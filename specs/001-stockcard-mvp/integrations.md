@@ -7,7 +7,10 @@ Checked Sept 14, 2026 against each provider's own docs, plus live calls to the x
 | Provider | Asset | Public API? | Auth | What it gives us for collateral | MVP use |
 |---|---|---|---|---|---|
 | **xStocks (Backed)** | Tokenized stocks | ✅ Yes (public endpoints) | None for public; `X-API-KEY` for client/trading | Asset list with **Solana mint addresses**, indicative price, **multiplier** (dividends/splits), **trading-halt status**, **proof of reserves**, official **Pyth/Chainlink feed IDs**, corporate-action calendar | **Yes, core** |
-| **Pyth** | Equity prices | ✅ Yes (Hermes) | Feed search is open; `/v2/updates/price/latest` returned **401 unauthorized** on Sept 14, so plan for a Pyth API key | Signed price updates posted on-chain; xStocks-specific feeds (e.g. `NVDAXUSD`) | **Yes, core** |
+| **Pyth** | Equity prices | ⚠️ Paid for equities | Pro key works for crypto; equities/xStocks return 403 "Not entitled"; equity access quoted ~$2,500/month | Official xStocks feed (Lazer id 1833 = NVDAXUSD) | **No (production option)** |
+| **Chainlink Data Streams** | Equity + xStocks prices | 💲 Self-serve, paid | app.chain.link; from $150/month per feed, no free tier; Solana verifier exists, devnet unconfirmed | Official xStocks oracle, 24/5 US equities | **No (production path)** |
+| **Switchboard On-Demand** | Custom feeds | ✅ Permissionless | None; SOL fees per update; devnet supported | Oracle-signed feed built from our chosen public sources | **Spike Wed, go/no-go 12:00 ET** |
+| **Jupiter Price v3** | Token prices | ✅ Yes | None on `lite-api.jup.ag` (checked Sept 14) | `usdPrice`, pool `liquidity`, xStocks `stockData.price` and `scaledUiConfig` multiplier | **Yes, price signer source** |
 | **Collector Crypt** | Graded cards (Pokémon etc.) | ✅ Yes (marketplace read + builders) | None (optional `ccsk_` key for higher limits); gacha and shipping need partner registration | Per-card **insuredValue**, grade, grading company, **grading cert ID**, NFT standard, owner, live listings and offers; devnet API | **Yes, collectibles pricing + liquidation path** |
 | **PSA** | Grading certs | ✅ Yes (free token) | Bearer token from PSA account | Cert lookup → confirms card, grade, label. **100 calls/day free**, terms restrict use to verifying certs | **Yes, verification only** (cache results) |
 | **Backpack** | SPCX + broker stocks | ✅ Yes (public + signed) | None for public; ED25519 for account | **SPCX Solana mint**, deposit/withdraw status, spot/perp/external prices, order book depth, its own collateral haircuts, session calendar; user balances (signed) | **Yes, SPCX pricing/eligibility now; import P3** |
@@ -18,7 +21,7 @@ Checked Sept 14, 2026 against each provider's own docs, plus live calls to the x
 | **Beezie** | Cards, luxury, watches | ❌ No public API found | n/a | Docs are product and user guides only | Partnership ask |
 | **Luxembourg SV / freeport / appraisers** | Art | ❌ No | n/a | Appraisals arrive as documents; we post them with the `Signed` oracle | Signed prices (as specced) |
 
-**Bottom line:** stocks can be fully automated today (xStocks + Backpack + Pyth). Graded cards can be priced and verified today (Collector Crypt `insuredValue` + PSA cert), but liquidation still means selling on a marketplace. Watches and art stay on admin-signed prices until a partner or paid feed is in place.
+**Bottom line:** stock prices can be automated today for free with a price signer (xStocks + Jupiter, Backpack for SPCX) and optionally Switchboard; official oracles (Chainlink, Pyth) are paid and are the production path. Graded cards can be priced and verified today (Collector Crypt `insuredValue` + PSA cert), but liquidation still means selling on a marketplace. Watches and art stay on admin-signed prices until a partner or paid feed is in place.
 
 ## xStocks (Backed): details
 
@@ -27,16 +30,16 @@ Base URL: `https://api.backed.fi/api/v2` (docs: docs.xstocks.fi/apis/openapi). P
 | Endpoint | Use in StockCard |
 |---|---|
 | `GET /public/assets` / `GET /public/assets/{symbol}` | Market list: Solana mint address (`deployments[network=Solana].address`), ISIN, underlying, trading hours mode, halt flag |
-| `GET /public/assets/{symbol}/price-data` | Indicative price `{ quote }`, used for the UI and a sanity check against Pyth |
+| `GET /public/assets/{symbol}/price-data` | Indicative price `{ quote }`, price signer source #1 (with Jupiter as #2) |
 | `GET /public/assets/{symbol}/multiplier?network=Solana` | `{ currentMultiplier, newMultiplier, activationDateTime }` |
 | `GET /public/system/status/{symbol}` | `{ isMarketTradingHalted, isAtomicTradingHalted }` → pause new borrows on that market |
 | `GET /public/proof-of-reserves/{symbol}` | `sharesHeld` vs `circulatingSupply` → pause the market if reserves < supply |
-| `GET /public/oracles/{symbol}?network=Solana` | Official Pyth Hermes ID and Chainlink feed for the token |
+| `GET /public/oracles/{symbol}?network=Solana` | Official Pyth (Lazer + Hermes) and Chainlink Data Streams feed IDs, kept for the production path |
 | `GET /public/corporate-actions/upcoming` | Warn users before a split or dividend changes the multiplier |
 
 Live values (Sept 14, 2026, mainnet):
 
-| Symbol | Solana mint | Pyth Hermes ID | Multiplier | Indicative price |
+| Symbol | Solana mint | Pyth Hermes ID (reference) | Multiplier | Indicative price |
 |---|---|---|---|---|
 | NVDAx | `Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh` | `4244d07890e4610f46bbde67de8f43a4bf8b569eebe904f136b469f148503b7f` | 1.001701 | $211.96 |
 | SPYx | `XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W` | `2817b78438c769357182c04346fddaad1178c82f4048828fe0997c3c64624e14` | 1.005715 | $761.76 |
@@ -50,7 +53,7 @@ Trading mode is `TwentyFourFive` (24/5), so prices keep updating outside NYSE ho
 - Required:
   1. Use `anchor_spl::token_interface` (`InterfaceAccount<Mint>`, `InterfaceAccount<TokenAccount>`, `Interface<TokenInterface>`) and `transfer_checked` for collateral, so both Token and Token-2022 mints work.
   2. In `oracle.rs`/`math.rs`, read the Scaled UI Amount extension from the collateral mint (current multiplier, plus the new multiplier once its activation timestamp has passed) and value collateral as `raw × multiplier × price × (1 − haircut)`.
-  3. Before relying on it, confirm whether Pyth `NVDAXUSD` is priced per token or per underlying share: compare it against `price-data.quote` and NVDA × multiplier. Record the answer in parameters.md.
+  3. Before relying on it, confirm whether each price source is per token or per underlying share: compare xStocks `price-data.quote`, Jupiter `usdPrice` and NVDA × multiplier. Record the answer in parameters.md.
   4. Devnet mock equity mints must be **Token-2022 with the Scaled UI Amount extension** (NVDAx multiplier 1.001701, SPYx 1.005715) so the demo exercises the same path.
 - Off-chain guards (server cron or on-demand in the app): halt → set the market to borrow-paused; proof of reserves shortfall → paused.
 
@@ -66,7 +69,7 @@ Backpack matters in two ways:
 |---|---|---|
 | `GET /assets` | none | SPCX Solana mint, decimals, deposit/withdraw enabled, withdrawal fee |
 | `GET /markets` | none | Stock markets (`rwaMarketType: "STOCK"`), e.g. `SPCX.US_USDC` spot and `SPCX.US_USDC_PERP` |
-| `GET /ticker?symbol=SPCX.US_USDC` (`&source=External`) | none | Backpack last price vs external market price, used as a sanity check against Pyth |
+| `GET /ticker?symbol=SPCX.US_USDC` (`&source=External`) | none | Backpack last price vs external market price, price signer source for SPCX (with Jupiter) |
 | `GET /markPrices?symbol=SPCX.US_USDC_PERP` | none | Index and mark price, a second reference |
 | `GET /depth?symbol=SPCX.US_USDC` | none | Order book depth, used to size liquidation haircut |
 | `GET /collateral` | none | Backpack's own collateral haircut functions (useful benchmark) |
@@ -88,9 +91,9 @@ Live values (Sept 14, 2026):
 | Backpack's own collateral haircut | `inverseSqrt` with base 0.5 (same as MU.US, SNDK.US) |
 
 **Implications**
-- SPCX moves from "Signed/Demo" to a **Pyth market** with a demo fallback.
+- SPCX uses the price signer (Backpack External + Jupiter). A Pyth feed exists but equity access is paid.
 - On-chain SPCX liquidity is thin (Backpack spot ~$12k per day), so a liquidator can't dump size. Keep 50% max LTV but add a **10% haircut**, and cap total SPCX deposits (MVP: $250k market cap parameter).
-- The Pyth SPCX feed only trades regular hours (Backpack itself trades pre/post/overnight sessions), so the closed-market rules apply every night, not just weekends.
+- Pyth's SPCX feed (reference) only covers regular hours (Backpack itself trades pre/post/overnight sessions), so the closed-market rules apply every night, not just weekends.
 
 ## ⚠️ Issuer controls on real RWA mints (xStocks and SPCX)
 
@@ -158,3 +161,7 @@ Phygitals and ALT already lend against cards, but custodially, per platform, wit
 - WatchCharts: watchcharts.com/api
 - ALT: support.alt.xyz (Alt Value), alt.xyz/borrow
 - Jupiter: developers.jup.ag, portal.jup.ag
+
+
+## Oracle update (Sept 14, 2026)
+Hybrid plan, details in parameters.md "Oracle decision": price signer for all equities from Tuesday; Switchboard spike Wednesday 09:00–11:00 ET with go/no-go at 12:00 for SPYx/TSLAx; NVDAx, TIDE and PSA10 stay Signed; Chainlink Data Streams is the production path. Sources: docs.chain.link/data-streams/sign-up (pricing), docs.switchboard.xyz (devnet support), live calls to api.backed.fi and lite-api.jup.ag on Sept 14.

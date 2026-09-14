@@ -13,13 +13,13 @@ One Anchor program on devnet holds collateral and lends USDC with on-chain LTV c
 **Language/Version**: Rust 1.98 (program), TypeScript 5.x on Node 20 (app, tests, scripts)
 
 **Primary Dependencies**:
-- Program: `anchor-lang` 1.2.0, `anchor-spl` 1.2.0, `pyth-solana-receiver-sdk` 2.0.0 (requires anchor-lang ^1.0.2, compatible)
-- App: `next` 16, React 19, Tailwind CSS 4, `@anchor-lang/core` 1.2 (the Anchor TS client, renamed from `@coral-xyz/anchor`), `@solana/web3.js` 1.x (what the Anchor client expects), `@solana/wallet-adapter-react` + `@solana-mobile/wallet-standard-mobile` ≥ 0.5.1 (0.6.0 current; needed so MWA detects the webshell), `@pythnetwork/hermes-client` 3.x + `@pythnetwork/pyth-solana-receiver` 0.16, `@tanstack/react-query`
+- Program: `anchor-lang` 1.2.0, `anchor-spl` 1.2.0, no oracle crate in the base build; `switchboard-on-demand` 0.13.x is added only if the Wednesday spike passes
+- App: `next` 16, React 19, Tailwind CSS 4, `@anchor-lang/core` 1.2 (the Anchor TS client, renamed from `@coral-xyz/anchor`), `@solana/web3.js` 1.x (what the Anchor client expects), `@solana/wallet-adapter-react` + `@solana-mobile/wallet-standard-mobile` ≥ 0.5.1 (0.6.0 current; needed so MWA detects the webshell), `@switchboard-xyz/on-demand` (only if the spike passes), `@tanstack/react-query`
 - Card UI reference: `crd-ui` (MIT, zero dependencies, active Aug 2026) for layout and brand detection. Our card component is custom-styled to the StockCard brand.
 
 **Storage**: On-chain state for credit. Off-chain card and transaction records in Vercel KV / Upstash Redis (free tier), falling back to an in-memory map in local dev.
 
-**Testing**: `anchor test` (TypeScript, mocha) against local validator with `Signed` markets. No Pyth dependency in tests. Manual Android runs with Phantom/Solflare on devnet.
+**Testing**: `anchor test` (TypeScript, mocha) against local validator with `Signed` markets. No oracle network dependency in tests. Manual Android runs with Phantom/Solflare on devnet.
 
 **Target Platform**: Desktop Chrome/Safari/Firefox, Android Chrome 120+, Android APK via webshell. Solana devnet.
 
@@ -54,7 +54,7 @@ No violations, so no Complexity Tracking entries.
 │   │                                                                        │
 │   ├─ WalletProvider: Wallet Standard (desktop) + MWA (Android)             │
 │   ├─ lib/program.ts : Anchor client from IDL (signs with user wallet)      │
-│   ├─ lib/pyth.ts    : Hermes → post PriceUpdateV2 in same tx (Pyth markets)│
+│   ├─ lib/oracle.ts  : Switchboard update in same tx (only if spike passes) │
 │   └─ lib/risk.ts    : same LTV/interest math as program (preview only)     │
 │                                                                            │
 │  Route handlers (server only)                                              │
@@ -62,6 +62,7 @@ No violations, so no Complexity Tracking entries.
 │                                   └─ BridgeCardProvider (sandbox)          │
 │   /api/cashback    → cashback authority keypair → deposit_collateral_for   │
 │   /api/faucet      → mint authority keypair → mock asset mints             │
+│   /api/prices/sync → price signer: xStocks + Jupiter → set_signed_price    │
 │   /api/backpack    → ED25519-signed read-only balances (or fixture)        │
 │   /api/admin/*     → set_signed_price / crash / restore (devnet only)      │
 │   storage: Upstash Redis (cards, txs, cashback queue)                      │
@@ -70,7 +71,7 @@ No violations, so no Complexity Tracking entries.
 ┌───────────────▼──────────── Anchor program `stockcard` ────────────────────┐
 │ Config PDA ─ USDC vault PDA (pool, seeded by admin)                        │
 │ Market PDA (per collateral mint) ─ collateral vault PDA                    │
-│   oracle: Pyth PriceUpdateV2 (feed id)  |  SignedPrice PDA (appraisal/FMV) │
+│   oracle: SignedPrice PDA (market/appraisal/FMV/demo) | Switchboard feed    │
 │ Position PDA (owner, market)                                               │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -81,17 +82,17 @@ No violations, so no Complexity Tracking entries.
 3. Purchase: `/api/card/simulate` → server checks allowance → `transferChecked` from the user's USDC ATA to the merchant settlement ATA, signed by the delegate → the tx is stored.
 4. Settled → the cashback job computes tier % → gets the asset price → `deposit_collateral_for(owner)` from the cashback treasury → stores the cashback signature.
 
-**Borrow path (Pyth market)**: one transaction contains a Hermes price update → `postPriceUpdate` → `borrow(amount)` reading `PriceUpdateV2` → close the price update account. Signed markets skip the Pyth part.
+**Price path.** Signed markets (default): `/api/prices/sync` posts `set_signed_price` every 60 s from xStocks + Jupiter; `borrow(amount)` reads the `SignedPrice` PDA with a 180 s max age. Switchboard markets (only if the Wednesday spike passes): the client fetches a signed Switchboard update and puts it in the same transaction before `borrow`. Production path (not built): Chainlink Data Streams.
 
 ## Key risk parameters (devnet defaults)
 
 | Market | Oracle | Max LTV | Liq. threshold | Liq. bonus | Haircut | Max price age |
 |---|---|---|---|---|---|---|
-| NVDAx, SPYx, TSLAx, SPCX | Pyth (fallback Signed) | 50% | 65% | 5% | 0% open / 10% closed | 60s open / 72h closed |
+| NVDAx, SPYx, TSLAx, SPCX | Signed/Market (SPYx, TSLAx → Switchboard if spike passes) | 50% | 65% | 5% | 0% open / 10% closed | 180s open / 72h closed |
 | TIDE (art note) | Signed (appraisal) | 30% | 45% | 10% | 20% | 100 days |
 | PSA10 (graded card item) | Signed (partner FMV) | 40% | 55% | 8% | 25% | 8 days |
 
-APR 8% (800 bps). Close factor 50%.
+APR by LTV band (stocks 9.9% / 12.9% / 14.9%; collectibles and art 11.9% / 15.9%), protocol share of interest 40%, utilization cap 90%. Close factor 50%. Savings (US7) and Demo Shop (US8): see spec.md and parameters.md §3b–§3c.
 
 ## Project Structure
 
@@ -122,7 +123,7 @@ programs/stockcard/
     ├── state.rs                # Config, Market, Position, SignedPrice
     ├── errors.rs
     ├── math.rs                 # accrue, value, ltv (checked, bps)
-    ├── oracle.rs               # Pyth / Signed price read + staleness
+    ├── oracle.rs               # SignedPrice (+ Switchboard if spike passes) + staleness
     └── instructions/
         ├── init_config.rs  add_market.rs  set_signed_price.rs
         ├── deposit.rs  deposit_for.rs  withdraw.rs
@@ -139,7 +140,7 @@ app/                            # Next.js 16 PWA
 │   ├── (app)/borrow/  card/  cashback/  portfolio/  import/  admin/
 │   └── api/card/  cashback/  faucet/  backpack/  admin/
 ├── src/components/             # CreditCard, HealthBar, AssetRow, MockBadge, AmountSheet
-├── src/lib/                    # program.ts, pyth.ts, risk.ts, card/*.ts, kv.ts, idl/
+├── src/lib/                    # program.ts, prices.ts, risk.ts, card/*.ts, kv.ts, idl/
 └── src/styles/tokens.css       # brand tokens from deck (plaster/ink/brass)
 android/                        # generated by solana-mobile webshell (Thursday)
 ```
@@ -152,7 +153,7 @@ android/                        # generated by solana-mobile webshell (Thursday)
 |---|---|---|
 | **Mon Sept 14 (today)** | Spec kit, toolchain, Anchor workspace + state/math/errors, Next.js scaffold with wallet connect (desktop + MWA), brand tokens, home screen with mock data | `anchor build` passes; app connects Phantom on desktop and Android Chrome |
 | **Tue Sept 15** | All instructions + `anchor test` green; devnet deploy; seed script; home/borrow/repay wired to the program | SC-003; US1 borrow and US2 on devnet |
-| **Wed Sept 16** | Card: CardProvider, mock provider, delegate approve, purchase feed; cashback; health bar + admin crash/liquidate; Pyth path or Signed fallback decision | US1 end to end, US3, US4 |
+| **Wed Sept 16** | Card: CardProvider, mock provider, delegate approve, purchase feed; cashback; health bar + admin crash/liquidate; price signer live; Switchboard spike 09:00–11:00 ET, go/no-go 12:00 | US1 end to end, US3, US4 |
 | **Thu Sept 17** | Art + collectible markets (US5); PWA manifest; webshell APK on a real Android device; polish; Vercel prod; README; record video | SC-001, SC-002, SC-004, SC-005 |
 | **Fri Sept 18** | Buffer, Backpack import only if everything else is done, submit by noon ET | SC-006, submitted |
 

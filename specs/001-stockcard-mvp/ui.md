@@ -16,7 +16,7 @@ Type: **Bodoni Moda** for big numbers and the card wordmark, **Hanken Grotesk** 
 
 ## Navigation
 
-Bottom tab bar on mobile (≤ 768 px), left rail on desktop: **Home · Card · Assets · Cashback**. Admin lives at `/admin` (devnet only, not in the nav).
+Bottom tab bar on mobile (≤ 768 px), left rail on desktop: **Home · Card · Assets · Savings · Shop**. Cashback moves under Card (tier + asset settings). Admin lives at `/admin` (devnet only, not in the nav).
 
 ## Screens
 
@@ -28,7 +28,7 @@ Bottom tab bar on mobile (≤ 768 px), left rail on desktop: **Home · Card · A
 | S4 | Repay sheet | `/borrow?mode=repay` | Amount or "Repay all"; debt incl. interest | Confirm & sign |
 | S5 | Card | `/card` | Card stack (front shows masked number, holder, expiry, network placeholder; tap flips to CVV "•••"); card limit (delegate allowance) with "Change limit"; freeze toggle; transaction feed with status and explorer link; "Test purchase" button (demo) | Test purchase |
 | S6 | Test purchase sheet | `/card?simulate=1` | Merchant presets (Coffee $4.80, Groceries $62.15, Flight $389.00) or custom; shows cashback preview "+$0.62 in NVDAx" | Pay |
-| S7 | Assets | `/portfolio` | Rows per asset: icon, name, class chip (Equity / Art note / Collectible), wallet balance, locked, price + source ("Pyth" / "Appraisal" / "Partner FMV" / "Demo"), max LTV, MockBadge; Deposit / Withdraw; Faucet link | Deposit |
+| S7 | Assets | `/portfolio` | Rows per asset: icon, name, class chip (Equity / Art note / Collectible), wallet balance, locked, price + source ("Market price" / "Switchboard" / "Appraisal" / "Partner value" / "Demo price"), max LTV, MockBadge; Deposit / Withdraw; Faucet link | Deposit |
 | S8 | Asset detail + deposit/withdraw sheet | `/portfolio/[mint]` | For art: artwork canvas, Lot, compartment label; for collectible: slab render; amount input; credit impact preview | Confirm & sign |
 | S9 | Cashback | `/cashback` | Tier cards (Standard 0.5 / Plus 1 / Black 2, demo toggle); pick asset (NVDAx, SPYx, TIDE art note, card pack credit); lifetime cashback in assets | Save |
 | S10 | Import from Backpack | `/import` | Key fields (read-only warning), "Use demo data"; results list with Eligible / Not on-chain badges | Import |

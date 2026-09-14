@@ -16,7 +16,7 @@ A holder connects a Solana wallet (desktop browser or Android phone), sees their
 
 **Why this priority**: This is the product. Without it there is no demo and no submission.
 
-**Independent Test**: With a fresh devnet wallet funded from the in-app faucet: deposit 10 NVDAx → borrow 500 USDC → run a $42 test purchase → the card screen lists the purchase with an explorer link, and available credit drops accordingly.
+**Independent Test**: With a fresh devnet wallet that claimed test money and bought 10 NVDAx in the Demo Shop: deposit 10 NVDAx → borrow 500 USDC → run a $42 test purchase → the card screen lists the purchase with an explorer link, and available credit drops accordingly.
 
 **Acceptance Scenarios**:
 
@@ -42,18 +42,22 @@ The user repays part or all of the debt, including interest, and withdraws their
 
 ---
 
-### User Story 3 - Health bar, price crash and liquidation (Priority: P2)
+### User Story 3 - Protect my position: buffer, alerts, top-up, liquidation (Priority: P2)
 
-The user sees a health bar. In demo mode, an admin "crash price" control drops NVDA by 40%. The position turns unhealthy, and a liquidator repays part of the debt in exchange for discounted collateral.
+Protection comes in three layers. (1) When borrowing, the app suggests staying at or below 35% LTV and shows how far the price can fall before liquidation. (2) As LTV rises, the app raises in-app banners and sends web push notifications with the exact amount of collateral to add or debt to repay to get back to healthy. (3) If nobody acts, the position becomes liquidatable and a liquidator repays part of the debt in exchange for discounted collateral. In demo mode, an admin "crash price" control drops a signed price by 30%.
 
-**Why this priority**: Shows that risk is handled on-chain. Judges will ask about it.
+**Why this priority**: Shows that risk is handled on-chain and that users get a fair chance to act before liquidation. Judges will ask about it.
 
-**Independent Test**: Borrow close to max → crash price → the health bar turns red → run liquidate from the admin panel → debt and collateral both shrink and the position is healthy again.
+**Independent Test**: Borrow $1,000 against 10 NVDAx ($2,119.60) → enable notifications → crash −30% → a push notification and red banner say "Add 3.48 NVDAx or repay $258.14" → tap Add stock, deposit → the bar is green again. Crash again and ignore the alert → run liquidate 50% from the admin panel → the position ends at about 52% LTV, no longer liquidatable (amber).
 
 **Acceptance Scenarios**:
 
-1. **Given** a position at 48% LTV, **When** the price drops 40%, **Then** LTV shows 80% and the position is flagged liquidatable (above the 65% liquidation threshold).
-2. **Given** a healthy position, **When** anyone calls liquidate, **Then** the program rejects it.
+1. **Given** 10 NVDAx at $211.96, **When** the user types $1,000 in the Borrow sheet, **Then** it shows "Liquidation if NVDA falls below $153.85 (−27.4%)" and a note that the suggested maximum is $750.
+2. **Given** a $1,000 loan on 10 NVDAx, **When** the price drops 30% to $148.37, **Then** LTV shows 67.4%, the position is flagged liquidatable, the Home banner offers "Add 3.48 NVDAx" and "Repay $258.14", and a subscribed device receives one push notification.
+3. **Given** that at-risk position, **When** the user deposits 3.48 NVDAx, **Then** LTV returns to ≤ 50% and the banner clears.
+4. **Given** the same at-risk position with no top-up, **When** the admin liquidates 50% of the debt, **Then** debt drops to $500, 3.538 NVDAx is seized (repay × 1.05 / price), LTV ends at 52.2% and a second liquidation is rejected as `NotLiquidatable`.
+5. **Given** a healthy position, **When** anyone calls liquidate, **Then** the program rejects it.
+6. **Given** a position that stays in the same alert band, **When** the alert check runs again, **Then** no duplicate push is sent; a new push is sent only when the position enters a worse band.
 
 ---
 
@@ -63,27 +67,61 @@ Each card purchase earns cashback (Standard 0.5%, with a demo toggle for Plus 1%
 
 **Why this priority**: It's the consumer hook and a clear differentiator, and it's cheap to build once Story 1 exists.
 
-**Independent Test**: Pick NVDAx as the cashback asset → make a $100 purchase at the 1% tier → collateral increases by $1.00 worth of NVDAx, labeled "Cashback".
+**Independent Test**: Pick NVDAx as the cashback asset → make a $100 purchase at the Plus tier (1.5%, within the credit-linked cap) → collateral increases by $1.50 worth of NVDAx, labeled "Cashback".
 
 **Acceptance Scenarios**:
 
-1. **Given** cashback asset NVDAx and tier Plus, **When** a $100 purchase settles, **Then** $1.00 of NVDAx at the current price is deposited into the user's NVDAx position, and the feed shows "+0.0056 NVDAx cashback".
+1. **Given** cashback asset NVDAx and tier Plus (1.5%) and a $1,000 average credit balance, **When** a $100 purchase settles, **Then** $1.50 of NVDAx at the current price is deposited into the user's NVDAx position, and the feed shows "+0.0071 NVDAx cashback" (at $211.96). A purchase beyond 25% of the credit balance that month earns 0.5%.
 2. **Given** a failed or declined purchase, **When** it's processed, **Then** no cashback is issued.
 
 ---
 
-### User Story 5 - Art notes and collectibles as collateral (Priority: P2)
+### User Story 5 - Art notes and Pokémon cards as collateral (Priority: P2)
 
-The user sees Genesis Collection art notes and a vaulted graded card in their portfolio. Each has its own max LTV (art 30%, collectibles 40%) and an admin-signed price (appraisal or FMV) with a haircut.
+The user sees Genesis Collection art notes and a vaulted graded Pokémon card (PSA 10, devnet mock) in their portfolio. Each has its own max LTV (art 30%, collectibles 40%) and an admin-signed price (appraisal or FMV) with a haircut.
 
 **Why this priority**: Makes the "real assets, not just stocks" story visible. Uses the same program paths with a different oracle kind.
 
-**Independent Test**: Faucet 1,000 TIDE art notes and 1 PSA10 item token → deposit both → available credit = TIDE value × 0.8 haircut × 30% + item FMV × 0.75 haircut × 40%.
+**Independent Test**: Buy 1,000 TIDE art notes and one graded-card item token in the Demo Shop → deposit both → available credit = TIDE value × 0.8 haircut × 30% + item value × 0.75 haircut × 40%.
 
 **Acceptance Scenarios**:
 
 1. **Given** an art market with an appraisal older than its max age, **When** the user borrows against it, **Then** the program rejects it with a stale-price error.
-2. **Given** art and stock positions, **When** the home screen loads, **Then** each asset shows its own LTV, price source ("Pyth" / "Appraisal" / "Partner FMV") and a mock label.
+2. **Given** art and stock positions, **When** the home screen loads, **Then** each asset shows its own LTV, price source ("Market price" / "Switchboard" / "Appraisal" / "Partner value") and a mock label.
+
+---
+
+### User Story 7 - Savings: earn on USDC that funds the loans (Priority: P2)
+
+A user deposits USDC into Savings and earns a variable APY paid from borrowers' interest (target ~6% at 80% utilization). 60% of interest goes to savers, 40% to the protocol reserve. Withdrawals are instant up to idle liquidity.
+
+**Why this priority**: It's the funding source for the lending pool and the protocol's margin (lend at ~10–15%, pay ~6%). Judges and investors will ask where the USDC comes from.
+
+**Independent Test**: Wallet A deposits 10,000 USDC into Savings → wallet B borrows 5,000 against NVDAx → after a simulated year, A's balance has grown by B's interest × 60% × (A's share), and the reserve holds 40%.
+
+**Acceptance Scenarios**:
+
+1. **Given** an empty pool, **When** a user deposits 10,000 USDC, **Then** they receive shares worth 10,000 USDC and the Savings screen shows the current APY and utilization.
+2. **Given** 90% utilization, **When** anyone tries to borrow, **Then** the program rejects it (`PoolUtilizationCap`) and the app says "Borrowing is full right now."
+3. **Given** a saver whose withdrawal exceeds idle liquidity, **When** they withdraw, **Then** the program rejects it and the app shows the instant-withdrawable amount.
+4. **Given** interest accrued on positions, **When** the reserve is checked, **Then** it equals 40% of accrued interest (rounded in the protocol's favor).
+
+---
+
+### User Story 8 - Demo Shop: buy assets with test money, then lock them (Priority: P1 for stocks, P2 for collectibles)
+
+A new user claims test money (dUSDC), opens the Demo Shop and buys tokenized stocks at the live market price or one of six collectibles and watches mirrored from real Collector Crypt listings (image, grade, insured value). The purchase mints a devnet mock token to their wallet, which they can lock as collateral in one tap.
+
+**Why this priority**: Replaces the bare faucet with a story judges understand in seconds: "buy a Rolex, lock it, spend with the card".
+
+**Independent Test**: Claim $100,000 test dUSDC → buy 10 NVDAx at the market price and the "Rolex Daytona" item → both appear in Assets → tap "Lock as collateral" → credit line updates.
+
+**Acceptance Scenarios**:
+
+1. **Given** a new wallet, **When** it claims test money, **Then** it receives 100,000 dUSDC once, and at most 10,000 more per day.
+2. **Given** 100,000 dUSDC, **When** the user buys the Lugia PSA 10 item, **Then** its insured value in dUSDC moves to the shop treasury and 1 item token is minted to the wallet within 30 seconds.
+3. **Given** an item token in the wallet, **When** the user taps "Lock as collateral", **Then** the deposit sheet opens prefilled and the credit line shows value × 75% (haircut) × 40%.
+4. **Given** the shop, **When** it renders, **Then** every item shows "Demo shop · test money" and "Mirrored from a real Collector Crypt listing. Not affiliated. You don't own the real item."
 
 ---
 
@@ -105,7 +143,7 @@ The user enters a Backpack API key and sees which holdings are eligible (SPCX) a
 
 ### Edge Cases
 
-- Equity market closed: the Pyth price is older than normal max-age → use the market-hours max-age with a wider haircut; if still stale, block borrow/withdraw and show "Price updates when markets reopen".
+- Equity market closed: the stock price is older than normal max-age → use the market-hours max-age with a wider haircut; if still stale, block borrow/withdraw and show "Price updates when markets reopen".
 - Borrowed USDC exceeds pool liquidity → the program rejects with an insufficient-liquidity error; the app shows pool availability.
 - Card delegate allowance lower than purchase → decline the purchase and prompt "Top up card limit".
 - Wallet on the wrong cluster (mainnet) → banner plus network switch instructions.
@@ -121,13 +159,13 @@ The user enters a Backpack API key and sees which holdings are eligible (SPCX) a
 **Wallet & portfolio**
 - **FR-001**: Users MUST be able to connect a Solana wallet with Wallet Standard on desktop and Mobile Wallet Adapter on Android.
 - **FR-002**: The app MUST show wallet balances for all supported collateral assets and USDC, with price, source and mock label.
-- **FR-003**: The app MUST provide a devnet faucet for mock collateral assets (rate-limited per wallet).
+- **FR-003**: The app MUST provide test money (dUSDC claim, rate-limited per wallet) and a Demo Shop where users buy mock stock tokens and mirrored collectible/watch item tokens with it (US8).
 
 **Credit line (program)**
-- **FR-010**: The program MUST support markets per collateral mint with `max_ltv_bps`, `liq_threshold_bps`, `liq_bonus_bps`, `haircut_bps` and an oracle kind (`Pyth` or `Signed`).
+- **FR-010**: The program MUST support markets per collateral mint with `max_ltv_bps`, `liq_threshold_bps`, `liq_bonus_bps`, `haircut_bps` and an oracle kind (`Signed` or `Switchboard`).
 - **FR-011**: Users MUST be able to deposit and withdraw collateral; withdrawals MUST keep LTV ≤ max LTV.
 - **FR-012**: Users MUST be able to borrow USDC to a destination token account up to max LTV, using a non-stale price.
-- **FR-013**: Interest MUST accrue linearly at the config APR (default 8%) and be applied before every state change.
+- **FR-013**: Interest MUST accrue linearly at the position's current APR and be applied before every state change. The APR comes from the market's LTV bands (parameters.md §3b: stocks 9.9% / 12.9% / 14.9%) and is re-selected after each state change. No utilization-based rate curves.
 - **FR-014**: Users MUST be able to repay partially or fully; repayment MUST be capped at outstanding debt.
 - **FR-015**: Anyone MUST be able to liquidate a position whose LTV exceeds the liquidation threshold, repaying up to 50% of the debt and receiving collateral worth repaid × (1 + bonus).
 - **FR-016**: An authorized depositor (cashback authority) MUST be able to deposit collateral into a user's position without the user signing.
@@ -144,8 +182,21 @@ The user enters a Backpack API key and sees which holdings are eligible (SPCX) a
 - **FR-031**: On each settled purchase, the system MUST deposit tier % × amount of the chosen asset into the user's position via FR-016.
 
 **Risk UX**
-- **FR-040**: The home screen MUST show collateral value, debt, available credit, current LTV and a health bar (green < 50%, amber ≤ 65%, red > 65%).
-- **FR-041**: A demo admin panel MUST allow crashing or restoring a market price and running a liquidation.
+- **FR-040**: The home screen MUST show collateral value, debt, available credit, current LTV and a health bar (green ≤ 50%, amber ≤ 65%, red > 65%).
+- **FR-041**: A demo admin panel MUST allow crashing (−30%) or restoring a signed market price and running a liquidation.
+- **FR-042**: The Borrow sheet MUST show the liquidation price and the % drop to reach it, and flag amounts above the suggested maximum LTV (35%) without blocking them.
+- **FR-043**: The app MUST show alert banners by band (parameters.md §4) with one-tap "Add collateral" and "Repay" actions prefilled with the exact amount needed to return to max LTV.
+- **FR-044**: Users MUST be able to opt in to web push notifications from a device. The server MUST evaluate positions after every admin price change and on a schedule, and send at most one push per position per band entered.
+- **FR-045**: Push subscriptions MUST be tied to a wallet signature and removable by the user. Notifications MUST NOT include amounts of other users' positions or any secret.
+
+**Savings**
+- **FR-060**: Users MUST be able to deposit and withdraw USDC in Savings for pool shares; share value MUST grow with interest paid by borrowers.
+- **FR-061**: 40% of accrued interest MUST go to the protocol reserve; the admin MAY withdraw only the reserve.
+- **FR-062**: The program MUST block new borrows above 90% utilization and withdrawals above idle liquidity.
+
+**Demo Shop**
+- **FR-070**: The app MUST list buyable devnet assets: stock tokens at the market price and mirrored collectible/watch items with Collector Crypt image, grade and insured value.
+- **FR-071**: A purchase MUST transfer dUSDC from the user to the shop treasury and mint the matching mock token; items MUST be labeled as demo mirrors, not real ownership.
 
 **Import**
 - **FR-050**: Users MAY import Backpack holdings. The ED25519 secret stays in the browser; the client signs a `balanceQuery` request and the server proxies `GET /api/v1/capital` with those headers (CORS workaround). Nothing is stored or logged. Fallback: demo fixture.
@@ -172,9 +223,10 @@ The user enters a Backpack API key and sees which holdings are eligible (SPCX) a
 
 ## Assumptions
 
-- Devnet only. Collateral assets are mock SPL mints (NVDAx, SPYx, TSLAx, SPCX, TIDE art notes, PSA10 item tokens), created and faucetable by the admin.
-- USDC: the program is mint-agnostic. Devnet uses Circle's devnet USDC (`4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`) if faucet liquidity is enough for the pool; otherwise a mock 6-decimal USDC mint, switchable by env.
+- Devnet only. Collateral assets are mock mints bought in the Demo Shop with test dUSDC: NVDAx, SPYx, TSLAx, SPCX, TIDE art notes, and six item tokens mirrored from Collector Crypt listings (3 graded cards, 3 watches).
+- USDC: the program is mint-agnostic. The demo uses a mock 6-decimal **dUSDC** mint so test money, the Demo Shop, Savings and the pool can all be funded freely. Circle devnet USDC stays an option for the Bridge sandbox path.
 - Bridge sandbox access may not arrive before Friday, so the mock card provider is the default path.
-- Pyth equity feeds need a price update posted in the same transaction via Hermes. If that isn't reliable on devnet by Tuesday night, NVDAx falls back to a `Signed` market labeled "Demo price".
+- Stock prices come from a price signer that posts free public prices (xStocks + Jupiter; Backpack + Jupiter for SPCX) as `Signed` prices with source `Market` when both agree within 2%. TIDE uses "Appraisal", the PSA10 Pokémon card "Partner value". NVDAx always stays Signed so the admin crash can override it (source `Demo`). A time-boxed Switchboard spike on Wed Sept 16 (go/no-go 12:00 ET) may move SPYx and TSLAx to `Switchboard` feeds. Pyth Pro equity access (~$2,500/month) and Chainlink Data Streams (from $150/month per feed) are the production path, not the MVP.
+- Web push works in Chrome on Android and desktop. Delivery inside the webshell APK must be verified on a device; if it doesn't work there, the demo uses Android Chrome for the notification moment.
 - Card network logos (Visa/Mastercard) are trademarks and appear only as text placeholders until an issuer approves brand use.
 - No real KYC, no mainnet, no real artworks or partner integrations.

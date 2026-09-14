@@ -42,3 +42,9 @@
 ## R7. Off-chain storage
 - **Decision**: Upstash Redis via Vercel Marketplace (free tier) for cards, transactions and the cashback queue; in-memory adapter for local dev.
 - **Alternative**: Postgres. Overkill for a demo.
+
+## Amendment (Sept 14, 2026): oracle choice
+- **Decision**: Hybrid. All equities start on `Signed` prices posted by a price signer from free public sources (xStocks `price-data` + Jupiter Price v3; Backpack External + Jupiter for SPCX), with a 2% agreement check. A time-boxed Switchboard On-Demand spike on Wed Sept 16 (go/no-go 12:00 ET) may move SPYx/TSLAx to `OracleKind::Switchboard`. NVDAx stays Signed for the crash demo.
+- **Rationale**: Pyth Pro equity/xStocks access costs ~$2,500/month (the Pro key returned 403 "Not entitled" for NVDA, SPCX and NVDAX feed 1833; Hermes returned 401/403). Chainlink Data Streams, the official xStocks oracle, is self-serve but paid (from $150/month per feed, no free tier, devnet verification unconfirmed). Switchboard is permissionless and supports devnet; `switchboard-on-demand` 0.13.0 declares `anchor-lang >=0.31` and a Solana 3 feature, but a build with anchor-lang 1.2 is unverified.
+- **Supersedes**: the Pyth `PriceUpdateV2` decision above and the "Pyth equity path by Wednesday" risk.
+- **Production path**: Chainlink Data Streams (or Pyth Pro) once there is revenue.

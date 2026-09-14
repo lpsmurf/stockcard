@@ -4,7 +4,9 @@ All routes return `{ ok: true, data }` or `{ ok: false, error: { code, message }
 
 | Method & path | Body | Response data | Notes |
 |---|---|---|---|
-| `POST /api/faucet` | `{ mint }` | `{ signature, amount }` | Allowed mock mints only; 1/hour per wallet+mint |
+| `POST /api/faucet` | none | `{ signature, amount }` | Test money: 100,000 dUSDC once per wallet, then ≤ 10,000 per 24 h |
+| `GET /api/shop/items` | none | `[{ symbol, kind, name, grade?, image, priceUsd6, source }]` | Stocks at signed price, TIDE, six mirrored items (cached 60 s) |
+| `POST /api/shop/buy` | `{ symbol, amount, paySignature }` | `ShopOrder` | Wallet-signed. Verifies the dUSDC transfer to `SHOP_TREASURY_ADDRESS` (amount = price × qty), then mints the mock token; idempotent by `paySignature` |
 | `POST /api/card` | `{ holderName, network }` | `Card` | Creates via the active CardProvider |
 | `GET /api/card` | none | `Card \| null` + `{ allowanceUsd6 }` | Reads delegate allowance on-chain |
 | `PATCH /api/card` | `{ status?, tier?, cashbackMint? }` | `Card` | `cashbackMint` must be an allowed market mint |
@@ -14,6 +16,18 @@ All routes return `{ ok: true, data }` or `{ ok: false, error: { code, message }
 | `POST /api/backpack/import` | `{ apiKey, timestamp, window, signature } \| { demo: true }` | `{ holdings: [{ symbol, qty, eligible, reason }] }` | **Secret never sent.** Client signs `instruction=balanceQuery&timestamp=<ms>&window=<ms>` (ED25519, base64). Server forwards `GET https://api.backpack.exchange/api/v1/capital` with `X-API-Key`, `X-Signature`, `X-Timestamp`, `X-Window` within the window (≤ 60,000 ms). Nothing is logged or stored. |
 | `POST /api/admin/price` | `{ mint, price }` or `{ mint, action: "crash" \| "restore" }` | `{ signature }` | Devnet only (`NEXT_PUBLIC_CLUSTER=devnet`) |
 | `POST /api/admin/liquidate` | `{ owner, mint, repayUsd6 }` | `{ signature }` | Uses the admin keypair as liquidator |
+| `POST /api/push/subscribe` | `{ subscription: PushSubscriptionJSON }` | `{ id }` | Wallet-signed. Stores the device under `push:{owner}` |
+| `DELETE /api/push/subscribe` | `{ endpoint }` | `{ removed: true }` | Wallet-signed |
+| `POST /api/push/test` | none | `{ sent }` | Wallet-signed. Sends "Notifications are on" to the caller's devices |
+| `POST /api/prices/sync` | none | `{ posted: [{ symbol, price, sig }], skipped: [{ symbol, reason }] }` | Header `authorization: Bearer CRON_SECRET`. Price signer (parameters.md "Price signer"); skips markets under a `Demo` override |
+| `POST /api/alerts/check` | `{ owner? }` | `{ checked, notified }` | Header `authorization: Bearer CRON_SECRET`. Reads positions + prices, computes bands, sends pushes per parameters.md §4. Also called inline by `/api/admin/price` after a price change |
+
+**Web push notes**
+- VAPID keys: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` for `pushManager.subscribe`, `VAPID_PRIVATE_KEY` + `VAPID_SUBJECT` server-side via `web-push`.
+- The service worker (`public/sw.js`, T042) handles `push` (show notification with title/body from the payload) and `notificationclick` (open `/?fix={market}`, which opens the Add collateral or Repay sheet prefilled).
+- Payload: `{ title, body, market, band, url }` only. No other users' data, no secrets.
+- Permission is requested only after a user taps "Turn on alerts" (Home banner or Card screen), never on page load.
+- Schedule: Upstash QStash every 5 minutes (Vercel Hobby cron is daily only).
 
 **Backpack notes** (from docs.backpack.exchange, checked Sept 14, 2026)
 - Auth: ED25519. Headers `X-API-Key` (base64 public key), `X-Signature` (base64), `X-Timestamp` (ms), `X-Window` (default 5000, max 60000). Signing string: `instruction=<type>&<params sorted alphabetically as query string>&timestamp=<ts>&window=<window>`.

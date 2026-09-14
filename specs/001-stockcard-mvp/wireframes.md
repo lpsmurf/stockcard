@@ -65,15 +65,15 @@ S7 ──Import from Backpack──▶ S10 Import
 │                                │
 │ ┌──────────────┬─────────────┐ │
 │ │ Debt         │ APR         │ │
-│ │ $500.00      │ 8.00%       │ │
-│ │ +$0.11/day   │ fixed       │ │
+│ │ $500.00      │ 9.9%        │ │
+│ │ +$0.14/day   │ by LTV      │ │
 │ └──────────────┴─────────────┘ │
 │                                │
 │ [ Borrow to card ] ( Repay )   │  two equal buttons
 │                                │
 │ Recent card activity  See all ›│
 │ ○ Albert Heijn      −$62.15    │  TxRow: merchant, amount
-│   Settled · +0.0035 NVDAx      │  cashback line in brass
+│   Settled · +0.0044 NVDAx      │  cashback line in brass
 │ ○ Blue Bottle        −$4.80    │
 │   Settled · +0.0003 NVDAx      │
 ├────────────────────────────────┤
@@ -82,7 +82,12 @@ S7 ──Import from Backpack──▶ S10 Import
 
 States
 - No collateral: replace credit block with "Add an asset to open your credit line" + [ Add assets ] → /portfolio
-- At risk (LTV > 65%): red banner at top "Your position can be liquidated. Repay or add collateral." [ Repay ] ( Add collateral )
+- Watch (max < LTV ≤ 55%): ink-2 note under the health bar "You can't borrow more until LTV is under 50%."
+- Warning (55% < LTV ≤ 60%): amber banner "NVDA dropped. Add {add} NVDAx or repay {repay} to stay safe." [ Add stock ] ( Repay )
+- Urgent (60% < LTV ≤ 65%): red banner "You're close to liquidation." same actions, exact amounts
+- At risk (LTV > 65%): red banner at top "Your position can be liquidated. Add 3.48 NVDAx or repay $258.14." [ Add stock ] ( Repay )
+- Buttons open S8 deposit / S4 repay prefilled with the amount that brings LTV back to 50%. On devnet, "Add stock" offers "Get test assets" when the wallet balance is too low.
+- Alerts off: dismissible card under activity "Get an alert before liquidation" [ Turn on alerts ] → browser permission → toast "Alerts are on for this device"
 - Loading: skeleton blocks at same sizes
 - Wrong network: amber banner "Switch your wallet to Devnet"
 Desktop: left column card + credit + health; right column activity feed.
@@ -102,11 +107,14 @@ Desktop: left column card + credit + health; right column activity feed.
 │ To        Card wallet 7xKp…9aQe│
 │ ────────────────────────────── │
 │ New LTV            18% → 54% ! │  turns warn if > max (blocks confirm)
-│ Interest           $0.11 / day │
+│ Liquidation if NVDA < {liqPx}  │  mono; "(−{drop}%)" in ink-3
+│ Suggested max {sugMax} (35%)   │  ink-3 hint; amber text above it, never blocks
+│ APR / interest  {apr} · {int}/d│
 │ Health after       Healthy     │
 │                                │
 │ [     Confirm and sign      ]  │  sticky above safe-area
 └────────────────────────────────┘
+Example at $1,000 on 10 NVDAx: "Liquidation if NVDA < $153.85 (−27.4%)", suggested max $750.
 Error inline under input: "That's more than your credit line. You can borrow up to $890.00."
 Success toast: "Borrowed $500.00 to your card" + explorer link.
 ```
@@ -150,7 +158,7 @@ Success toast: "Borrowed $500.00 to your card" + explorer link.
 │ Activity                       │
 │ ○ Albert Heijn       −$62.15   │
 │   Groceries · Settled · 14:02 ↗│  ↗ explorer
-│   +0.0035 NVDAx cashback       │
+│   +0.0044 NVDAx cashback       │
 │ ○ KLM               −$389.00   │
 │   Declined · Card limit $500   │  bad color
 │ ···                            │
@@ -171,11 +179,11 @@ No card yet → "Get your virtual card" block: name field (prefilled), network �
 │ Merchant  [ Albert Heijn     ] │
 │ Amount    $ 62.15              │
 │ ────────────────────────────── │
-│ Cashback   +$0.62 in NVDAx     │  brass; tier label "Plus 1%"
+│ Cashback   +$0.93 in NVDAx     │  brass; tier label "Plus 1.5%"
 │ Card limit left   $437.85      │
 │ [            Pay            ]  │
 └────────────────────────────────┘
-Result: sheet closes; feed row appears as Pending → Settled (poll 5 s); toast "Paid $62.15 · +0.0035 NVDAx".
+Result: sheet closes; feed row appears as Pending → Settled (poll 5 s); toast "Paid $62.15 · +0.0044 NVDAx".
 ```
 
 ## S7 Assets (`/portfolio`)
@@ -188,7 +196,7 @@ Result: sheet closes; feed row appears as Pending → Settled (poll 5 s); toast 
 │ ‹All› ‹Stocks› ‹Art› ‹Collect.›│  filter chips
 │                                │
 │ NVDAx                ‹Equity›  │  AssetRow
-│ NVIDIA · $178.00 · Pyth        │
+│ NVIDIA · $211.96 · Market price│
 │ Locked 10.00 · Wallet 15.00    │
 │ Max LTV 50%      ( Deposit )   ›│
 │ ────────────────────────────── │
@@ -198,12 +206,12 @@ Result: sheet closes; feed row appears as Pending → Settled (poll 5 s); toast 
 │ Locked 0 · Wallet 1,000        │
 │ Max LTV 30%  ‹Devnet mock›    ›│
 │ ────────────────────────────── │
-│ PSA10          ‹Collectible›   │
-│ Graded card · $4,800 FMV       │
+│ PSA10 Pokémon  ‹Collectible›   │
+│ PSA 10 card · $4,800 FMV       │
 │ Partner FMV · −25% haircut     │
 │ Max LTV 40%  ‹Devnet mock›    ›│
 │                                │
-│ ( Get test assets )            │  faucet
+│ ( Shop with test money )       │  → S13 Demo Shop
 │ ( Import from Backpack )       │  → S10
 └────────────────────────────────┘
 ```
@@ -244,13 +252,13 @@ Withdraw with debt: "You can withdraw up to {max} while you have a balance."
 │ of what you own.               │
 │                                │
 │ Lifetime cashback              │
-│ $14.20  in 0.0798 NVDAx        │  Bodoni + mono
+│ $14.20  in 0.0670 NVDAx        │  Bodoni + mono
 │                                │
 │ Your tier   ‹Demo toggle›      │
 │ ┌────────┐┌────────┐┌────────┐ │
 │ │Standard││ Plus ✓ ││ Black  │ │  selected = brass border
-│ │ 0.5%   ││ 1%     ││ 2%     │ │
-│ │ Free   ││$9.99/mo││ $29/mo │ │
+│ │ 0.5%   ││ 1.5%   ││ 2.5%   │ │
+│ │ Free   ││€9.99/mo││€39.99  │ │
 │ └────────┘└────────┘└────────┘ │
 │                                │
 │ Cashback buys                  │
@@ -300,7 +308,7 @@ Withdraw with debt: "You can withdraw up to {max} while you have a balance."
 │ Admin token [ •••••••• ]       │
 │                                │
 │ Market   Price     Source      │
-│ NVDAx    $178.00   Demo        │
+│ NVDAx    $211.96   Demo        │
 │ ( Crash −40% ) ( Restore )     │
 │ TIDE     $10.00    Appraisal   │
 │ ( Crash −40% ) ( Restore )     │
@@ -328,3 +336,49 @@ Withdraw with debt: "You can withdraw up to {max} while you have a balance."
 | `Toast` | global | To build. Success with explorer link, error with copy from parameters.md |
 | `ExplorerLink` | rows, toasts | To build |
 | `Banner` | S2 states | To build. warn/bad variants |
+
+## S12 Savings (`/savings`)
+
+```
+┌────────────────────────────────┐
+│ Savings                        │
+│ Earn on USDC. It funds the     │
+│ credit lines.                  │
+│                                │
+│ YOUR SAVINGS                   │
+│ $10,142.50                     │  Bodoni-equivalent display, tabular
+│ +$142.50 earned                │  mint/good
+│                                │
+│ Current APY        6.2%        │  ‹Founding saver +1%›
+│ Pool utilization   ▓▓▓▓▓▓▓░ 81%│
+│ Instant withdraw   $1,900,000  │
+│                                │
+│ [ Add USDC ]   ( Withdraw )    │
+│ APY is variable: 60% of what   │
+│ borrowers pay. Devnet test USDC│  ink-3 + MockBadge
+└────────────────────────────────┘
+Full pool: "Withdrawals above {idle} are available as loans are repaid."
+```
+
+## S13 Demo Shop (`/shop`)
+
+```
+┌────────────────────────────────┐
+│ Demo shop      ‹Test money›    │
+│ Balance 100,000.00 dUSDC       │
+│ ( Claim test money )           │  disabled after first claim, shows next refill
+│ ‹Stocks› ‹Cards› ‹Watches› ‹Art›│
+│ ┌────────────────────────────┐ │
+│ │ [image: Rolex Daytona]     │ │  Collector Crypt image
+│ │ Rolex "Pikachu" Daytona    │ │
+│ │ Insured value $74,200      │ │  mono
+│ │ Unlocks up to $22,260 credit│ │ 74,200 × 0.75 × 40%
+│ │ [ Buy with test money ]    │ │
+│ └────────────────────────────┘ │
+│ Mirrored from a real Collector │  ink-3, every item
+│ Crypt listing. Not affiliated. │
+│ You don't own the real item.   │
+└────────────────────────────────┘
+After purchase: sheet "You bought Rolex "Pikachu" Daytona" [ Lock as collateral ] ( Keep in wallet )
+Stocks tab: NVDAx $211.96 · Market price, amount input in $ or shares, same buy flow.
+```

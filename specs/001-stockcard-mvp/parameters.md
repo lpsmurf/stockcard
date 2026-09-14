@@ -16,7 +16,7 @@ Every concrete value the implementation needs lives here. If code disagrees with
 | Package | Version |
 |---|---|
 | `anchor-lang`, `anchor-spl` | 1.2.0 |
-| `pyth-solana-receiver-sdk` | 2.0.0 |
+| `switchboard-on-demand` (Rust) | 0.13.x, **only if the Wednesday spike passes** (not in T002) |
 | `next` / `react` / `react-dom` | 16.3.5 / 19.2.8 / 19.2.8 |
 | `tailwindcss` | 4.x |
 | `@anchor-lang/core` | 1.2.0 (not `@coral-xyz/anchor`) |
@@ -25,8 +25,9 @@ Every concrete value the implementation needs lives here. If code disagrees with
 | `@solana/wallet-adapter-react` / `-react-ui` / `-base` | latest |
 | `@solana-mobile/wallet-standard-mobile` | 0.6.0 (≥ 0.5.1 required for webshell) |
 | `@tanstack/react-query` | 5.x |
-| `@pythnetwork/hermes-client` / `@pythnetwork/pyth-solana-receiver` | 3.1.x / 0.16.x |
+| `@switchboard-xyz/on-demand` | latest, only if the spike passes. `@pythnetwork/*` packages already in `app/package.json` are unused and can be removed |
 | `@noble/curves` | latest (ED25519 for Backpack signing, wallet-auth verify) |
+| `web-push` | 3.6.x (VAPID web push from route handlers) |
 
 ## 2. Program
 
@@ -46,7 +47,9 @@ Every concrete value the implementation needs lives here. If code disagrees with
 ### Global config values
 | Param | Value |
 |---|---|
-| `apr_bps` | 800 (8.00%) |
+| APR | Dynamic by asset class and LTV band, see "Rates" below (replaces the fixed 8%) |
+| `protocol_share_bps` | 4000 (40% of interest to the protocol reserve, 60% to savers) |
+| `max_utilization_bps` | 9000 (borrowing blocked above 90% pool utilization) |
 | `close_factor_bps` | 5000 |
 | Seconds per year | 31,536,000 |
 | Interest rounding | Up (protocol's favor) |
@@ -57,18 +60,49 @@ Every concrete value the implementation needs lives here. If code disagrees with
 ### Markets (seed values)
 | Symbol | Class | Decimals | Oracle | Max LTV | Liq. threshold | Liq. bonus | Haircut | Max price age | Closed-market age / haircut | Demo price (USD) | Faucet per hour |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| NVDAx | Equity | 8 | Pyth (fallback Signed/Demo) | 5000 | 6500 | 500 | 0 | 60 s | 259,200 s / 1000 | 211.96 | 25 |
-| SPYx | Equity | 8 | Pyth (fallback Signed/Demo) | 5000 | 6500 | 500 | 0 | 60 s | 259,200 s / 1000 | 761.76 | 5 |
-| TSLAx | Equity | 8 | Pyth (fallback Signed/Demo) | 5000 | 6500 | 500 | 0 | 60 s | 259,200 s / 1000 | 363.36 | 10 |
-| SPCX | Equity | 6 | Pyth (fallback Signed/Demo) | 5000 | 6500 | 500 | 1000 | 60 s | 259,200 s / 2000 | 150.77 | 20 |
+| NVDAx | Equity | 8 | Signed/Market (price signer); admin crash override | 5000 | 6500 | 500 | 0 | 180 s | 259,200 s / 1000 | 211.96 | 25 |
+| SPYx | Equity | 8 | Signed/Market → Switchboard if the spike passes Wed 12:00 ET | 5000 | 6500 | 500 | 0 | 180 s | 259,200 s / 1000 | 761.76 | 5 |
+| TSLAx | Equity | 8 | Signed/Market → Switchboard if the spike passes Wed 12:00 ET | 5000 | 6500 | 500 | 0 | 180 s | 259,200 s / 1000 | 363.36 | 10 |
+| SPCX | Equity | 6 | Signed/Market (Backpack External + Jupiter) | 5000 | 6500 | 500 | 1000 | 180 s | 259,200 s / 2000 | 150.77 | 20 |
 | TIDE | ArtNote | 6 | Signed/Appraisal | 3000 | 4500 | 1000 | 2000 | 8,640,000 s (100 d) | n/a | 10.00 per note | 1,000 |
-| PSA10 | Collectible | 0 | Signed/PartnerFmv | 4000 | 5500 | 800 | 2500 | 691,200 s (8 d) | n/a | 4,800.00 per item | 1 (once per wallet) |
+| PSA10 (graded Pokémon card, PSA 10, devnet mock) | Collectible | 0 | Signed/PartnerFmv | 4000 | 5500 | 800 | 2500 | 691,200 s (8 d) | n/a | 4,800.00 per item | 1 (once per wallet) |
 
 Validation rule in `add_market`/`update_market`: `0 < max_ltv < liq_threshold ≤ 9000`, `liq_bonus ≤ 2000`, `haircut < 10000`.
 
 Decimals match the real mainnet mints (xStocks 8, SPCX 6). Demo prices are xStocks indicative prices and the Backpack external SPCX price from Sept 14, 2026. SPCX market deposit cap: $250,000 (thin on-chain liquidity). Equity mock mints are **Token-2022 with the Scaled UI Amount extension** (multipliers below). Collateral value = raw × multiplier × price × (1 − haircut); see integrations.md.
 
-Pyth feed IDs come from the official xStocks oracles endpoint (`GET https://api.backed.fi/api/v2/public/oracles/{symbol}?network=Solana`). Verify per-token vs per-share pricing before use. **Decision deadline: Wed Sept 16, 12:00 ET.** If the Pyth path isn't working, set the equity markets to Signed/Demo.
+**Oracle decision (Sept 14, hybrid):** Pyth Pro equity access costs about $2,500/month and Chainlink Data Streams starts at $150/month per feed with no free tier, so neither is in the MVP.
+
+1. **Price signer (all equities, from Tuesday).** A server job reads two free public sources, checks they agree, and posts `set_signed_price` with source `Market`. The program treats it like any `SignedPrice` (staleness + haircut). Labeled "Market price · xStocks + Jupiter" in the UI.
+2. **Switchboard spike (Wednesday, time-boxed).** 09:00–11:00 ET: confirm `switchboard-on-demand` 0.13.x builds with anchor-lang 1.2 / Solana 3 (crate declares `anchor-lang >=0.31` and a Solana 3 feature), create one custom SPYx feed on devnet from the same two sources, read it in a test instruction. **Go/no-go 12:00 ET.** Go → SPYx and TSLAx use `oracle_kind = Switchboard` (update fetched by the client and included in the borrow/withdraw/liquidate transaction). No-go → stay on the price signer; nothing else changes.
+3. **Always Signed:** NVDAx (the crash demo needs an overridable price), TIDE (appraisal), PSA10 Pokémon card (partner value).
+4. **Production path (pitch, not built):** Chainlink Data Streams, the official xStocks oracle, with Pyth Pro as the alternative.
+
+### Price signer
+| Param | Value |
+|---|---|
+| Route | `POST /api/prices/sync` (header `authorization: Bearer CRON_SECRET`) |
+| Schedule | Every 60 s via Upstash QStash (same account as the alert check); also called right before the demo |
+| Sources (xStocks) | `GET https://api.backed.fi/api/v2/public/assets/{symbol}/price-data` → `quote` (checked Sept 14: NVDAx 212.245) and `GET https://lite-api.jup.ag/price/v3?ids={mainnet_mint}` → `usdPrice` (checked Sept 14: NVDAx 212.18, no key needed; `api.jup.ag` with `JUPITER_API_KEY` if rate-limited) |
+| Sources (SPCX) | Backpack `GET /ticker?symbol=SPCX.US_USDC&source=External` → `lastPrice` and Jupiter `usdPrice` for `SPCXxcqXj6e5dJDVNovHN8744zkbhM2bYudU45BimGb` |
+| Agreement check | Post the mean only if the two sources differ by ≤ 200 bps; otherwise skip, log, and let the price go stale (borrowing pauses) |
+| Liquidity floor | Ignore Jupiter if its reported `liquidity` < $100,000; then post the xStocks/Backpack price alone with an extra 500 bps haircut flag in the log (program haircut unchanged) |
+| Per-token pricing | Jupiter prices the token; xStocks `quote` is checked against `usdPrice` and NVDA × `scaledUiConfig.multiplier` before first use; record which one is per token |
+| Closed market | If xStocks `stockData.updatedAt` is older than 15 min, don't post; the market's closed-market max-age and haircut apply |
+| Demo override | `/api/admin/price` crash posts source `Demo`; the signer skips a market while its latest source is `Demo`; "Restore" resumes the signer |
+| Signer key | `ADMIN_SECRET` on devnet (must equal `config.price_signer`) |
+
+### Production oracle references (not used in MVP)
+Official xStocks oracles (`GET https://api.backed.fi/api/v2/public/oracles/{symbol}?network=Solana`, checked Sept 14) list two pull-based providers per token:
+
+| Symbol | Pyth Pro (Lazer) id | Pyth verifier | Chainlink Data Streams feed id (schema v10) | Chainlink verifier |
+|---|---|---|---|---|
+| NVDAx | 1833 (`NVDAXUSD`, exponent −8, min 3 publishers) | `pytd2yyk641x7ak7mkaasSJVXh6YYZnC7wTmtgAyxPt` | `0x000a37a55df2ef907d8fa06af6632bc16da58a62b68be2e1994efaa037a0918a` | `Gt9S41PtjR58CbG9JhJ3J6vxesqrNAswbWYbLNTMZA3c` |
+| SPYx | 1843 (`SPYXUSD`) | same | `0x000ac6ba1b453a15c1fe9dcd82265ca47bcd04e7b3667de1623617c45cef2a77` | same |
+
+Pyth Pro key (Sept 14): works for crypto, 403 "Not entitled" for equities and xStocks; equity access quoted at ~$2,500/month. Chainlink Data Streams: self-serve at app.chain.link, subscriptions from $150/month per feed, no free tier; devnet verification not confirmed. Verify per-token vs per-share pricing before use.
+
+Legacy Pyth Hermes feed IDs (reference only):
 
 | Symbol | Pyth feed ID |
 |---|---|
@@ -77,13 +111,13 @@ Pyth feed IDs come from the official xStocks oracles endpoint (`GET https://api.
 | TSLAx | `47a156470288850a440df3a6ce85a55917b813a19bb5b31128a33a986566a362` (mint `XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB`, multiplier 1.0) |
 | SPCX | `8a593d6edde7a3095213c88116d8840d01e93c2ddeb800bc891772eb8b93bb94` (`Equity.US.SPCX/USD`; mint `SPCXxcqXj6e5dJDVNovHN8744zkbhM2bYudU45BimGb`, 6 decimals, multiplier 1) |
 
-Pyth Hermes `/v2/updates/price/latest` returned 401 on Sept 14: get a Pyth API key (env `PYTH_API_KEY`) or confirm the current public endpoint before building T029.
+Hermes `/v2/updates/price/latest` returned 401 without a key and 403 with the Pro key on Sept 14. Not used.
 
 ### Pool
 | Param | Value |
 |---|---|
-| USDC mint | Env `NEXT_PUBLIC_USDC_MINT`. Try Circle devnet `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`; if faucet < $5k, create mock `dUSDC` (6 decimals) |
-| Seed pool size | 50,000 USDC (mock) or whatever Circle faucet allows (≥ 5,000) |
+| USDC mint | Env `NEXT_PUBLIC_USDC_MINT` = mock **dUSDC** (6 decimals, mint authority = `FAUCET_AUTHORITY_SECRET`) so test money, shop, savings and pool can be funded freely. Circle devnet USDC only for the optional Bridge path |
+| Seed pool size | 2,000,000 dUSDC deposited through `deposit_savings` by the admin (so the reserve/share math is exercised from day one) |
 
 ### Error messages (program error → UI copy)
 | Error | UI copy |
@@ -101,11 +135,14 @@ Pyth Hermes `/v2/updates/price/latest` returned 401 on Sept 14: get a Pyth API k
 | API | Base URL | Auth | Env |
 |---|---|---|---|
 | xStocks public | `https://api.backed.fi/api/v2/public` | none | — |
-| Pyth Hermes | `https://hermes.pyth.network` | feed search open; price updates need a key (401 on Sept 14) | `PYTH_API_KEY` |
+| Jupiter Price v3 | `https://lite-api.jup.ag/price/v3` (keyless) / `https://api.jup.ag/price/v3` | none / `x-api-key` | `JUPITER_API_KEY` (optional) |
+| Switchboard On-Demand | devnet queue via `@switchboard-xyz/on-demand` | none (SOL fees per update) | `NEXT_PUBLIC_SWITCHBOARD_FEED_SPYX`, `NEXT_PUBLIC_SWITCHBOARD_FEED_TSLAX` (only if spike passes) |
+| Pyth Pro | `https://pyth.dourolabs.app/v1` | Bearer key; equities not entitled (~$2,500/month) | `PYTH_API_KEY` (not used) |
+| Chainlink Data Streams | app.chain.link | paid subscription from $150/month | — (production path) |
 | Backpack public | `https://api.backpack.exchange/api/v1` | none (account routes ED25519) | — |
 | Collector Crypt | `https://dev-api.collectorcrypt.com` (devnet) / `https://api.collectorcrypt.com` | none (optional `Bearer ccsk_…`) | `COLLECTORCRYPT_API_KEY` (optional) |
 | PSA cert | `https://api.psacard.com/publicapi` | `bearer` token, 100 calls/day | `PSA_API_TOKEN` (optional) |
-| Jupiter (post-MVP) | `https://api.jup.ag` | `x-api-key` | `JUPITER_API_KEY` (optional) |
+| Jupiter swaps (post-MVP) | `https://api.jup.ag` | `x-api-key` | `JUPITER_API_KEY` (optional) |
 
 ## 3. Card & cashback
 
@@ -120,19 +157,114 @@ Pyth Hermes `/v2/updates/price/latest` returned 401 on Sept 14: get a Pyth API k
 | Merchant presets | Coffee "Blue Bottle" $4.80 · Groceries "Albert Heijn" $62.15 · Flight "KLM" $389.00 |
 | Decline rules | amount > allowance → `LIMIT`; amount > USDC balance → `FUNDS`; card frozen → `FROZEN` |
 | Feed polling | 5 s while Card screen is open |
-| Cashback tiers | Standard 50 bps · Plus 100 bps · Black 200 bps (Black capped at $5,000 spend per calendar month, then 100 bps) |
+| Cashback tiers | Credit-linked (see "Tiers"): top rate on spend up to min(€ cap, 25% of average credit balance) per month. Standard 50 bps (cap €1,000) then 25 · Plus 150 bps (€2,000) then 50 · Black 250 bps (€4,000) then 75 |
 | Default tier | Standard; demo toggle on Cashback screen |
+| Tier prices | Standard free · Plus €9.99/month (€99/year) · Black €39.99/month (€399/year) |
 | Cashback assets | NVDAx (default), SPYx, TIDE; PSA10 shows "Pack credit" (accrues, not deposited) |
 | Cashback treasury | Holds ≥ 1,000 of each cashback asset, owned by `CASHBACK_AUTHORITY_SECRET` |
-| Cashback amount | `amount_usd × tier_bps / 10000 / price`, rounded down to asset decimals; skip if < 1 base unit |
+| Cashback amount | Per purchase: top rate while month-to-date spend ≤ min(cap, 25% × average drawn balance this month), base rate after; `usd × bps / 10000 / price`, rounded down; skip if < 1 base unit |
+
+## 3b. Rates, tiers, savings (decided Sept 14)
+
+### Rates (APR, like Nexo: lower LTV = lower rate)
+The program stores up to 3 bands per market and applies the band for the position's LTV after each state change. Interest between two state changes accrues at the rate stored on the position (`position.apr_bps`).
+
+| Asset class | LTV ≤ band 1 | Band 2 | Band 3 (to max LTV) |
+|---|---|---|---|
+| Stocks (NVDAx, SPYx, TSLAx, SPCX), max 50% | ≤ 20%: **9.9%** | 20–35%: **12.9%** | 35–50%: **14.9%** |
+| Graded cards / watches (PSA10), max 40% | ≤ 20%: **11.9%** | 20–40%: **15.9%** | — |
+| Art notes (TIDE), max 30% | ≤ 15%: **11.9%** | 15–30%: **15.9%** | — |
+
+Examples: $500 on 10 NVDAx (23.6% LTV) → 12.9% → $0.18/day. $1,000 (47.2%) → 14.9% → $0.41/day. $3,500 on $10,000 of stock (35%) → 12.9% → $1.24/day.
+
+**Discounts (off-chain in MVP, shown in app and landing; on-chain `Member` PDA post-MVP):** Plus −1.0 pt · Founding member −2.0 pt for 12 months on the first €5,000 of balance. Black gets no APR discount (0% FX, metal card, perks and savings boost instead). **Floor 8.9%.** No utilization-based rate curves.
+
+### Tiers (card + cashback)
+| | Standard | Plus | Black |
+|---|---|---|---|
+| Price | Free | €9.99/month or €99/year | €39.99/month or €399/year |
+| Cashback in your chosen asset (top rate on spend up to 25% of credit in use) | 0.5% up to €1,000/month, then 0.25% | 1.5% up to €2,000/month, then 0.5% | 2.5% up to €4,000/month, then 0.75% |
+| APR discount | — | −1 pt | — |
+| Savings APY boost | — | +0.5 pt | +1 pt |
+| Card | Virtual | Virtual + physical | Metal |
+| Planned perks (not contracted) | — | Priority support, early access to art drops | Airport lounges via card-network program, travel & purchase insurance, 0% FX markup, grading/vault credits, SMS liquidation alerts |
+
+Risk rules never depend on tier: max LTV, liquidation threshold and bonus are the same for everyone.
+
+Economics note: EU consumer card interchange is capped (0.2% debit / 0.3% credit), so cashback is funded by interest margin and subscriptions, not interchange; that is why the top rate is linked to credit in use (Nexo pays cashback only in Credit Mode). Model and scenarios: `docs/unit-economics.md`. Cashback paid in assets also adds collateral, which lowers LTV.
+
+### Founding member offer (early adopters)
+| Offer | Who | Value |
+|---|---|---|
+| Founding APR | First 1,000 waitlist sign-ups who activate within 90 days of launch | −2 pt APR for 12 months on the first €5,000 of balance (floor 8.9%) |
+| Plus on us | Referral reward (GTM) | Plus tier free for 3 months |
+| Founding saver | First $10,000 per user in Savings | +1 pt APY for 6 months, paid from marketing budget |
+| Founders metal card | First 250 Black subscribers | Numbered metal card design |
+
+### Savings (USDC) — funds the lending pool
+| Param | Value |
+|---|---|
+| Asset | USDC only (MVP). SOL/crypto staking is post-MVP, separate from lending, never collateral |
+| Mechanism | Deposits mint shares in the USDC pool; share value grows with interest paid by borrowers |
+| Saver APY | Variable: `utilization × weighted borrow APR × (1 − protocol_share)`. Displayed as "~6% APY" when utilization ≈ 80% and average APR ≈ 12.5% |
+| Protocol margin | 40% of interest → reserve (≈ 3.8–4% of the pool at 80% utilization) |
+| Withdrawals | Instant up to idle liquidity (`vault − reserve`); otherwise "Available as loans are repaid" |
+| Borrow cap | New borrows blocked above 90% utilization |
+| Example | $1M pool, 80% utilization, 12.5% average APR → $100k interest/yr → savers $60k (6.0% APY) · protocol $40k (4.0%) before losses. See docs/unit-economics.md |
+| Legal flag | MiCA restricts granting interest on e-money tokens (USDC) to EU retail. Devnet demo is fine; production structure needs counsel before launch |
+
+## 3c. Demo Shop and test money (US8)
+
+| Param | Value |
+|---|---|
+| Test money | `POST /api/faucet` gives **100,000 dUSDC once per wallet**, then up to 10,000 dUSDC per 24 h |
+| Stock purchases | NVDAx, SPYx, TSLAx, SPCX at the current signed market price; any amount ≥ $10; server mints the mock token after the dUSDC transfer confirms |
+| Art note purchases | TIDE at $10.00 per note, min 10 notes |
+| Item purchases | 1 token per item per wallet; price = item insured value read at seed time |
+| Shop treasury | `SHOP_TREASURY_ADDRESS` (admin-owned); receives dUSDC |
+| Labels | "Demo shop · test money" on the screen; per item "Mirrored from a real Collector Crypt listing. Not affiliated. You don't own the real item." |
+
+### Mirrored items (6 markets, class Collectible, 0 decimals, oracle Signed/PartnerFmv)
+Seed script finds each item with `GET https://api.collectorcrypt.com/marketplace?search={query}&orderBy=priceDesc&step=5`, stores name, grade, image and `insuredValue` in the market metadata file, and posts that value with `set_signed_price` (source PartnerFmv). Risk params for all six: max LTV 4000, liq threshold 5500, bonus 800, haircut 2500, max price age 691,200 s. Values below were live on Sept 14, 2026.
+
+| Symbol | Search query | Category | Insured value |
+|---|---|---|---|
+| CC-LUGIA | `2002 #090 Lugia-Holo 1st Edition PSA 10` | Pokémon, PSA 10 | $54,000 |
+| CC-RAYQUAZA | `2006 #3 Rayquaza-Holo PSA 10 Pop Series 1` | Pokémon, PSA 10 | $13,000 |
+| CC-MEW | `2006 #101 Mew Gold Star HOLO R BGS 8` | Pokémon, BGS 8 | $5,500 |
+| CC-DAYTONA | `Rolex "Pikachu" Daytona` | Watch | $74,200 |
+| CC-ROYALOAK | `Audemars Piguet Royal Oak - Silver Dial` | Watch | $51,315 |
+| CC-SEAMASTER | `Omega Seamaster Diver 300M 007 Edition` | Watch | $10,600 |
+
+The generic `PSA10` market above is replaced by these six. "Solflare Packs" cards are Collector Crypt NFTs too: T052 shows a connected mainnet wallet's cards (including ones pulled from Solflare Packs) as "Eligible soon".
 
 ## 4. Demo admin
 
 | Param | Value |
 |---|---|
-| Crash | Price × 0.60 (−40%) |
+| Crash | Price × 0.70 (−30%), Signed markets only |
 | Restore | Back to demo price from table above |
 | Liquidation repay | 50% of debt (close factor) |
+| Demo script numbers | 10 NVDAx at $211.96, borrow $1,000 (47.2%) → crash to $148.37 (67.4%) → fix: add 3.48 NVDAx or repay $258.14 → or liquidate $500, seize 3.538 NVDAx → 52.2% |
+
+### Position protection
+| Param | Value |
+|---|---|
+| Suggested max LTV (Borrow sheet hint, not enforced) | 3500 bps (35%) |
+| Liquidation price shown | `debt / (collateral_amount × multiplier × (1 − haircut) × liq_threshold)` per market; "−X%" vs current price |
+| Alert bands | Healthy ≤ max LTV · Watch max < LTV ≤ 5500 · Warning 5500 < LTV ≤ 6000 · Urgent 6000 < LTV ≤ liq threshold · Liquidatable > liq threshold (equity values; art/collectibles scale: Warning at liq − 1000, Urgent at liq − 500) |
+| In-app | Watch: note on Home · Warning/Urgent/Liquidatable: banner with actions |
+| Push | Sent when a position enters Warning, Urgent or Liquidatable (never on improvement), max 1 per band entered |
+| Fix amounts | Add collateral = `debt / max_ltv − collateral_value` in tokens (round up to 4 decimals) · Repay = `debt − collateral_value × max_ltv` (round up to cents) |
+| Alert check triggers | After every `/api/admin/price` change (immediate) + scheduled every 5 min |
+| Scheduler | Vercel Cron only runs daily on Hobby: use Upstash QStash schedule (or Vercel Pro cron) calling `/api/alerts/check` with `CRON_SECRET` |
+
+### Push copy
+| Band | Title | Body |
+|---|---|---|
+| Warning | "{symbol} dropped" | "Your credit line is at {ltv}%. Add {add} {symbol} or repay {repay} to stay safe." |
+| Urgent | "Close to liquidation" | "At {liq}% your {symbol} can be sold. Add {add} {symbol} or repay {repay} now." |
+| Liquidatable | "Your position can be liquidated" | "Repay {repay} or add {add} {symbol} to stop it." |
 | Guard | Only if `NEXT_PUBLIC_CLUSTER=devnet` and header `x-admin-token == ADMIN_TOKEN` |
 
 ## 5. Environment variables
@@ -152,7 +284,15 @@ Pyth Hermes `/v2/updates/price/latest` returned 401 on Sept 14: get a Pyth API k
 | `ADMIN_SECRET` | server | program admin + price signer on devnet |
 | `ADMIN_TOKEN` | server | random string for admin routes |
 | `MERCHANT_SETTLEMENT_ADDRESS` | server | pubkey |
+| `SHOP_TREASURY_ADDRESS` | server | pubkey receiving Demo Shop dUSDC |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | server | Upstash; unset → in-memory store |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | client | Web push public key (`npx web-push generate-vapid-keys`) |
+| `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | server | Private key; subject `mailto:littleplu@gmail.com` |
+| `CRON_SECRET` | server | Shared secret for `/api/alerts/check` |
+| `QSTASH_TOKEN` | server | Optional, creates the 5-minute schedule |
+| `PYTH_API_KEY` | server | Pyth Pro key; not used in MVP (crypto only) |
+| `JUPITER_API_KEY` | server | Optional; keyless lite endpoint is the default |
+| `NEXT_PUBLIC_SWITCHBOARD_FEED_SPYX`, `NEXT_PUBLIC_SWITCHBOARD_FEED_TSLAX` | client | Switchboard feed pubkeys, set only if the Wednesday spike passes |
 | `BRIDGE_API_KEY`, `STRIPE_SECRET_KEY` | server | optional |
 
 ## 6. UI
@@ -164,7 +304,7 @@ Pyth Hermes `/v2/updates/price/latest` returned 401 on Sept 14: get a Pyth API k
 | Touch targets | ≥ 44 px |
 | Fonts | Bodoni Moda (display), Hanken Grotesk (UI), IBM Plex Mono (numbers) via `next/font/google` |
 | Colors | tokens in `app/src/app/globals.css` (already implemented) |
-| Health colors | LTV ≤ max → good; max < LTV ≤ liq → warn; > liq → bad |
+| Health colors | LTV ≤ max → good; max < LTV ≤ liq → warn; > liq → bad (alert bands above add Warning/Urgent labels inside warn) |
 | Money format | `$1,234.56`; token amounts up to 4 decimals, trailing zeros trimmed |
 | Explorer links | `https://explorer.solana.com/tx/{sig}?cluster=devnet` |
 | Mock labels | Every mock asset/price/card shows `MockBadge` |

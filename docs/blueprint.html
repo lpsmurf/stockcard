@@ -1,0 +1,1054 @@
+<title>StockCard Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..600&family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --plaster:#e9ece8; --surface:#f4f6f3; --raised:#ffffff;
+  --ink:#141c19; --ink-2:#48524d; --ink-3:#6c7671;
+  --rule:rgba(20,28,25,.13); --rule-strong:rgba(20,28,25,.28);
+  --brass:#8e6a22; --brass-soft:rgba(142,106,34,.12); --on-brass:#fff;
+  --good:#2f6b4f; --warn:#9a6b12; --bad:#a33a2c;
+  --good-soft:rgba(47,107,79,.12); --warn-soft:rgba(154,107,18,.13); --bad-soft:rgba(163,58,44,.12);
+  --display:"Bodoni Moda","Didot",Georgia,serif;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --plaster:#0e1311; --surface:#131916; --raised:#1a211e;
+    --ink:#e6ebe7; --ink-2:#aeb8b2; --ink-3:#8a948f;
+    --rule:rgba(230,235,231,.12); --rule-strong:rgba(230,235,231,.28);
+    --brass:#d1ae63; --brass-soft:rgba(209,174,99,.14); --on-brass:#1a1406;
+    --good:#7cc39d; --warn:#e0b25a; --bad:#e07a6a;
+    --good-soft:rgba(124,195,157,.14); --warn-soft:rgba(224,178,90,.14); --bad-soft:rgba(224,122,106,.14);
+  }
+}
+:root[data-theme="dark"]{
+  --plaster:#0e1311; --surface:#131916; --raised:#1a211e;
+  --ink:#e6ebe7; --ink-2:#aeb8b2; --ink-3:#8a948f;
+  --rule:rgba(230,235,231,.12); --rule-strong:rgba(230,235,231,.28);
+  --brass:#d1ae63; --brass-soft:rgba(209,174,99,.14); --on-brass:#1a1406;
+  --good:#7cc39d; --warn:#e0b25a; --bad:#e07a6a;
+  --good-soft:rgba(124,195,157,.14); --warn-soft:rgba(224,178,90,.14); --bad-soft:rgba(224,122,106,.14);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{background:var(--plaster);color:var(--ink);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+a{color:var(--brass)}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:0 80px;display:grid;grid-template-columns:200px minmax(0,1fr);gap:56px}
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr);gap:0}}
+
+/* chapter index */
+.toc{position:sticky;top:0;align-self:start;padding-block:40px;font-size:13.5px}
+.toc .mark{font-family:var(--display);font-size:22px;letter-spacing:-.01em;display:block;margin-bottom:22px;color:var(--ink);text-decoration:none}
+.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:2px;counter-reset:c}
+.toc a{display:grid;grid-template-columns:26px 1fr;padding:5px 0;color:var(--ink-2);text-decoration:none;border-radius:4px}
+.toc a::before{counter-increment:c;content:counter(c,decimal-leading-zero);font:12px var(--mono);color:var(--ink-3);padding-top:2px}
+.toc a:hover{color:var(--ink)}
+.toc .meta{margin-top:26px;font:12px/1.5 var(--mono);color:var(--ink-3)}
+@media (max-width:900px){
+  .toc{position:static;padding-block:20px 0}
+  .toc ol{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0 12px}
+  .toc .meta{display:none}
+}
+
+/* type */
+main{min-width:0}
+.eyebrow{font:500 12px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--brass)}
+h1,h2,h3{text-wrap:balance;margin:0}
+h1{font:400 clamp(44px,7vw,78px)/1.02 var(--display);letter-spacing:-.02em}
+h1 em{color:var(--brass)}
+h2{font:400 clamp(32px,4.2vw,46px)/1.08 var(--display);letter-spacing:-.015em}
+h3{font:600 17px/1.35 var(--sans)}
+p{margin:0;max-width:66ch}
+.lede{font-size:19px;line-height:1.55;color:var(--ink-2);max-width:60ch}
+.muted{color:var(--ink-2)}
+.small{font-size:14px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+code{font:13.5px var(--mono);background:var(--brass-soft);padding:1px 5px;border-radius:4px;color:var(--ink)}
+
+/* chapters */
+section.ch{padding-block:72px 8px;border-top:1px solid var(--rule);display:grid;gap:28px}
+section.ch:first-of-type{border-top:0}
+.ch-head{display:grid;gap:14px}
+.ch-head .num{font:12px var(--mono);color:var(--ink-3);letter-spacing:.1em}
+.stack{display:grid;gap:16px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.cols-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}
+
+/* cover */
+.cover{padding-block:56px 40px;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:48px;align-items:center}
+@media (max-width:900px){.cover{grid-template-columns:minmax(0,1fr);gap:36px}}
+.cover .facts{display:flex;flex-wrap:wrap;gap:8px 22px;font:13px var(--mono);color:var(--ink-2);margin-top:6px}
+.cover .facts b{color:var(--ink);font-weight:500}
+
+/* the card */
+.card{position:relative;aspect-ratio:1.586;width:100%;max-width:400px;border-radius:18px;padding:6%;color:#ece5d1;overflow:hidden;
+  background:linear-gradient(135deg,#2b2f2d 0%,#141715 58%,#26231c 100%);box-shadow:0 30px 50px -28px rgba(0,0,0,.6);container-type:inline-size;
+  display:flex;flex-direction:column;justify-content:space-between}
+.card::after{content:"";position:absolute;inset:0;opacity:.07;background:repeating-linear-gradient(115deg,#fff 0 1px,transparent 1px 7px);pointer-events:none}
+.card .r{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;position:relative}
+.card .wm{font:400 7cqi/1 var(--display)}
+.card .tag{font:3cqi var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#bdb49e}
+.card .chip{width:13cqi;aspect-ratio:1.3;border-radius:1.2cqi;background:linear-gradient(135deg,#dcc07e,#94763a)}
+.card .pan{font:5.2cqi var(--mono);letter-spacing:.12em}
+.card .lbl{font:2.8cqi var(--mono);letter-spacing:.12em;text-transform:uppercase;color:#a89f8a}
+.card .amt{font:400 6.6cqi/1.15 var(--display)}
+.card .hold{font:3.2cqi var(--mono);letter-spacing:.08em;text-transform:uppercase;color:#cfc6b0}
+.card .net{font:italic 500 4.6cqi var(--mono);color:#f1ead6;text-align:right}
+.card .sb{font:3cqi var(--mono);letter-spacing:.1em;text-transform:uppercase;color:#a89f8a;text-align:right}
+
+/* figures */
+figure{margin:0;display:grid;gap:12px}
+figcaption{font-size:14px;color:var(--ink-2);max-width:70ch}
+.fig{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:22px;overflow-x:auto}
+.fig svg{display:block;width:100%;height:auto;min-width:640px;color:var(--ink)}
+.fig.narrow svg{min-width:520px}
+svg text{font-family:var(--sans);fill:currentColor}
+svg .t-mono{font-family:var(--mono)}
+svg .t-3{fill:var(--ink-3)} svg .t-2{fill:var(--ink-2)} svg .t-brass{fill:var(--brass)}
+svg .t-good{fill:var(--good)} svg .t-bad{fill:var(--bad)} svg .t-warn{fill:var(--warn)}
+svg .box{fill:var(--raised);stroke:var(--rule-strong)}
+svg .zone{fill:none;stroke:var(--rule-strong);stroke-dasharray:4 4}
+svg .zone-fill{fill:var(--brass-soft);stroke:none}
+svg .line{stroke:currentColor;fill:none;stroke-width:1.3}
+svg .line-brass{stroke:var(--brass);fill:none;stroke-width:1.6}
+svg .line-3{stroke:var(--ink-3);fill:none;stroke-width:1.2}
+svg .dash{stroke-dasharray:5 4}
+svg .f-brass{fill:var(--brass)} svg .f-ink{fill:currentColor} svg .f-3{fill:var(--ink-3)}
+svg .f-good{fill:var(--good)} svg .f-warn{fill:var(--warn)} svg .f-bad{fill:var(--bad)}
+svg .f-rule{fill:var(--rule)} svg .f-plaster{fill:var(--plaster)}
+
+/* term list */
+.terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:0 32px;border-top:1px solid var(--rule)}
+.term{padding-block:16px;border-bottom:1px solid var(--rule);display:grid;gap:4px}
+.term dt{font:500 15px var(--sans)}
+.term dt span{font:12px var(--mono);color:var(--ink-3);margin-left:6px}
+.term dd{margin:0;font-size:14.5px;color:var(--ink-2)}
+
+/* tables */
+.tbl{overflow-x:auto;border:1px solid var(--rule);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:620px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--rule);vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{font:500 11.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);background:var(--raised)}
+td.mono,td .mono{font-size:13px}
+td:first-child{white-space:nowrap}
+
+/* pills */
+.pill{display:inline-block;font:500 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:5px 8px;border-radius:999px;white-space:nowrap;border:1px solid transparent}
+.p-good{background:var(--good-soft);color:var(--good)}
+.p-warn{background:var(--warn-soft);color:var(--warn)}
+.p-bad{background:var(--bad-soft);color:var(--bad)}
+.p-brass{background:var(--brass-soft);color:var(--brass)}
+.p-line{border-color:var(--rule-strong);color:var(--ink-2)}
+
+/* callouts */
+.note{border-left:3px solid var(--brass);padding:4px 0 4px 18px;display:grid;gap:6px}
+.note.warn{border-color:var(--warn)} .note.bad{border-color:var(--bad)}
+.note h3{font-size:15.5px}
+.note p{font-size:15px;color:var(--ink-2)}
+
+/* wireframes */
+.phones{display:grid;grid-template-columns:repeat(auto-fill,minmax(262px,1fr));gap:28px 22px}
+.phone-wrap{display:grid;gap:10px;align-content:start}
+.phone{background:var(--raised);border:1px solid var(--rule-strong);border-radius:28px;padding:10px;max-width:290px;width:100%;box-shadow:0 18px 40px -30px rgba(0,0,0,.45)}
+.screen{background:var(--plaster);border-radius:20px;min-height:520px;padding:14px 14px 0;display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.4;overflow:hidden}
+.screen .bar{display:flex;justify-content:space-between;align-items:center;font:11px var(--mono);color:var(--ink-3)}
+.screen .bar b{font:400 15px var(--display);color:var(--ink)}
+.screen .cap{font:10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.screen .big{font:400 30px/1.05 var(--display);font-variant-numeric:tabular-nums}
+.screen .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.screen .row .v{font:12px var(--mono)}
+.screen .btn{flex:0 0 auto;text-align:center;border-radius:10px;padding:9px 6px;font-weight:600;font-size:12px;border:1px solid var(--rule-strong);color:var(--ink)}
+.screen .btn.pri{background:var(--brass);color:var(--on-brass);border-color:var(--brass)}
+.screen .btns{display:flex;gap:8px}
+.screen .btns .btn{flex:1 1 0}
+.screen .tile{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:9px 10px}
+.screen .hr{height:1px;background:var(--rule)}
+.screen .tabs{margin-top:auto;margin-inline:-14px;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--rule);background:var(--surface);font:10.5px var(--sans);color:var(--ink-3);text-align:center}
+.screen .tabs span{padding:10px 0 12px}
+.screen .tabs .on{color:var(--brass);font-weight:600}
+.screen .sheet{margin-top:auto;margin-inline:-14px;background:var(--raised);border-radius:18px 18px 0 0;padding:10px 14px 16px;display:grid;gap:9px;box-shadow:0 -12px 30px -22px rgba(0,0,0,.5)}
+.screen .handle{width:40px;height:4px;border-radius:4px;background:var(--rule-strong);margin:0 auto}
+.screen .dim{flex:1;opacity:.35;display:grid;gap:8px;align-content:start}
+.screen .chips{display:flex;flex-wrap:wrap;gap:5px}
+.screen .chip{font:10.5px var(--mono);padding:4px 7px;border-radius:999px;border:1px solid var(--rule-strong);color:var(--ink-2)}
+.screen .chip.on{border-color:var(--brass);color:var(--brass);background:var(--brass-soft)}
+.screen .card{max-width:none;border-radius:12px}
+.hb{position:relative;height:8px;border-radius:6px;background:var(--rule);overflow:visible}
+.hb i{position:absolute;inset:0 auto 0 0;border-radius:6px;background:var(--good)}
+.hb .m{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink-3)}
+.phone-wrap .who{display:flex;gap:8px;align-items:baseline;font-size:14px}
+.phone-wrap .who b{font:12px var(--mono);color:var(--ink-3)}
+.phone-wrap p{font-size:13.5px;color:var(--ink-2)}
+
+/* timeline */
+.days{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0;border:1px solid var(--rule);border-radius:12px;overflow:hidden;background:var(--surface)}
+.day{padding:16px;border-right:1px solid var(--rule);display:grid;gap:8px;align-content:start}
+.day:last-child{border-right:0}
+.day .d{font:12px var(--mono);color:var(--ink-3)}
+.day h3{font:400 22px var(--display)}
+.day ul{margin:0;padding-left:16px;font-size:13.5px;color:var(--ink-2);display:grid;gap:4px}
+.day.today{background:var(--brass-soft)}
+@media (max-width:760px){.day{border-right:0;border-bottom:1px solid var(--rule)}}
+
+/* decisions */
+.decisions{display:grid;gap:14px}
+.dec{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:18px 20px;display:grid;gap:10px}
+.dec header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 16px;align-items:baseline}
+.dec p{font-size:14.5px;color:var(--ink-2)}
+.dec .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.dec .opt{border:1px solid var(--rule);border-radius:10px;padding:10px 12px;font-size:13.5px;background:var(--raised)}
+.dec .opt b{display:block;margin-bottom:2px}
+.dec .opt.rec{border-color:var(--brass)}
+.dec .opt.rec b::after{content:" · recommended";font:500 11px var(--mono);color:var(--brass);letter-spacing:.04em}
+
+.theme-toggle{font:12px var(--mono);background:none;border:1px solid var(--rule-strong);color:var(--ink-2);border-radius:999px;padding:5px 10px;cursor:pointer;margin-top:14px}
+footer{padding-block:48px 0;border-top:1px solid var(--rule);margin-top:64px;font-size:13px;color:var(--ink-3)}
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Chapters">
+  <a class="mark" href="#top">StockCard</a>
+  <ol>
+    <li><a href="#idea">The idea</a></li>
+    <li><a href="#words">Plain-word glossary</a></li>
+    <li><a href="#math">How credit works</a></li>
+    <li><a href="#journey">User journey</a></li>
+    <li><a href="#screens">Wireframes</a></li>
+    <li><a href="#arch">Architecture</a></li>
+    <li><a href="#flows">Key flows</a></li>
+    <li><a href="#parts">Components &amp; APIs</a></li>
+    <li><a href="#safety">Safety &amp; honesty</a></li>
+    <li><a href="#meteora">Meteora DBC fit</a></li>
+    <li><a href="#plan">Build plan</a></li>
+    <li><a href="#decide">Decide before building</a></li>
+  </ol>
+  <div class="meta">Branch 001-stockcard-mvp<br>Draft for review · Sept 14, 2026<br>Devnet only</div>
+  <button class="theme-toggle" id="theme-toggle" type="button">Toggle theme</button>
+</nav>
+
+<main id="top">
+<header class="cover">
+  <div class="stack">
+    <div class="eyebrow">Engineering blueprint · Stocklana hackathon</div>
+    <h1>Spend what you own. <em>Never sell&nbsp;it.</em></h1>
+    <p class="lede">StockCard lets someone who owns tokenized stocks, art notes or graded collectibles lock them up, get a dollar credit line against them, and pay with a virtual card. They repay whenever they like and take their assets back. This page explains how the MVP will work, in plain words, before any of it gets built.</p>
+    <div class="facts">
+      <span>Submit by <b>Fri Sept 18, 12:00 ET</b></span>
+      <span>Hard deadline <b>4:00 PM ET</b></span>
+      <span>Network <b>Solana devnet</b></span>
+      <span>Team <b>Luis + AI agents</b></span>
+    </div>
+  </div>
+  <figure>
+    <div class="card" role="img" aria-label="StockCard virtual card, demo values, 18,420 dollars available">
+      <div class="r"><span class="wm">StockCard</span><span class="tag">Virtual</span></div>
+      <div class="r" style="align-items:center;justify-content:flex-start;gap:4cqi"><span class="chip"></span><span class="pan">•••• •••• •••• 4021</span></div>
+      <div class="r" style="align-items:flex-end">
+        <div><div class="lbl">Available credit</div><div class="amt">$18,420.00</div><div class="hold">Luis P · 09/29</div></div>
+        <div><div class="net">VISA</div><div class="sb">sandbox</div></div>
+      </div>
+    </div>
+    <figcaption class="small">The card component already exists in <code>app/src/components/credit-card.tsx</code>. Values here are demo values. "VISA" stays a text placeholder until a card issuer approves use of the logo.</figcaption>
+  </figure>
+</header>
+
+<section class="ch" id="idea">
+  <div class="ch-head">
+    <span class="num">CHAPTER 01</span>
+    <h2>The idea in one picture</h2>
+    <p class="lede">It works like a pawn shop with a debit card, except the "shop" is a public program on Solana that nobody can quietly change, and the owner can always see exactly where their assets are.</p>
+  </div>
+  <figure>
+    <div class="fig">
+      <svg viewBox="0 0 900 250" role="img" aria-label="Three steps: lock assets in the vault, borrow USDC to the card wallet, spend with the card; repay at any time to unlock the assets.">
+        <defs>
+          <marker id="ah1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-ink"/></marker>
+          <marker id="ah1b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-brass"/></marker>
+        </defs>
+        <rect class="box" x="20" y="30" width="240" height="120" rx="12"/>
+        <text x="40" y="60" class="t-mono t-3" font-size="11">STEP 1</text>
+        <text x="40" y="88" font-size="20" font-weight="600">Lock</text>
+        <text x="40" y="112" class="t-2" font-size="13">Deposit 10 NVDAx into</text>
+        <text x="40" y="130" class="t-2" font-size="13">the StockCard vault</text>
+
+        <rect class="box" x="330" y="30" width="240" height="120" rx="12"/>
+        <text x="350" y="60" class="t-mono t-3" font-size="11">STEP 2</text>
+        <text x="350" y="88" font-size="20" font-weight="600">Borrow</text>
+        <text x="350" y="112" class="t-2" font-size="13">Get up to 50% of the value</text>
+        <text x="350" y="130" class="t-2" font-size="13">as USDC digital dollars</text>
+
+        <rect class="box" x="640" y="30" width="240" height="120" rx="12"/>
+        <text x="660" y="60" class="t-mono t-3" font-size="11">STEP 3</text>
+        <text x="660" y="88" font-size="20" font-weight="600">Spend</text>
+        <text x="660" y="112" class="t-2" font-size="13">Pay with the virtual card;</text>
+        <text x="660" y="130" class="t-2" font-size="13">cashback buys more stock</text>
+
+        <line class="line" x1="262" y1="90" x2="326" y2="90" marker-end="url(#ah1)"/>
+        <text x="294" y="80" text-anchor="middle" class="t-3" font-size="11">opens credit</text>
+        <line class="line" x1="572" y1="90" x2="636" y2="90" marker-end="url(#ah1)"/>
+        <text x="604" y="80" text-anchor="middle" class="t-3" font-size="11">to card wallet</text>
+
+        <path class="line-brass dash" d="M760 152 V205 H140 V156" marker-end="url(#ah1b)"/>
+        <text x="450" y="230" text-anchor="middle" class="t-brass" font-size="13" font-weight="600">Repay any time, then withdraw your stock</text>
+      </svg>
+    </div>
+    <figcaption>The whole product is this loop. Everything else (the health bar, liquidation, cashback, imports) either keeps the loop safe or makes it more useful.</figcaption>
+  </figure>
+  <div class="cols">
+    <div class="note"><h3>Why people would use it</h3><p>Selling stock to pay for something triggers taxes and gives up future gains. Borrowing against it keeps the position. Nexo does this for crypto; nobody does it for stocks with a card on Solana.</p></div>
+    <div class="note"><h3>Who already does part of it</h3><p>Kamino and Jupiter Lend accept xStocks, but as trading dashboards with no card. Backpack lends against 2 stocks inside its exchange. ether.fi Cash has a borrow card, but only for crypto collateral.</p></div>
+    <div class="note"><h3>What judges ask</h3><p>"Could this be a real app people actually use?" So the demo must run end to end on devnet: deposit, borrow, a card purchase that really moves USDC, repay.</p></div>
+  </div>
+</section>
+
+<section class="ch" id="words">
+  <div class="ch-head">
+    <span class="num">CHAPTER 02</span>
+    <h2>Plain-word glossary</h2>
+    <p class="lede">The rest of this page uses these words. Each one gets a one-line everyday meaning.</p>
+  </div>
+  <dl class="terms">
+    <div class="term"><dt>Wallet <span>Phantom, Solflare</span></dt><dd>The user's app that holds their tokens and approves ("signs") every action. StockCard never holds the user's keys.</dd></div>
+    <div class="term"><dt>Tokenized stock <span>xStocks, SPCX</span></dt><dd>A token on Solana backed 1:1 by a real share held by the issuer. NVDAx follows NVIDIA's share price.</dd></div>
+    <div class="term"><dt>Program <span>smart contract</span></dt><dd>The rulebook that runs on Solana. It holds the vaults and does all the money math. The app can't override it.</dd></div>
+    <div class="term"><dt>Vault <span>PDA account</span></dt><dd>A locked box owned by the program. Collateral goes in one vault per asset; lendable USDC sits in the pool vault.</dd></div>
+    <div class="term"><dt>USDC <span>stablecoin</span></dt><dd>A digital dollar. It's what users borrow and what the card spends.</dd></div>
+    <div class="term"><dt>Oracle <span>price signer, Switchboard</span></dt><dd>Whoever puts prices on-chain. Ours posts public stock prices every minute; the program refuses to lend if a price is too old.</dd></div>
+    <div class="term"><dt>LTV <span>loan-to-value</span></dt><dd>Debt divided by collateral value. $500 borrowed against $2,000 of stock is 25% LTV.</dd></div>
+    <div class="term"><dt>Haircut</dt><dd>A safety discount on an asset's price. A 20% haircut counts a $10 art note as $8.</dd></div>
+    <div class="term"><dt>Liquidation</dt><dd>If the price falls too far, anyone may repay part of the debt and receive some collateral at a 5% discount. That keeps the pool whole.</dd></div>
+    <div class="term"><dt>Delegate <span>card limit</span></dt><dd>A permission the user signs: "the card may spend up to $500 of my USDC". The card can't take more.</dd></div>
+    <div class="term"><dt>Devnet</dt><dd>Solana's free practice network. Tokens have no real value, so the demo is safe to break.</dd></div>
+    <div class="term"><dt>Mock <span>MockBadge</span></dt><dd>A stand-in for the real thing (test mints, sandbox card, demo prices). Every mock is labeled in the app.</dd></div>
+  </dl>
+</section>
+
+<section class="ch" id="math">
+  <div class="ch-head">
+    <span class="num">CHAPTER 03</span>
+    <h2>How the credit line works, with real numbers</h2>
+    <p class="lede">One worked example using the seed values in <code>parameters.md</code>: 10 NVDAx at the Sept 14 demo price of $211.96, 50% max LTV, 65% liquidation threshold, 8% APR.</p>
+  </div>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Moment</th><th>What happens</th><th>Collateral value</th><th>Debt</th><th>LTV</th><th>State</th></tr></thead>
+      <tbody>
+        <tr><td>Deposit</td><td>10 NVDAx locked in the vault</td><td class="mono">$2,119.60</td><td class="mono">$0.00</td><td class="mono">0%</td><td><span class="pill p-good">Healthy</span></td></tr>
+        <tr><td>Credit line</td><td>50% of value becomes spendable</td><td class="mono">$2,119.60</td><td class="mono">up to $1,059.80</td><td class="mono">—</td><td><span class="pill p-line">Available</span></td></tr>
+        <tr><td>Borrow</td><td>$1,000 sent to the card wallet; interest ≈ $0.22/day</td><td class="mono">$2,119.60</td><td class="mono">$1,000.00</td><td class="mono">47.2%</td><td><span class="pill p-good">Healthy</span></td></tr>
+        <tr><td>Crash −30%</td><td>NVDAx drops to $148.37; push alert + red banner</td><td class="mono">$1,483.72</td><td class="mono">$1,000.00</td><td class="mono">67.4%</td><td><span class="pill p-bad">Liquidatable</span></td></tr>
+        <tr><td>Fix A · add stock</td><td>User taps "Add 3.48 NVDAx" from the alert</td><td class="mono">$2,000.05</td><td class="mono">$1,000.00</td><td class="mono">50.0%</td><td><span class="pill p-good">Healthy</span></td></tr>
+        <tr><td>Fix B · repay</td><td>Or the user taps "Repay $258.14"</td><td class="mono">$1,483.72</td><td class="mono">$741.86</td><td class="mono">50.0%</td><td><span class="pill p-good">Healthy</span></td></tr>
+        <tr><td>Last resort</td><td>Nobody acts: liquidator repays $500, receives $525 of NVDAx (3.538 tokens)</td><td class="mono">$958.72</td><td class="mono">$500.00</td><td class="mono">52.2%</td><td><span class="pill p-warn">Watch · safe</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <figure>
+    <div class="fig">
+      <svg viewBox="0 0 880 170" role="img" aria-label="Health bar from 0 to 100 percent LTV. Healthy up to 50, watch from 50 to 65, liquidatable above 65. The example sits at 47 percent after borrowing, 67 percent after a 30 percent crash and 52 percent after one liquidation.">
+        <rect x="40" y="90" width="400" height="18" class="f-good" opacity=".85"/>
+        <rect x="440" y="90" width="120" height="18" class="f-warn" opacity=".85"/>
+        <rect x="560" y="90" width="280" height="18" class="f-bad" opacity=".85"/>
+        <line class="line" x1="417.6" y1="30" x2="417.6" y2="112"/>
+        <circle cx="417.6" cy="99" r="5" class="f-plaster" stroke="currentColor" stroke-width="2"/>
+        <text x="411" y="40" text-anchor="end" font-size="12" font-weight="600">After borrow · 47%</text>
+        <line class="line dash" x1="457.6" y1="30" x2="457.6" y2="112"/>
+        <circle cx="457.6" cy="99" r="5" class="f-plaster" stroke="currentColor" stroke-width="2"/>
+        <text x="464" y="40" font-size="12" font-weight="600">After liquidation · 52%</text>
+        <line class="line" x1="579.2" y1="56" x2="579.2" y2="112"/>
+        <circle cx="579.2" cy="99" r="5" class="f-plaster" stroke="currentColor" stroke-width="2"/>
+        <text x="586" y="66" font-size="12" font-weight="600">After −30% crash · 67%</text>
+        <g class="t-mono t-3" font-size="11">
+          <text x="40" y="128" text-anchor="middle">0%</text>
+          <text x="440" y="128" text-anchor="middle">50% max</text>
+          <text x="560" y="128" text-anchor="middle">65% liq.</text>
+          <text x="840" y="128" text-anchor="middle">100%</text>
+        </g>
+        <text x="240" y="156" text-anchor="middle" class="t-good" font-size="12" font-weight="600">Healthy: can borrow more</text>
+        <text x="500" y="156" text-anchor="middle" class="t-warn" font-size="12" font-weight="600">Watch</text>
+        <text x="700" y="156" text-anchor="middle" class="t-bad" font-size="12" font-weight="600">Anyone can liquidate</text>
+      </svg>
+    </div>
+    <figcaption>The health bar users see on Home, drawn to scale. Colour is always paired with a word, so it works for colour-blind users too.</figcaption>
+  </figure>
+  <div class="stack">
+    <h3>Decided: protect first, liquidate last</h3>
+    <div class="cols-3">
+      <div class="note"><h3>1 · Buffer when borrowing</h3><p>The Borrow sheet suggests staying at or below 35% and shows the liquidation price: "Liquidation if NVDA falls below $153.85 (−27.4%)" for a $1,000 loan. At $750 the stock could fall 45.6%.</p></div>
+      <div class="note warn"><h3>2 · Alerts and web push</h3><p>From 55% LTV the app warns in-app and pushes to the phone, with exact one-tap fixes: add 3.48 NVDAx or repay $258.14. Only one push per band, so nobody gets spammed.</p></div>
+      <div class="note bad"><h3>3 · Liquidation</h3><p>If nobody acts, one 50% liquidation after a −30% crash brings LTV from 67.4% to 52.2%. That's out of danger (amber). The spec's test now says "no longer liquidatable".</p></div>
+    </div>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>LTV</th><th>Band</th><th>In the app</th><th>Push notification</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">≤ 50%</td><td><span class="pill p-good">Healthy</span></td><td>Nothing</td><td>None</td></tr>
+      <tr><td class="mono">50–55%</td><td><span class="pill p-line">Watch</span></td><td>Note: "You can't borrow more until LTV is under 50%."</td><td>None</td></tr>
+      <tr><td class="mono">55–60%</td><td><span class="pill p-warn">Warning</span></td><td>Amber banner with Add stock / Repay</td><td>"NVDA dropped": add or repay to stay safe</td></tr>
+      <tr><td class="mono">60–65%</td><td><span class="pill p-bad">Urgent</span></td><td>Red banner, exact amounts</td><td>"Close to liquidation"</td></tr>
+      <tr><td class="mono">&gt; 65%</td><td><span class="pill p-bad">Liquidatable</span></td><td>Red banner at top</td><td>"Your position can be liquidated"</td></tr>
+    </tbody>
+  </table></div>
+  <div class="cols-3">
+    <div class="note"><h3>Stocks · 50% LTV</h3><p>NVDAx, SPYx, TSLAx, SPCX. Live market prices from xStocks and Jupiter, posted every minute. When markets are closed, older prices get an extra 10% haircut (20% for SPCX).</p></div>
+    <div class="note"><h3>Art notes · 30% LTV</h3><p>TIDE, a placeholder Luxembourg art note. Priced by a signed appraisal, 20% haircut, expires after 100 days.</p></div>
+    <div class="note"><h3>Pokémon cards · 40% LTV</h3><p>A graded PSA 10 Pokémon card (devnet mock), valued like Collector Crypt's insured values. Signed partner value, 25% haircut, expires after 8 days.</p></div>
+  </div>
+</section>
+<section class="ch" id="journey">
+  <div class="ch-head">
+    <span class="num">CHAPTER 04</span>
+    <h2>The user journey</h2>
+    <p class="lede">About ten screens, one app. The same website is the Android app: it's installed as a web app, or wrapped as an APK, and connects Phantom or Solflare through Mobile Wallet Adapter.</p>
+  </div>
+  <figure>
+    <div class="fig">
+      <svg viewBox="0 0 900 320" role="img" aria-label="Screen map: Welcome leads to Home. Home branches to Borrow, Repay, Card, Assets and Cashback. Card leads to Test purchase, Assets leads to Asset detail and Backpack import. A hidden devnet admin screen can crash a price, which shows At risk on Home.">
+        <defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-ink"/></marker>
+        <marker id="ah2b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-brass"/></marker></defs>
+        <g font-size="13">
+          <rect class="box" x="20" y="140" width="150" height="44" rx="8"/><text x="34" y="159" font-weight="600">S1 Welcome</text><text x="34" y="175" class="t-mono t-3" font-size="10.5">/ (disconnected)</text>
+          <rect x="250" y="140" width="150" height="44" rx="8" class="zone-fill" stroke="var(--brass)"/><text x="264" y="159" font-weight="600">S2 Home</text><text x="264" y="175" class="t-mono t-3" font-size="10.5">credit · health</text>
+          <rect class="box" x="500" y="20" width="150" height="44" rx="8"/><text x="514" y="39" font-weight="600">S3 Borrow</text><text x="514" y="55" class="t-mono t-3" font-size="10.5">sheet · sign</text>
+          <rect class="box" x="500" y="80" width="150" height="44" rx="8"/><text x="514" y="99" font-weight="600">S4 Repay</text><text x="514" y="115" class="t-mono t-3" font-size="10.5">sheet · sign</text>
+          <rect class="box" x="500" y="140" width="150" height="44" rx="8"/><text x="514" y="159" font-weight="600">S5 Card</text><text x="514" y="175" class="t-mono t-3" font-size="10.5">/card · limit · feed</text>
+          <rect class="box" x="500" y="200" width="150" height="44" rx="8"/><text x="514" y="219" font-weight="600">S7 Assets</text><text x="514" y="235" class="t-mono t-3" font-size="10.5">/portfolio</text>
+          <rect class="box" x="500" y="260" width="150" height="44" rx="8"/><text x="514" y="279" font-weight="600">S9 Cashback</text><text x="514" y="295" class="t-mono t-3" font-size="10.5">tier · asset</text>
+          <rect class="box" x="730" y="140" width="150" height="44" rx="8"/><text x="744" y="159" font-weight="600">S6 Test purchase</text><text x="744" y="175" class="t-mono t-3" font-size="10.5">real USDC moves</text>
+          <rect class="box" x="730" y="200" width="150" height="44" rx="8"/><text x="744" y="219" font-weight="600">S8 Asset detail</text><text x="744" y="235" class="t-mono t-3" font-size="10.5">deposit · withdraw</text>
+          <rect class="box" x="730" y="260" width="150" height="44" rx="8"/><text x="744" y="279" font-weight="600">S10 Backpack</text><text x="744" y="295" class="t-mono t-3" font-size="10.5">import · P3</text>
+          <rect class="zone" x="20" y="260" width="150" height="44" rx="8"/><text x="34" y="279" font-weight="600">S11 Admin</text><text x="34" y="295" class="t-mono t-3" font-size="10.5">/admin · devnet</text>
+        </g>
+        <line class="line" x1="172" y1="162" x2="246" y2="162" marker-end="url(#ah2)"/><text x="209" y="152" text-anchor="middle" class="t-3" font-size="11">connect</text>
+        <g class="line">
+          <path d="M402 162 C450 162 450 42 496 42" marker-end="url(#ah2)"/>
+          <path d="M402 162 C450 162 450 102 496 102" marker-end="url(#ah2)"/>
+          <path d="M402 162 H496" marker-end="url(#ah2)"/>
+          <path d="M402 162 C450 162 450 222 496 222" marker-end="url(#ah2)"/>
+          <path d="M402 162 C450 162 450 282 496 282" marker-end="url(#ah2)"/>
+          <path d="M652 162 H726" marker-end="url(#ah2)"/>
+          <path d="M652 222 H726" marker-end="url(#ah2)"/>
+          <path d="M652 222 C690 222 690 282 726 282" marker-end="url(#ah2)"/>
+        </g>
+        <text x="689" y="152" text-anchor="middle" class="t-3" font-size="11">pay</text>
+        <text x="689" y="212" text-anchor="middle" class="t-3" font-size="11">lock</text>
+        <path class="line-brass dash" d="M172 282 H325 V188" marker-end="url(#ah2b)"/>
+        <text x="248" y="274" text-anchor="middle" class="t-brass" font-size="11">crash → "At risk"</text>
+      </svg>
+    </div>
+    <figcaption>Every signing sheet returns to where the user came from with a toast and an explorer link. Home, Card, Assets and Cashback are the four tabs; Admin is hidden and devnet-only.</figcaption>
+  </figure>
+</section>
+
+<section class="ch" id="screens">
+  <div class="ch-head">
+    <span class="num">CHAPTER 05</span>
+    <h2>Wireframes</h2>
+    <p class="lede">Nine key screens at phone size, with copy taken from <code>wireframes.md</code>. The look is calm consumer fintech: plaster ground, ink text, one brass accent. It's deliberately not a trading dashboard.</p>
+  </div>
+  <div class="phones">
+
+    <div class="phone-wrap">
+      <div class="phone"><div class="screen">
+        <div class="bar"><b>StockCard</b><span>7xKp…9aQe</span></div>
+        <div class="card"><div class="r"><span class="wm">StockCard</span><span class="tag">•••• 4021</span></div><div class="r" style="align-items:flex-end"><div><div class="lbl">Available</div><div class="amt">$390.00</div></div><div class="net">VISA</div></div></div>
+        <div><div class="cap">Available credit</div><div class="big">$890.00</div><div class="muted" style="font-size:11.5px">of $1,390.00 credit line</div></div>
+        <div class="row"><span style="color:var(--good);font-weight:600">Healthy</span><span class="v">LTV 18%</span></div>
+        <div class="hb"><i style="width:18%"></i><span class="m" style="left:50%"></span><span class="m" style="left:65%"></span></div>
+        <div class="btns" style="margin-top:2px"><div class="tile" style="flex:1"><div class="cap">Debt</div><div class="v mono">$500.00</div><div class="muted" style="font-size:10.5px">+$0.11/day</div></div><div class="tile" style="flex:1"><div class="cap">APR</div><div class="v mono">8.00%</div><div class="muted" style="font-size:10.5px">fixed</div></div></div>
+        <div class="btns"><span class="btn pri">Borrow to card</span><span class="btn">Repay</span></div>
+        <div class="row"><span>Albert Heijn</span><span class="v">−$62.15</span></div>
+        <div class="tabs"><span class="on">Home</span><span>Card</span><span>Assets</span><span>Cashback</span></div>
+      </div></div>
+      <div class="who"><b>S2</b><h3>Home</h3></div>
+      <p>The one number that matters (available credit) in big type, the health bar, and the two main actions.</p>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone"><div class="screen">
+        <div class="dim"><div class="bar"><b>StockCard</b><span></span></div><div class="big">$890.00</div><div class="hb"><i style="width:18%"></i></div></div>
+        <div class="sheet">
+          <div class="handle"></div>
+          <div class="row"><b style="font-size:14px">Borrow to your card</b><span>✕</span></div>
+          <div class="row"><span class="big" style="font-size:26px">$ 500.00</span><span class="chip on">MAX</span></div>
+          <div class="muted" style="font-size:11px">Up to $890.00</div>
+          <div class="row"><span class="muted">From</span><span class="v">NVDAx position</span></div>
+          <div class="row"><span class="muted">To</span><span class="v">Card wallet 7xKp…</span></div>
+          <div class="hr"></div>
+          <div class="row"><span class="muted">New LTV</span><span class="v">18% → 54%</span></div>
+          <div class="row"><span class="muted">Interest</span><span class="v">$0.11 / day</span></div>
+          <div class="row"><span class="muted">Health after</span><span class="v" style="color:var(--good)">Healthy</span></div>
+          <span class="btn pri">Confirm and sign</span>
+        </div>
+      </div></div>
+      <div class="who"><b>S3</b><h3>Borrow sheet</h3></div>
+      <p>Previews the result before signing. The program re-checks everything; the app only previews.</p>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone"><div class="screen">
+        <div class="bar"><b>Card</b><span class="pill p-brass" style="font-size:9px">Sandbox card</span></div>
+        <div class="card"><div class="r"><span class="wm">StockCard</span><span class="tag">Virtual</span></div><div class="r" style="justify-content:flex-start;gap:3cqi;align-items:center"><span class="chip"></span><span class="pan">•••• 4021</span></div><div class="r" style="align-items:flex-end"><div><div class="lbl">Available</div><div class="amt">$438.00</div><div class="hold">Luis P · 09/29</div></div><div class="net">VISA</div></div></div>
+        <div class="row"><span>Card limit</span><span class="v">$500.00 · Edit ›</span></div>
+        <div class="hb"><i style="width:88%;background:var(--brass)"></i></div>
+        <div class="row"><span>Freeze card</span><span class="chip">off</span></div>
+        <span class="btn pri">Test purchase</span>
+        <div class="cap">Activity</div>
+        <div><div class="row"><span>Albert Heijn</span><span class="v">−$62.15</span></div><div class="muted" style="font-size:10.5px">Groceries · Settled ↗ · <span style="color:var(--brass)">+0.0029 NVDAx</span></div></div>
+        <div><div class="row"><span>KLM</span><span class="v">−$389.00</span></div><div style="font-size:10.5px;color:var(--bad)">Declined · Card limit $500</div></div>
+        <div class="tabs"><span>Home</span><span class="on">Card</span><span>Assets</span><span>Cashback</span></div>
+      </div></div>
+      <div class="who"><b>S5</b><h3>Card</h3></div>
+      <p>The card limit is the delegate permission. Declines explain themselves in plain words.</p>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone"><div class="screen">
+        <div class="dim"><div class="bar"><b>Card</b></div><div class="card" style="opacity:.9"></div></div>
+        <div class="sheet">
+          <div class="handle"></div>
+          <div class="row"><b style="font-size:14px">Test purchase</b><span>✕</span></div>
+          <div class="muted" style="font-size:11px">Simulates a card payment on devnet. Real USDC moves.</div>
+          <div class="chips"><span class="chip">Coffee $4.80</span><span class="chip on">Groceries $62.15</span><span class="chip">Flight $389.00</span></div>
+          <div class="row"><span class="muted">Merchant</span><span class="v">Albert Heijn</span></div>
+          <div class="row"><span class="muted">Amount</span><span class="v">$62.15</span></div>
+          <div class="hr"></div>
+          <div class="row"><span class="muted">Cashback · Plus 1%</span><span class="v" style="color:var(--brass)">+$0.62 in NVDAx</span></div>
+          <div class="row"><span class="muted">Card limit left</span><span class="v">$437.85</span></div>
+          <span class="btn pri">Pay</span>
+        </div>
+      </div></div>
+      <div class="who"><b>S6</b><h3>Test purchase</h3></div>
+      <p>The demo stand-in for tapping a card in a shop. The feed row goes Pending → Settled within seconds.</p>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone"><div class="screen">
+        <div class="bar"><b>Assets</b><span>Locked $2,120</span></div>
+        <div class="chips"><span class="chip on">All</span><span class="chip">Stocks</span><span class="chip">Art</span><span class="chip">Collectibles</span></div>
+        <div class="tile" style="display:grid;gap:3px"><div class="row"><b>NVDAx</b><span class="pill p-line" style="font-size:9px">Equity</span></div><div class="muted" style="font-size:11px">NVIDIA · $211.96 · Demo price</div><div class="row"><span class="v">Locked 10 · Wallet 15</span><span style="font-size:11px">Max LTV 50%</span></div></div>
+        <div class="tile" style="display:grid;gap:3px"><div class="row"><b>TIDE</b><span class="pill p-line" style="font-size:9px">Art note</span></div><div class="muted" style="font-size:11px">Tidewater Lot 01 · $10.00 · Appraisal −20%</div><div class="row"><span class="v">Wallet 1,000</span><span class="pill p-brass" style="font-size:9px">Devnet mock</span></div></div>
+        <div class="tile" style="display:grid;gap:3px"><div class="row"><b>PSA10</b><span class="pill p-line" style="font-size:9px">Pokémon card</span></div><div class="muted" style="font-size:11px">Graded PSA 10 · $4,800 value · −25%</div><div class="row"><span class="v">Max LTV 40%</span><span class="pill p-brass" style="font-size:9px">Devnet mock</span></div></div>
+        <div class="btns"><span class="btn">Get test assets</span></div>
+        <div class="btns"><span class="btn">Import from Backpack</span></div>
+        <div class="tabs"><span>Home</span><span>Card</span><span class="on">Assets</span><span>Cashback</span></div>
+      </div></div>
+      <div class="who"><b>S7</b><h3>Assets</h3></div>
+      <p>Every asset shows where its price comes from and how much credit it gives. Mocks are always labeled.</p>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone"><div class="screen">
+        <div class="bar"><b>Cashback</b></div>
+        <div style="font-size:12px" class="muted">Every purchase buys you more of what you own.</div>
+        <div><div class="cap">Lifetime cashback</div><div class="big" style="font-size:26px">$14.20</div><div class="v mono" style="font-size:11px">in 0.0670 NVDAx</div></div>
+        <div class="btns" style="gap:6px">
+          <div class="tile" style="flex:1;text-align:center;padding:8px 4px"><b>Standard</b><div class="mono">0.5%</div><div class="muted" style="font-size:10px">Free</div></div>
+          <div class="tile" style="flex:1;text-align:center;padding:8px 4px;border-color:var(--brass);background:var(--brass-soft)"><b>Plus ✓</b><div class="mono">1%</div><div class="muted" style="font-size:10px">$9.99/mo</div></div>
+          <div class="tile" style="flex:1;text-align:center;padding:8px 4px"><b>Black</b><div class="mono">2%</div><div class="muted" style="font-size:10px">$29/mo</div></div>
+        </div>
+        <div class="cap">Cashback buys</div>
+        <div class="row"><span>● NVDAx</span><span class="muted">NVIDIA</span></div>
+        <div class="row"><span>○ SPYx</span><span class="muted">S&amp;P 500</span></div>
+        <div class="row"><span>○ TIDE</span><span class="muted">Art note</span></div>
+        <span class="btn pri">Save</span>
+        <div class="tabs"><span>Home</span><span>Card</span><span>Assets</span><span class="on">Cashback</span></div>
+      </div></div>
+      <div class="who"><b>S9</b><h3>Cashback</h3></div>
+      <p>Cashback isn't points. It buys the chosen asset and adds it to the user's collateral, which raises their credit line.</p>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone"><div class="screen">
+        <div class="bar"><b>Import from Backpack</b></div>
+        <div class="muted" style="font-size:11.5px">See which of your holdings can back your card.</div>
+        <div class="tile"><div class="cap">API key</div><div class="v mono">base64 public key</div></div>
+        <div class="tile"><div class="cap">API secret</div><div class="v mono">••••••••••••</div></div>
+        <div class="muted" style="font-size:10.5px">ⓘ Your secret stays on this device. We only send a signature for a balance check.</div>
+        <div class="btns"><span class="btn pri">Check holdings</span><span class="btn">Use demo</span></div>
+        <div class="hr"></div>
+        <div class="row"><span><b>SPCX.US</b> · 40</span><span class="pill p-good" style="font-size:9px">Eligible</span></div>
+        <div style="font-size:10.5px" class="muted">Withdraw to your wallet, then deposit here ›</div>
+        <div class="row"><span><b>MU.US</b> · 12</span><span class="pill p-line" style="font-size:9px">Not on-chain</span></div>
+        <div class="row"><span><b>NVDA.US</b> · 5</span><span class="pill p-line" style="font-size:9px">Not on-chain</span></div>
+        <div style="font-size:10.5px;color:var(--brass)">Buy NVDAx instead ›</div>
+        <div style="height:10px"></div>
+      </div></div>
+      <div class="who"><b>S10</b><h3>Backpack import</h3><span class="pill p-warn">Cut first if late</span></div>
+      <p>Only SPCX is a real token. Broker-held stocks can't be locked, and the screen says so honestly.</p>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone"><div class="screen">
+        <div class="tile" style="background:var(--raised);display:grid;gap:2px;box-shadow:0 10px 24px -16px rgba(0,0,0,.5)"><div class="row"><span class="cap">StockCard · now</span><span></span></div><b style="font-size:12.5px">Your position can be liquidated</b><span class="muted" style="font-size:11px">Repay $258.14 or add 3.48 NVDAx to stop it.</span></div>
+        <div class="tile" style="border-color:var(--bad);background:var(--bad-soft);display:grid;gap:6px"><b style="color:var(--bad);font-size:12px">Your position can be liquidated.</b><span style="font-size:11px">Add 3.48 NVDAx or repay $258.14.</span><div class="btns"><span class="btn pri">Add stock</span><span class="btn">Repay</span></div></div>
+        <div><div class="cap">Available credit</div><div class="big">$0.00</div><div class="muted" style="font-size:11.5px">of $741.86 credit line</div></div>
+        <div class="row"><span style="color:var(--bad);font-weight:600">Liquidatable</span><span class="v">LTV 67.4%</span></div>
+        <div class="hb"><i style="width:67.4%;background:var(--bad)"></i><span class="m" style="left:50%"></span><span class="m" style="left:65%"></span></div>
+        <div class="row"><span class="muted">NVDAx</span><span class="v">$148.37 · −30%</span></div>
+        <div class="row"><span class="muted">Debt</span><span class="v">$1,000.22</span></div>
+        <div class="tabs"><span class="on">Home</span><span>Card</span><span>Assets</span><span>Cashback</span></div>
+      </div></div>
+      <div class="who"><b>S2</b><h3>Home · alert</h3><span class="pill p-brass">New</span></div>
+      <p>The push notification and the banner give the exact fix. Tapping Add stock opens the deposit sheet with 3.48 NVDAx already filled in.</p>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone"><div class="screen">
+        <div class="bar"><b>Demo controls</b><span class="pill p-warn" style="font-size:9px">Devnet only</span></div>
+        <div class="tile"><div class="cap">Admin token</div><div class="v mono">••••••••</div></div>
+        <div class="tile" style="display:grid;gap:6px"><div class="row"><b>NVDAx</b><span class="v">$211.96 · Demo price</span></div><div class="btns"><span class="btn" style="color:var(--bad);border-color:var(--bad)">Crash −30%</span><span class="btn">Restore</span></div></div>
+        <div class="tile" style="display:grid;gap:6px"><div class="row"><b>TIDE</b><span class="v">$10.00 · Appraisal</span></div><div class="btns"><span class="btn" style="color:var(--bad);border-color:var(--bad)">Crash −30%</span><span class="btn">Restore</span></div></div>
+        <div class="cap">Positions at risk</div>
+        <div class="tile" style="display:grid;gap:6px;border-color:var(--bad)"><div class="row"><span class="v">7xKp…9aQe · NVDAx</span><span class="v" style="color:var(--bad)">LTV 67%</span></div><div class="row"><span class="v">Debt $1,000.22</span><span class="btn" style="flex:0 0 auto;padding:6px 8px">Liquidate 50%</span></div></div>
+        <div style="height:10px"></div>
+      </div></div>
+      <div class="who"><b>S11</b><h3>Admin</h3></div>
+      <p>For the video only. Shows judges that risk is enforced on-chain: crash a price, watch the position turn red, liquidate.</p>
+    </div>
+
+  </div>
+</section>
+<section class="ch" id="arch">
+  <div class="ch-head">
+    <span class="num">CHAPTER 06</span>
+    <h2>Architecture: three places code runs</h2>
+    <p class="lede">The user's device, a small StockCard server, and the Solana program. Money rules live only in the program. The server holds no user collateral; it can only spend what a user explicitly allowed the card to spend.</p>
+  </div>
+  <figure>
+    <div class="fig">
+      <svg viewBox="0 0 960 590" role="img" aria-label="Architecture. The app on the user's device sends wallet-signed transactions straight to the Solana program and calls the StockCard server over HTTPS. The server uses its own keys for card spends, cashback, faucet and demo prices, stores cards in Redis, and reads xStocks, Backpack, Bridge and Collector Crypt APIs. The server posts stock prices from xStocks and Jupiter; the app can add Switchboard updates if that trial passes.">
+        <defs>
+          <marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-ink"/></marker>
+          <marker id="ah3b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-brass"/></marker>
+          <marker id="ah3g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-3"/></marker>
+        </defs>
+
+        <!-- zones -->
+        <rect class="zone" x="20" y="60" width="260" height="370" rx="14"/>
+        <text x="36" y="84" class="t-mono t-3" font-size="10.5" letter-spacing="1.2">YOUR PHONE OR BROWSER</text>
+        <rect class="zone" x="360" y="60" width="260" height="370" rx="14"/>
+        <text x="376" y="84" class="t-mono t-3" font-size="10.5" letter-spacing="1.2">STOCKCARD SERVER · VERCEL</text>
+        <rect class="zone" x="700" y="60" width="240" height="370" rx="14"/>
+        <text x="716" y="84" class="t-mono t-3" font-size="10.5" letter-spacing="1.2">SOLANA DEVNET</text>
+
+        <!-- device -->
+        <rect class="box" x="36" y="98" width="228" height="150" rx="10"/>
+        <text x="50" y="122" font-size="14" font-weight="600">StockCard app</text>
+        <text x="50" y="140" class="t-mono t-3" font-size="10.5">Next.js 16 PWA · Android APK</text>
+        <g class="t-2" font-size="12"><text x="50" y="166">Screens and card render</text><text x="50" y="186">Risk preview (risk.ts)</text><text x="50" y="206">Program client (IDL)</text><text x="50" y="226">Backpack request signer</text></g>
+        <line class="line" x1="150" y1="250" x2="150" y2="290" marker-end="url(#ah3)"/>
+        <text x="158" y="274" class="t-3" font-size="11">asks to sign</text>
+        <rect class="box" x="36" y="294" width="228" height="120" rx="10"/>
+        <text x="50" y="318" font-size="14" font-weight="600">Wallet</text>
+        <text x="50" y="336" class="t-mono t-3" font-size="10.5">Phantom · Solflare · MWA</text>
+        <g class="t-2" font-size="12"><text x="50" y="362">Holds keys and tokens</text><text x="50" y="382">Signs every user action</text><text x="50" y="402">Grants the card limit</text></g>
+
+        <!-- server -->
+        <g font-size="12.5">
+          <rect class="box" x="376" y="98" width="228" height="46" rx="8"/><text x="390" y="117" font-weight="600">Card service</text><text x="390" y="134" class="t-mono t-3" font-size="10.5">/api/card · mock or Bridge</text>
+          <rect class="box" x="376" y="152" width="228" height="46" rx="8"/><text x="390" y="171" font-weight="600">Cashback · price signer</text><text x="390" y="188" class="t-mono t-3" font-size="10.5">/api/cashback · /api/prices</text>
+          <rect class="box" x="376" y="206" width="228" height="46" rx="8"/><text x="390" y="225" font-weight="600">Test-asset faucet</text><text x="390" y="242" class="t-mono t-3" font-size="10.5">/api/faucet · 1 per hour</text>
+          <rect class="box" x="376" y="260" width="228" height="46" rx="8"/><text x="390" y="279" font-weight="600">Alerts, push, demo admin</text><text x="390" y="296" class="t-mono t-3" font-size="10.5">/api/alerts · /api/push · /api/admin</text>
+          <rect class="box" x="376" y="314" width="228" height="46" rx="8"/><text x="390" y="333" font-weight="600">Backpack proxy</text><text x="390" y="350" class="t-mono t-3" font-size="10.5">/api/backpack · forwards only</text>
+          <rect class="box" x="376" y="368" width="228" height="46" rx="8" stroke-dasharray="4 3"/><text x="390" y="387" font-weight="600">Redis storage</text><text x="390" y="404" class="t-mono t-3" font-size="10.5">cards · purchases · limits</text>
+        </g>
+
+        <!-- chain -->
+        <rect x="716" y="98" width="208" height="190" rx="10" class="zone-fill" stroke="var(--brass)"/>
+        <text x="730" y="122" font-size="14" font-weight="600">stockcard program</text>
+        <text x="730" y="140" class="t-mono t-brass" font-size="10.5">all money rules live here</text>
+        <g class="t-2" font-size="12"><text x="730" y="166">Config · APR, pause</text><text x="730" y="186">USDC pool vault</text><text x="730" y="206">6 markets + vaults</text><text x="730" y="226">Position per user</text><text x="730" y="246">Signed prices</text><text x="730" y="266">Events for the feed</text></g>
+        <rect class="box" x="716" y="300" width="208" height="114" rx="10"/>
+        <text x="730" y="324" font-size="14" font-weight="600">Token accounts</text>
+        <text x="730" y="342" class="t-mono t-3" font-size="10.5">SPL Token · Token-2022</text>
+        <g class="t-2" font-size="12"><text x="730" y="368">User USDC = card wallet</text><text x="730" y="388">Merchant settlement</text><text x="730" y="406">Cashback treasury</text></g>
+
+        <!-- device → chain top lane -->
+        <path class="line-brass" d="M110 96 V30 H820 V94" marker-end="url(#ah3b)"/>
+        <text x="465" y="22" text-anchor="middle" class="t-brass" font-size="12" font-weight="600">wallet-signed: deposit · borrow · repay · withdraw</text>
+        <!-- device → server -->
+        <line class="line" x1="266" y1="170" x2="372" y2="170" marker-end="url(#ah3)"/>
+        <text x="319" y="162" text-anchor="middle" class="t-3" font-size="11">HTTPS</text>
+        <!-- server → chain -->
+        <line class="line" x1="606" y1="190" x2="712" y2="190" marker-end="url(#ah3)"/>
+        <text x="659" y="182" text-anchor="middle" class="t-3" font-size="11">server keys</text>
+        <line class="line dash" x1="606" y1="340" x2="712" y2="350" marker-end="url(#ah3)"/>
+        <text x="659" y="334" text-anchor="middle" class="t-3" font-size="11">spend limit</text>
+
+        <!-- externals -->
+        <line class="line-3" x1="110" y1="432" x2="110" y2="492" marker-end="url(#ah3g)"/>
+        <text x="118" y="466" class="t-3" font-size="11">signed update</text>
+        <path class="line-3" d="M490 432 V492" marker-end="url(#ah3g)"/>
+        <path class="line-3" d="M310 470 H855"/>
+        <path class="line-3" d="M310 470 V492" marker-end="url(#ah3g)"/>
+        <path class="line-3" d="M670 470 V492" marker-end="url(#ah3g)"/>
+        <path class="line-3" d="M855 470 V492" marker-end="url(#ah3g)"/>
+        <text x="580" y="458" class="t-3" font-size="11">server reads partner APIs</text>
+        <g font-size="12.5">
+          <rect class="box" x="20" y="496" width="180" height="70" rx="8"/><text x="34" y="520" font-weight="600">Switchboard</text><text x="34" y="538" class="t-2" font-size="11.5">oracle-signed prices</text><text x="34" y="555" class="t-mono t-warn" font-size="10">spike Wed · go/no-go</text>
+          <rect class="box" x="230" y="496" width="160" height="70" rx="8"/><text x="244" y="520" font-weight="600">xStocks · Jupiter</text><text x="244" y="538" class="t-2" font-size="11.5">stock prices · halts</text><text x="244" y="555" class="t-mono t-3" font-size="10">free · no key</text>
+          <rect class="box" x="410" y="496" width="160" height="70" rx="8"/><text x="424" y="520" font-weight="600">Backpack API</text><text x="424" y="538" class="t-2" font-size="11.5">SPCX · balances</text><text x="424" y="555" class="t-mono t-3" font-size="10">public + signed</text>
+          <rect class="box" x="590" y="496" width="160" height="70" rx="8"/><text x="604" y="520" font-weight="600">Bridge + Stripe</text><text x="604" y="538" class="t-2" font-size="11.5">real card sandbox</text><text x="604" y="555" class="t-mono t-warn" font-size="10">access pending</text>
+          <rect class="box" x="770" y="496" width="170" height="70" rx="8"/><text x="784" y="520" font-weight="600">Collector Crypt · PSA</text><text x="784" y="538" class="t-2" font-size="11.5">card values · certs</text><text x="784" y="555" class="t-mono t-3" font-size="10">after core (P2)</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption>The brass path is the one that matters for trust: the user's own wallet talks straight to the program. The server only acts with its own keys for things users opted into (card spends within the limit, cashback deposits, test tokens, demo prices). It also checks positions every 5 minutes and after every price change, and sends web push alerts through the installed app.</figcaption>
+  </figure>
+  <div class="cols">
+    <div class="note"><h3>One codebase, two platforms</h3><p>The website is installable as an app. For Android it gets wrapped as an APK with <code>solana-mobile webshell</code>, and wallets connect through Mobile Wallet Adapter. Every screen must work at 360 px wide.</p></div>
+    <div class="note"><h3>Card provider is swappable</h3><p>The card code talks to one <code>CardProvider</code> interface. The <b>mock</b> provider (default) does a real devnet USDC transfer; the <b>Bridge</b> provider uses Stripe's card sandbox when keys arrive. Rain or Baanx could plug in later.</p></div>
+  </div>
+</section>
+
+<section class="ch" id="flows">
+  <div class="ch-head">
+    <span class="num">CHAPTER 07</span>
+    <h2>Key flows, step by step</h2>
+    <p class="lede">Read each diagram top to bottom. Columns are the parties involved; each arrow is one message or transaction. Brass arrows are where money actually moves.</p>
+  </div>
+  <figure>
+    <div class="fig"><svg id="seq-borrow" role="img" aria-label="Borrow flow: the price signer posts a market price from xStocks and Jupiter, the app previews, the wallet signs the borrow, the program checks interest, price age, LTV and pool liquidity, then sends USDC to the card wallet."></svg></div>
+    <figcaption><b>Borrow.</b> The price signer keeps a fresh stock price on-chain (posted every minute when xStocks and Jupiter agree within 2%). The program refuses any price older than 3 minutes. If the Switchboard spike passes, SPYx and TSLAx instead carry an oracle-signed update inside the borrow transaction.</figcaption>
+  </figure>
+  <figure>
+    <div class="fig"><svg id="seq-card" role="img" aria-label="Card purchase flow: the user sets a card limit by signing a delegate approval once, then a test purchase goes to the server, which checks limit, balance and freeze, transfers USDC to the merchant as delegate, stores the purchase and deposits cashback asset into the user's position."></svg></div>
+    <figcaption><b>Card purchase and cashback.</b> The user signs once to set the limit. After that, purchases don't need a wallet popup, just like a real card, and the server can never exceed the limit. Cashback uses a special program instruction that can only <i>add</i> collateral to a user's position.</figcaption>
+  </figure>
+  <figure>
+    <div class="fig"><svg id="seq-liq" role="img" aria-label="Protection flow: the admin crashes a signed price by 30 percent, the server checks positions and sends a web push with exact fix amounts, the user adds stock and the position is healthy again; if nobody acts, a 50 percent liquidation brings LTV to 52 percent."></svg></div>
+    <figcaption><b>Protect, then liquidate (demo).</b> The crash only works on markets with a <b>signed</b> price, which is why NVDAx, the art note and the Pokémon card all use one in the demo. The alert check runs right after the price change, so the phone buzzes within seconds.</figcaption>
+  </figure>
+</section>
+<section class="ch" id="parts">
+  <div class="ch-head">
+    <span class="num">CHAPTER 08</span>
+    <h2>Components and APIs</h2>
+    <p class="lede">Everything that will exist, grouped by where it runs. The status column shows what's already built on the branch.</p>
+  </div>
+  <h3>On-chain program: 12 instructions</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Instruction</th><th>Who calls it</th><th>In plain words</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">init_config</td><td>Admin, once</td><td>Sets up the rulebook: 8% APR, 50% close factor, the USDC pool vault.</td><td><span class="pill p-line">Setup</span></td></tr>
+      <tr><td class="mono">add_market / update_market</td><td>Admin</td><td>Adds an asset (NVDAx, TIDE…) with its LTV, haircut and price source. Rejects unsafe numbers.</td><td><span class="pill p-line">Setup</span></td></tr>
+      <tr><td class="mono">set_signed_price</td><td>Price signer</td><td>Posts an appraisal or partner value, or a demo price.</td><td><span class="pill p-line">Setup</span></td></tr>
+      <tr><td class="mono">fund_pool · set_pause</td><td>Anyone · Admin</td><td>Adds lendable USDC · emergency stop for new borrowing (repay still works).</td><td><span class="pill p-line">Setup</span></td></tr>
+      <tr><td class="mono">deposit_collateral</td><td>User</td><td>Locks assets in the vault and opens or grows a position.</td><td><span class="pill p-brass">P1</span></td></tr>
+      <tr><td class="mono">borrow</td><td>User</td><td>Sends USDC to the card wallet if the price is fresh and LTV stays ≤ max.</td><td><span class="pill p-brass">P1</span></td></tr>
+      <tr><td class="mono">repay</td><td>Anyone</td><td>Pays down debt; "repay all" is capped at the exact debt, so nothing is overpaid.</td><td><span class="pill p-brass">P1</span></td></tr>
+      <tr><td class="mono">withdraw_collateral</td><td>User</td><td>Unlocks assets, only if the remaining debt stays safe.</td><td><span class="pill p-brass">P1</span></td></tr>
+      <tr><td class="mono">liquidate</td><td>Anyone</td><td>Repays up to half of an unsafe loan in exchange for collateral + 5% bonus.</td><td><span class="pill p-line">P2</span></td></tr>
+      <tr><td class="mono">deposit_collateral_for</td><td>Cashback key only</td><td>Adds cashback assets to someone's position. It can add, never remove.</td><td><span class="pill p-line">P2</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>App server routes</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Route</th><th>What it does</th><th>Protection</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">POST /api/faucet</td><td>Sends test NVDAx, TIDE, PSA10… to a devnet wallet.</td><td>1 per hour per wallet and asset</td></tr>
+      <tr><td class="mono">POST · GET · PATCH /api/card</td><td>Create the virtual card, read it with the live card limit, freeze it, set tier and cashback asset.</td><td>Wallet signature, max 5 min old</td></tr>
+      <tr><td class="mono">POST /api/card/simulate</td><td>Runs a test purchase: approve or decline, move USDC, queue cashback.</td><td>Wallet signature</td></tr>
+      <tr><td class="mono">GET /api/card/transactions</td><td>Purchase feed, newest first.</td><td>Wallet signature</td></tr>
+      <tr><td class="mono">POST /api/cashback/process</td><td>Buys and deposits the cashback asset; safe to retry, never pays twice.</td><td>Server-internal</td></tr>
+      <tr><td class="mono">POST /api/backpack/import</td><td>Forwards a balance check the browser already signed; stores nothing.</td><td>Secret never sent</td></tr>
+      <tr><td class="mono">POST /api/admin/price · liquidate</td><td>Demo controls: crash (−30%) or restore a signed price, run a liquidation.</td><td>Devnet only + admin token</td></tr>
+      <tr><td class="mono">POST · DELETE /api/push/subscribe</td><td>Turn alerts on or off for this phone or browser.</td><td>Wallet signature</td></tr>
+      <tr><td class="mono">POST /api/alerts/check</td><td>Checks every position, works out its band, sends one push per worse band.</td><td>Cron secret · every 5 min + after price changes</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Partner APIs</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Partner</th><th>Used for</th><th>Access today</th><th>MVP role</th></tr></thead>
+    <tbody>
+      <tr><td>Jupiter Price v3</td><td>NVDAx/SPYx/TSLAx/SPCX market price, pool liquidity, split multiplier</td><td>Free, no key (checked Sept 14)</td><td><span class="pill p-good">Core</span></td></tr>
+      <tr><td>Switchboard On-Demand</td><td>Oracle-signed prices for SPYx and TSLAx</td><td>Permissionless, devnet, small SOL fees</td><td><span class="pill p-warn">Spike Wed</span></td></tr>
+      <tr><td>Chainlink Data Streams</td><td>Official xStocks oracle</td><td>Paid, from $150/month per feed</td><td><span class="pill p-line">Production</span></td></tr>
+      <tr><td>Pyth Pro</td><td>Official xStocks feed (NVDAXUSD = 1833)</td><td>Stocks ~$2,500/month; key works for crypto only</td><td><span class="pill p-line">Not used</span></td></tr>
+      <tr><td>Web Push + Upstash QStash</td><td>Phone and browser notifications, 5-minute schedule</td><td>Standard browser API; QStash free tier</td><td><span class="pill p-good">Core</span></td></tr>
+      <tr><td>xStocks (Backed)</td><td>Price (signer source), mint addresses, multiplier, trading halts, proof of reserves</td><td>Public, no key</td><td><span class="pill p-good">Core</span></td></tr>
+      <tr><td>Backpack</td><td>SPCX data and price check; user balance import</td><td>Public + signed</td><td><span class="pill p-good">Core</span> <span class="pill p-line">Import P3</span></td></tr>
+      <tr><td>Bridge + Stripe Issuing</td><td>Real card sandbox paying from a Solana wallet</td><td>Sandbox access requested</td><td><span class="pill p-warn">Optional</span></td></tr>
+      <tr><td>Collector Crypt</td><td>Graded-card insured values, listings</td><td>Public API, devnet available</td><td><span class="pill p-line">P2</span></td></tr>
+      <tr><td>PSA</td><td>Verify grading certificates</td><td>Free token, 100 calls/day</td><td><span class="pill p-line">P2</span></td></tr>
+      <tr><td>Upstash Redis</td><td>Cards, purchases, rate limits</td><td>Free tier; in-memory fallback locally</td><td><span class="pill p-good">Core</span></td></tr>
+      <tr><td>Meteora DBC</td><td>Launch curve for the art note (proposal)</td><td>Public SDK, same program on devnet</td><td><span class="pill p-brass">Proposed</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>UI components</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Component</th><th>Where</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>CreditCard · HealthBar · MockBadge · ConnectButton · AppShell · wallet providers · risk.ts</td><td>Everywhere</td><td><span class="pill p-good">Built</span></td></tr>
+      <tr><td>Sheet · AmountInput · PreviewRow</td><td>Borrow, repay, purchase, deposit</td><td><span class="pill p-line">To build</span></td></tr>
+      <tr><td>AlertBanner · TurnOnAlerts · service worker push handler</td><td>Home, Card, background</td><td><span class="pill p-line">To build</span></td></tr>
+      <tr><td>AssetRow · TxRow · Toast · ExplorerLink · Banner</td><td>Assets, feeds, alerts</td><td><span class="pill p-line">To build</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="ch" id="safety">
+  <div class="ch-head">
+    <span class="num">CHAPTER 09</span>
+    <h2>Safety and honesty</h2>
+    <p class="lede">Judges will poke at risk. These are the rules the code enforces and the risks we disclose rather than hide.</p>
+  </div>
+  <div class="cols">
+    <div class="stack">
+      <h3>Enforced by the program</h3>
+      <div class="note"><p><b>Fresh price or no loan.</b> Borrow, withdraw and liquidate all check the price's age in the same transaction. If the two price sources disagree by more than 2%, no new price is posted, so borrowing pauses instead of using a bad price.</p></div>
+      <div class="note"><p><b>Interest first.</b> Interest is added before any change, so nobody can dodge it with timing.</p></div>
+      <div class="note"><p><b>Whole-number math.</b> Cents and basis points only, overflow-checked, rounded in the pool's favor.</p></div>
+      <div class="note"><p><b>The app only previews.</b> Even a hacked app can't approve an unsafe loan.</p></div>
+    </div>
+    <div class="stack">
+      <h3>Risks we disclose</h3>
+      <div class="note warn"><p><b>Issuers can pause, freeze or claw back.</b> Real xStocks and SPCX tokens give the issuer those powers. The program checks vault balances and pause flags and blocks new borrows if anything's off.</p></div>
+      <div class="note warn"><p><b>Stocks don't trade 24/7.</b> Outside market hours older prices are accepted, but with an extra haircut.</p></div>
+      <div class="note warn"><p><b>Stock splits change balances.</b> xStocks use a multiplier on the token; collateral is valued as tokens × multiplier × price.</p></div>
+      <div class="note warn"><p><b>Everything is a mock on devnet.</b> Test mints, sandbox card, placeholder artworks, demo prices, all labeled. No partnerships are claimed.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="ch" id="meteora">
+  <div class="ch-head">
+    <span class="num">CHAPTER 10</span>
+    <h2>Can we also enter "Best Use of Meteora DBC"?</h2>
+    <p class="lede">Yes, but only in one specific way. Meteora's Dynamic Bonding Curve is a launch pool: the price climbs along a preset curve as people buy, and once enough USDC is raised the pool "graduates" into a normal Meteora DAMM v2 trading pool.</p>
+  </div>
+  <div class="note bad">
+    <h3>The constraint that decides it</h3>
+    <p>A DBC pool always <b>creates a new token</b> (the SDK's <code>createPool</code> needs a fresh <code>baseMint</code> keypair). So DBC can't launch or trade existing xStocks or SPCX; Backed and Backpack issue those. StockCard does, however, plan to issue its own asset: the <b>TIDE art note</b>.</p>
+  </div>
+  <figure>
+    <div class="fig">
+      <svg viewBox="0 0 900 300" role="img" aria-label="Comparison. Today the TIDE art note is priced only by an appraisal and has no place to sell seized collateral. With DBC, TIDE launches on a curve anchored near its appraisal, graduates to a DAMM v2 pool at a raise target, and only then becomes eligible as StockCard collateral, with the pool used as a price check and liquidation venue.">
+        <defs><marker id="ah4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-ink"/></marker>
+        <marker id="ah4b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="f-brass"/></marker></defs>
+        <text x="20" y="24" class="t-mono t-3" font-size="11" letter-spacing="1.2">CURRENT PLAN</text>
+        <rect class="box" x="20" y="40" width="150" height="54" rx="8"/><text x="34" y="63" font-size="13" font-weight="600">Appraiser</text><text x="34" y="81" class="t-3" font-size="11">document</text>
+        <rect class="box" x="220" y="40" width="170" height="54" rx="8"/><text x="234" y="63" font-size="13" font-weight="600">TIDE market</text><text x="234" y="81" class="t-3" font-size="11">30% LTV</text>
+        <line class="line" x1="172" y1="67" x2="216" y2="67" marker-end="url(#ah4)"/><text x="194" y="58" text-anchor="middle" class="t-3" font-size="10.5">signed</text>
+        <text x="20" y="126" class="t-bad" font-size="12.5" font-weight="600">No market price to sanity-check</text>
+        <text x="20" y="146" class="t-bad" font-size="12.5" font-weight="600">No venue to sell seized notes</text>
+        <line x1="440" y1="20" x2="440" y2="280" class="line-3 dash"/>
+        <text x="470" y="24" class="t-mono t-brass" font-size="11" letter-spacing="1.2">WITH METEORA DBC</text>
+        <rect class="box" x="470" y="40" width="190" height="64" rx="8"/><text x="484" y="62" font-size="13" font-weight="600">DBC launch curve</text><text x="484" y="80" class="t-3" font-size="11">TIDE / USDC, anchored</text><text x="484" y="95" class="t-3" font-size="11">near the $10 appraisal</text>
+        <rect x="700" y="40" width="180" height="64" rx="8" class="zone-fill" stroke="var(--brass)"/><text x="714" y="62" font-size="13" font-weight="600">DAMM v2 pool</text><text x="714" y="80" class="t-3" font-size="11">graduated, LP locked</text><text x="714" y="95" class="t-3" font-size="11">real trading</text>
+        <line class="line-brass" x1="662" y1="72" x2="696" y2="72" marker-end="url(#ah4b)"/>
+        <text x="679" y="120" text-anchor="middle" class="t-brass" font-size="10.5">raise target hit</text>
+        <rect class="box" x="585" y="170" width="190" height="64" rx="8"/><text x="599" y="192" font-size="13" font-weight="600">TIDE market</text><text x="599" y="210" class="t-3" font-size="11">eligible only after</text><text x="599" y="225" class="t-3" font-size="11">graduation · 30% LTV</text>
+        <path class="line" d="M790 106 V202 H779" marker-end="url(#ah4)"/>
+        <text x="798" y="150" class="t-2" font-size="11">price check</text><text x="798" y="165" class="t-2" font-size="11">+ liquidation venue</text>
+        <path class="line dash" d="M520 106 V202 H581" marker-end="url(#ah4)"/>
+        <text x="478" y="150" class="t-2" font-size="11">appraisal still</text><text x="478" y="165" class="t-2" font-size="11">signed on-chain</text>
+        <text x="470" y="272" class="t-good" font-size="12.5" font-weight="600">Graduation = credit eligibility</text>
+      </svg>
+    </div>
+    <figcaption>The pitch to Meteora: a launch tuned for a thinly traded, appraised real asset rather than a memecoin, with a graduation rule that means something ("enough real liquidity exists to lend against it").</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>DBC setting</th><th>Meme launch default</th><th>StockCard art-note setting</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">quoteMint</td><td>SOL</td><td>USDC, the same dollar the card spends</td></tr>
+      <tr><td class="mono">curve</td><td>Steep, 100×+ price run</td><td>Narrow band around the appraisal (<code>buildCurveWithMidPrice</code> or two segments), so it discovers price rather than hype</td></tr>
+      <tr><td class="mono">baseFee · dynamicFee</td><td>High fee at open to deter snipers</td><td>Linear fee schedule plus a volatility fee that widens if trading gets jumpy</td></tr>
+      <tr><td class="mono">migrationQuoteThreshold</td><td>Arbitrary market cap</td><td>The compartment's raise target, i.e. the artwork's purchase price</td></tr>
+      <tr><td class="mono">lockedVesting · LP lock %</td><td>Often none</td><td>Issuer allocation vests; most graduated LP is permanently locked, so liquidations have depth</td></tr>
+      <tr><td class="mono">creatorTradingFeePercentage</td><td>Creator revenue</td><td>Funds re-appraisals and vault insurance</td></tr>
+      <tr><td class="mono">tokenType</td><td>SPL</td><td>Token-2022; a transfer-hook variant exists if compliance allowlists are needed later</td></tr>
+    </tbody>
+  </table></div>
+  <div class="cols">
+    <div class="note"><h3>Cost</h3><p>About 1 to 1.5 extra days: a config + pool script on devnet (same program ID as mainnet), a launch screen with curve progress and a buy button, and a watcher that turns on the TIDE market after graduation.</p></div>
+    <div class="note warn"><h3>Tension</h3><p>Meteora says "working code on mainnet beats slides." A mainnet art-note sale with a placeholder artwork breaks our honest-demo rule and is a securities question. A mainnet-safe alternative is a read-only <b>issuer monitor</b> for existing DBC pools.</p></div>
+    <div class="note"><h3>Suggested placement</h3><p>A cuttable Phase 7c after US1–US4, taking the slot of art visuals (T041). Confirm first that Stocklana allows one project to enter sponsor tracks too.</p></div>
+  </div>
+</section>
+
+<section class="ch" id="plan">
+  <div class="ch-head">
+    <span class="num">CHAPTER 11</span>
+    <h2>Build plan</h2>
+    <p class="lede">Built in vertical slices: each story works end to end (program → screen → devnet transaction) before the next one starts. If time runs out, whole stories are cut, never half of each.</p>
+  </div>
+  <div class="days">
+    <div class="day today"><span class="d">MON 14 · today</span><h3>Foundation</h3><ul><li>Toolchain ✓ · app scaffold ✓ · specs ✓</li><li>Anchor workspace (T002)</li><li>State, math, oracle, errors</li></ul></div>
+    <div class="day"><span class="d">TUE 15</span><h3>Program</h3><ul><li>All instructions + tests</li><li>Devnet deploy + seed</li><li>Price signer live</li><li>Home, borrow, repay wired</li></ul></div>
+    <div class="day"><span class="d">WED 16</span><h3>Card</h3><ul><li>Card provider + purchase feed</li><li>Cashback, alerts + web push</li><li>Crash, liquidate</li><li>Switchboard spike · go/no-go 12:00 ET</li></ul></div>
+    <div class="day"><span class="d">THU 17</span><h3>Ship</h3><ul><li>Art + collectibles</li><li>Android APK on a phone</li><li>Vercel, README, video</li></ul></div>
+    <div class="day"><span class="d">FRI 18</span><h3>Submit</h3><ul><li>Buffer · Backpack import</li><li>Submit by noon ET</li></ul></div>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Story</th><th>What a user can do</th><th>Priority</th><th>If late</th></tr></thead>
+    <tbody>
+      <tr><td>US1</td><td>Borrow against a stock and spend it on the card</td><td><span class="pill p-brass">P1</span></td><td>Never cut</td></tr>
+      <tr><td>US2</td><td>Repay and withdraw</td><td><span class="pill p-brass">P1</span></td><td>Never cut</td></tr>
+      <tr><td>US3</td><td>Protect my position: buffer, alerts, push, liquidation</td><td><span class="pill p-line">P2</span></td><td>Keep</td></tr>
+      <tr><td>US4</td><td>Cashback that buys assets</td><td><span class="pill p-line">P2</span></td><td>Keep</td></tr>
+      <tr><td>US5</td><td>Art notes and collectibles as collateral</td><td><span class="pill p-line">P2</span></td><td>Cut 4th</td></tr>
+      <tr><td>Partners</td><td>xStocks guards, Collector Crypt, PSA, Backpack data</td><td><span class="pill p-line">P2</span></td><td>Cut 2nd–3rd</td></tr>
+      <tr><td>US6</td><td>Import from Backpack</td><td><span class="pill p-line">P3</span></td><td>Cut 1st</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="ch" id="decide">
+  <div class="ch-head">
+    <span class="num">CHAPTER 12</span>
+    <h2>Decide before building</h2>
+    <p class="lede">Drawing this blueprint surfaced a few conflicts and open choices. Three are settled; the rest are still open. Each one changes code, so it's cheaper to settle now than on Wednesday.</p>
+  </div>
+  <div class="decisions">
+    <article class="dec">
+      <header><h3>1 · How liquidation risk is handled</h3><span class="pill p-good">Decided Sept 14</span></header>
+      <p>Protect first, liquidate last. A 35% suggested borrow limit with the liquidation price shown; alerts from 55% LTV in-app and through <b>web push</b>, with exact add-stock or repay amounts; if nobody acts, a −30% crash plus one 50% liquidation brings 67.4% down to 52.2%. The acceptance test now reads "no longer liquidatable".</p>
+      <div class="opts"><div class="opt rec"><b>Spec updated</b>spec.md US3 + FR-042–045, parameters.md §4 bands and push copy, wireframes S2/S3, api.md push routes, tasks T056–T061.</div></div>
+    </article>
+    <article class="dec">
+      <header><h3>2 · Signed prices for the demo</h3><span class="pill p-good">Decided Sept 14</span></header>
+      <p>Every demo market uses an admin-set price, so the crash works on all three asset types: NVDAx ("Demo price"), the TIDE art note ("Appraisal") and a graded PSA 10 Pokémon card ("Partner value"). A live stock price shows beside NVDAx once an oracle is available.</p>
+      <div class="opts"><div class="opt rec"><b>Spec updated</b>parameters.md markets + oracle table, spec.md assumptions, tasks T029.</div></div>
+    </article>
+    <article class="dec">
+      <header><h3>3 · Live stock prices</h3><span class="pill p-good">Decided Sept 14</span></header>
+      <p>Pyth equity access costs about $2,500/month and Chainlink Data Streams starts at $150/month per feed, so the MVP uses a hybrid: a <b>price signer</b> posts free xStocks + Jupiter prices (both agreed within 0.03% on Sept 14), and a <b>2-hour Switchboard trial</b> on Wednesday may make SPYx and TSLAx oracle-signed. NVDAx, the art note and the Pokémon card stay signed. Chainlink is the stated production path.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Option</th><th>Cost</th><th>Who signs the price</th><th>Extra work</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td>A · Price signer</td><td class="mono">$0</td><td>Our server key, public sources</td><td>~½ day</td><td><span class="pill p-good">All stocks, Tuesday</span></td></tr>
+          <tr><td>B · Switchboard</td><td class="mono">$0 + SOL fees</td><td>Independent oracle nodes</td><td>+1 day, unknowns</td><td><span class="pill p-warn">Trial Wed 09–11 ET</span></td></tr>
+          <tr><td>C · Chainlink Data Streams</td><td class="mono">from $150/mo</td><td>Official xStocks oracle</td><td>+1 day</td><td><span class="pill p-line">Production</span></td></tr>
+          <tr><td>Pyth Pro equities</td><td class="mono">~$2,500/mo</td><td>Official xStocks oracle</td><td>—</td><td><span class="pill p-line">Not used</span></td></tr>
+        </tbody>
+      </table></div>
+    </article>
+    <article class="dec">
+      <header><h3>4 · Which devnet USDC</h3><span class="pill p-warn">Open</span></header>
+      <p>Bridge's card sandbox uses Circle's devnet USDC, but its faucet may not fill a 5,000+ pool.</p>
+      <div class="opts"><div class="opt rec"><b>Try Circle, fall back to dUSDC</b>Already switchable through an env variable.</div><div class="opt"><b>Mock dUSDC from the start</b>Simplest, but no Bridge path.</div></div>
+    </article>
+    <article class="dec">
+      <header><h3>5 · Wireframes used an old NVDA price</h3><span class="pill p-good">Fixed</span></header>
+      <p>The wireframes and US4 were written with $178; the seed price is now $211.96. For example, $1 of cashback is 0.0047 NVDAx, not 0.0056. This page already uses the new price.</p>
+      <div class="opts"><div class="opt rec"><b>Updated</b>wireframes.md and spec.md now use $211.96.</div></div>
+    </article>
+    <article class="dec">
+      <header><h3>6 · Meteora DBC track</h3><span class="pill p-brass">New idea</span></header>
+      <p>See Chapter 10. It only fits through our own art note, and it costs about a day.</p>
+      <div class="opts">
+        <div class="opt rec"><b>Devnet art-note launch, cuttable</b>After US1–US4, replaces T041.</div>
+        <div class="opt"><b>Mainnet read-only issuer monitor</b>Satisfies "mainnet", but it's weaker for StockCard.</div>
+        <div class="opt"><b>Skip</b>Protects the core deadline.</div>
+      </div>
+    </article>
+    <article class="dec">
+      <header><h3>7 · Mac mini toolchain drift</h3><span class="pill p-line">Housekeeping</span></header>
+      <p>This machine runs Rust 1.96.1; parameters.md pins 1.98.1. Solana isn't on the zsh PATH yet.</p>
+      <div class="opts"><div class="opt rec"><b><code>rustup update</code> + one PATH line</b>Before T002, so both machines build the same way.</div></div>
+    </article>
+  </div>
+</section>
+
+<footer>Sources: PLAN.md, RESEARCH.md, specs/001-stockcard-mvp (spec, plan, parameters, wireframes, data-model, contracts, integrations, tasks), constitution.md, Meteora DBC docs and SDK reference (checked Sept 14, 2026). Draft for review; nothing here is built yet unless marked Built.</footer>
+
+<script>
+(function(){
+  var btn=document.getElementById('theme-toggle');
+  btn.addEventListener('click',function(){
+    var root=document.documentElement;
+    var cur=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    root.setAttribute('data-theme',cur==='dark'?'light':'dark');
+  });
+
+  var NS='http://www.w3.org/2000/svg';
+  function el(tag,attrs,text){var e=document.createElementNS(NS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;return e;}
+  function seq(id,lanes,msgs){
+    var svg=document.getElementById(id); if(!svg)return;
+    var colW=175, left=95, top=64, rowH=40;
+    var W=left*2+colW*(lanes.length-1), H=top+msgs.length*rowH+30;
+    svg.setAttribute('viewBox','0 0 '+W+' '+H);
+    var defs=el('defs',{});
+    [['sa','f-ink'],['sab','f-brass']].forEach(function(m){
+      var mk=el('marker',{id:id+m[0],viewBox:'0 0 10 10',refX:'9',refY:'5',markerWidth:'7',markerHeight:'7',orient:'auto'});
+      mk.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z','class':m[1]})); defs.appendChild(mk);
+    });
+    svg.appendChild(defs);
+    function x(i){return left+i*colW;}
+    lanes.forEach(function(name,i){
+      svg.appendChild(el('line',{x1:x(i),y1:top-14,x2:x(i),y2:H-10,'class':'line-3 dash'}));
+      svg.appendChild(el('rect',{x:x(i)-72,y:8,width:144,height:36,rx:8,'class':'box'}));
+      svg.appendChild(el('text',{x:x(i),y:31,'text-anchor':'middle','font-size':'13','font-weight':'600'},name));
+    });
+    msgs.forEach(function(m,r){
+      var y=top+r*rowH+18, a=m[0], b=m[1], cls=m[3]||'';
+      var brass=cls.indexOf('brass')>-1, dash=cls.indexOf('dash')>-1;
+      svg.appendChild(el('text',{x:14,y:y+4,'class':'t-mono t-3','font-size':'10.5'},String(r+1).padStart(2,'0')));
+      if(a===b){
+        var w=m[2].length*6.4+20, tx=x(a)+10;
+        if(tx+w>W-8) tx=x(a)-10-w;
+        var t=el('text',{x:tx+10,y:y+4,'font-size':'12','class':brass?'t-brass':'t-2'},m[2]);
+        svg.appendChild(el('rect',{x:tx,y:y-11,width:w,height:22,rx:5,'class':'zone-fill'}));
+        svg.appendChild(t);
+      }else{
+        var x1=x(a)+(b>a?4:-4), x2=x(b)+(b>a?-4:4);
+        svg.appendChild(el('line',{x1:x1,y1:y,x2:x2,y2:y,'class':(brass?'line-brass':'line')+(dash?' dash':''),'marker-end':'url(#'+id+(brass?'sab':'sa')+')'}));
+        svg.appendChild(el('text',{x:(x(a)+x(b))/2,y:y-6,'text-anchor':'middle','font-size':'12','class':brass?'t-brass':'','font-weight':brass?'600':'400'},m[2]));
+      }
+    });
+  }
+  seq('seq-borrow',['xStocks · Jupiter','Price signer','Program','App + wallet','User'],[
+    [1,0,'Every 60 s: get NVDAx price from both'],
+    [0,1,'$212.245 · $212.18','dash'],
+    [1,1,'Agree within 2%? Yes → post mean'],
+    [1,2,'set_signed_price $212.21 (source Market)'],
+    [4,3,'Borrow $1,000 to card'],
+    [3,3,'Preview: LTV 0% → 47.2%, $0.22/day'],
+    [4,3,'Sign'],
+    [3,2,'borrow(1,000)'],
+    [2,2,'Add interest · price ≤ 180s old · LTV ≤ 50% · pool has USDC'],
+    [2,4,'+$1,000 USDC in card wallet','brass']
+  ]);
+  seq('seq-card',['User','App','Server','Solana','Merchant'],[
+    [0,1,'Set card limit $500 (once)'],
+    [1,3,'Approve delegate: card may spend $500','dash'],
+    [0,1,'Test purchase $62.15'],
+    [1,2,'POST /api/card/simulate · wallet-signed'],
+    [2,3,'Read card limit + USDC balance'],
+    [2,2,'Within limit? Enough USDC? Not frozen?'],
+    [2,3,'Transfer $62.15 as delegate'],
+    [3,4,'+$62.15 USDC settled','brass'],
+    [2,2,'Save purchase · cashback 1% = $0.62'],
+    [2,3,'deposit_collateral_for +0.0029 NVDAx','brass'],
+    [2,1,'Settled + explorer link','dash'],
+    [1,0,'Feed row: Settled · +0.0029 NVDAx','dash']
+  ]);
+  seq('seq-liq',['Admin panel','Server','Program','Phone','User'],[
+    [0,1,'Crash NVDAx −30%'],
+    [1,2,'set_signed_price $148.37'],
+    [1,1,'Alert check: LTV 47.2% → 67.4% = Liquidatable'],
+    [1,3,'Web push: "Add 3.48 NVDAx or repay $258.14"','dash'],
+    [3,4,'Notification → tap → deposit sheet prefilled'],
+    [4,2,'deposit_collateral 3.48 NVDAx (wallet-signed)','brass'],
+    [2,2,'LTV 67.4% → 50.0% · Healthy'],
+    [0,1,'If nobody acts: Liquidate 50%'],
+    [1,2,'liquidate(repay $500)'],
+    [2,2,'Price fresh · LTV > 65% · repay ≤ half of debt'],
+    [2,1,'3.538 NVDAx to liquidator (5% bonus)','brass'],
+    [2,2,'Result: 52.2% · no longer liquidatable']
+  ]);
+})();
+</script>
+</main>
+</div>

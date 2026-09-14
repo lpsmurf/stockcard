@@ -4,7 +4,7 @@ A credit card backed by your stocks, on Solana. You lock tokenized US stocks (xS
 
 - **Hackathon:** [Stocklana](https://hackathons.solana.com/hackathons/stocklana). Track: Credit & yield + Consumer
 - **Deadline:** Fri Sept 18, 2026, 4:00 PM ET
-- **Stack:** Anchor program (devnet) + Next.js app + Pyth equity oracles + Bridge/Stripe card sandbox
+- **Stack:** Anchor program (devnet) + Next.js app + stock prices from a price signer (xStocks + Jupiter), Switchboard spike, Chainlink as production path + Bridge/Stripe card sandbox
 
 ## Status
 Planning done, no code yet. See:

@@ -22,7 +22,7 @@ Values: parameters.md. Screens: wireframes.md.
 ## Phase 1: Setup (Mon Sept 14)
 
 - [x] T001 Install toolchain: rustup, Anchor CLI 1.2.0 (crates.io), verify `solana`, `anchor --version`
-- [ ] T002 Create Anchor workspace at repo root: `Anchor.toml`, `Cargo.toml`, `programs/stockcard/Cargo.toml` (anchor-lang 1.2, anchor-spl 1.2, pyth-solana-receiver-sdk 2.0), `tests/stockcard.ts`
+- [ ] T002 Create Anchor workspace at repo root: `Anchor.toml`, `Cargo.toml`, `programs/stockcard/Cargo.toml` (anchor-lang 1.2, anchor-spl 1.2; no oracle crate yet), `tests/stockcard.ts`
 - [x] T003 [P] Scaffold Next.js 16 app in `app/` (TypeScript, Tailwind 4, App Router, `src/`), add `@anchor-lang/core`, `@solana/web3.js`, wallet adapter, `@solana-mobile/wallet-standard-mobile`, react-query
 - [x] T004 [P] Brand tokens and fonts in `app/src/styles/tokens.css` + `app/src/app/layout.tsx` (ui.md tokens, both themes)
 - [ ] T005 [P] Update `.env.example` with all app and server variables from contracts/api.md
@@ -32,11 +32,11 @@ Values: parameters.md. Screens: wireframes.md.
 
 - [ ] T007 `programs/stockcard/src/state.rs`: Config, Market, Position, SignedPrice, enums (data-model.md)
 - [ ] T008 [P] `programs/stockcard/src/errors.rs` + events
-- [ ] T009 [P] `programs/stockcard/src/math.rs`: accrue, collateral value, ltv, seize amount (u128, checked, round in protocol's favor) + unit tests
-- [ ] T010 `programs/stockcard/src/oracle.rs`: read Pyth PriceUpdateV2 or SignedPrice with staleness + closed-market fallback; read the Token-2022 Scaled UI Amount multiplier from the collateral mint (integrations.md)
+- [ ] T009 [P] `programs/stockcard/src/math.rs`: accrue (position APR, reserve share), APR band selection, collateral value, ltv, seize amount, savings shares ↔ amount, utilization (u128, checked, round in protocol's favor) + unit tests
+- [ ] T010 `programs/stockcard/src/oracle.rs`: read `SignedPrice` (sources Market / Appraisal / PartnerFmv / Demo) with staleness + closed-market fallback, behind an `oracle_kind` match so a `Switchboard` arm can be added in T029b; read the Token-2022 Scaled UI Amount multiplier from the collateral mint (integrations.md)
 - [ ] T011b Issuer-control guards in `oracle.rs`/instructions: vault balance reconciliation (`impaired` market), mint `paused` and vault-frozen checks, block market if a transfer hook program is set; store extension flags in `Market` (integrations.md "Issuer controls")
 - [ ] T011 `init_config`, `add_market`, `update_market`, `set_signed_price`, `fund_pool`, `set_pause` in `programs/stockcard/src/instructions/`
-- [x] T012 [P] `app/src/lib/risk.ts`: same math as T009 for previews
+- [x] T012 [P] `app/src/lib/risk.ts`: same math as T009 for previews (**reopen**: add APR bands, reserve share, savings share math)
 - [x] T013 [P] WalletProvider (Wallet Standard + MWA registration) in `app/src/components/providers.tsx`; connect button; wrong-network banner
 - [ ] T014 [P] App shell: bottom tabs / desktop rail, `MockBadge` (done) · toasts, banners, loading/empty/error states (to do)
 - [ ] T015 `app/src/lib/program.ts`: Anchor client, PDA helpers, account fetch hooks (react-query)
@@ -55,7 +55,7 @@ Values: parameters.md. Screens: wireframes.md.
 - [ ] T020 [US1] Deploy to devnet, run seed, commit program id to `.env.example` and `Anchor.toml`
 
 ### App
-- [ ] T021 [P] [US1] `/api/faucet` route with rate limit (Redis or memory)
+- [ ] T021 [P] [US1] `/api/faucet` test money (100,000 dUSDC once, 10,000/24 h) with rate limit (Redis or memory)
 - [ ] T022 [P] [US1] S7 Assets screen + S8 deposit sheet
 - [ ] T023 [US1] S2 Home: available credit, health bar, debt row
 - [ ] T024 [US1] S3 Borrow sheet with preview; destination = user's USDC ATA (card wallet)
@@ -63,7 +63,8 @@ Values: parameters.md. Screens: wireframes.md.
 - [ ] T026 [US1] `/api/card` (create/get/patch), `/api/card/simulate`, `/api/card/transactions` with wallet-signature auth
 - [x] T027 [P] [US1] `CreditCard` component (ui.md; masking approach adapted from crd-ui, MIT, attribution in file header)
 - [ ] T028 [US1] S5 Card screen: create card, set limit (SPL approve), feed; S6 test purchase sheet
-- [ ] T029 [US1] (Optional, Wed noon decision) Pyth path: Hermes update + post in same tx for equity markets; otherwise switch equities to Signed "Demo price"
+- [ ] T029a [US1] Price signer: `/api/prices/sync` (CRON_SECRET) reads xStocks `price-data` + Jupiter Price v3 (SPCX: Backpack External + Jupiter), posts `set_signed_price` source `Market` when sources agree within 200 bps; skips markets under a `Demo` override; QStash every 60 s (parameters.md "Price signer")
+- [ ] T029b [US1] (Wed 09:00–11:00 ET spike, go/no-go 12:00) Switchboard: add `switchboard-on-demand` 0.13.x, confirm it builds with anchor-lang 1.2; create a custom SPYx devnet feed from the same sources; add `OracleKind::Switchboard` arm in `oracle.rs` + client update in the borrow tx; test. Go → SPYx/TSLAx switch; no-go → revert the branch, stay on T029a
 
 **Checkpoint**: US1 acceptance scenarios 1–4 pass on devnet.
 
@@ -75,18 +76,33 @@ Values: parameters.md. Screens: wireframes.md.
 
 **Checkpoint**: Full P1 loop on devnet; `scripts/smoke-devnet.ts` prints explorer links.
 
-## Phase 5: US3 Health, crash, liquidation (P2)
+## Phase 5: US3 Protect my position: buffer, alerts, top-up, liquidation (P2)
 
-- [ ] T033 [US3] Tests: liquidate healthy fails; after price drop succeeds; close factor; seize amount
+- [ ] T033 [US3] Tests: liquidate healthy fails; $1,000 on 10 NVDAx, crash −30% → liquidatable; liquidate $500 seizes 3.538 NVDAx and ends at 52.2%; second liquidation fails `NotLiquidatable`; close factor; top-up of 3.48 NVDAx returns LTV ≤ 50%
 - [ ] T034 [US3] `liquidate` instruction
 - [ ] T035 [P] [US3] `/api/admin/price` (crash/restore) and `/api/admin/liquidate`, devnet + ADMIN_TOKEN guard
-- [ ] T036 [US3] S11 Admin screen; health bar red state + "at risk" banner on Home
+- [ ] T036 [US3] S11 Admin screen (crash −30% on Signed markets, restore, liquidate); health bar red state
+- [ ] T056 [P] [US3] `app/src/lib/risk.ts`: `liquidationPrice`, `alertBand`, `fixAmounts` (add collateral tokens / repay USDC to reach max LTV) + unit checks against the demo script numbers in parameters.md §4
+- [ ] T057 [US3] S3 Borrow sheet: liquidation price and "−X%" line, suggested max 35% hint
+- [ ] T058 [US3] S2 Home alert banners by band with prefilled [Add stock] → S8 deposit and (Repay) → S4; "Turn on alerts" card
+- [ ] T059 [P] [US3] Web push: VAPID keys, `web-push`, `/api/push/subscribe` (POST/DELETE, wallet-signed), `/api/push/test`, `push`/`notificationclick` handlers in `public/sw.js`, client subscribe hook
+- [ ] T060 [US3] `/api/alerts/check` (CRON_SECRET): read positions + prices, compute bands, dedupe with `alert:{owner}:{market}`, send pushes; call it inline from `/api/admin/price`
+- [ ] T061 [US3] Upstash QStash 5-minute schedule for `/api/alerts/check`; verify a push arrives on Android Chrome and desktop Chrome (and note whether the webshell APK receives it)
 
 ## Phase 6: US4 Cashback in assets (P2)
 
 - [ ] T037 [US4] `/api/cashback/process`: tier %, price lookup, `deposit_collateral_for` from cashback treasury, idempotent by txId; called after settle
 - [ ] T038 [US4] S9 Cashback screen (tier toggle, asset picker); cashback rows in feed and S6 preview
 - [ ] T039 [US4] Test: `deposit_collateral_for` rejects non-authority (in T018 suite)
+
+## Phase 6b: US8 Demo Shop (P1 stocks, P2 items) and US7 Savings (P2)
+
+- [ ] T070 [US8] Seed: dUSDC mint, six mirrored item markets from Collector Crypt (parameters.md §3c), TIDE; write `app/src/lib/shop-items.json` (name, grade, image, insured value, source URL)
+- [ ] T071 [P] [US8] `/api/shop/items` and `/api/shop/buy` (verify dUSDC transfer, mint token, idempotent) + `ShopOrder` records
+- [ ] T072 [US8] S13 Demo Shop screen: tabs Stocks / Cards / Watches / Art, item cards with image + insured value + credit it unlocks, buy sheet, "Lock as collateral" after purchase
+- [ ] T073 [US7] Program: `deposit_savings`, `withdraw_savings`, `claim_reserve`; reserve and `total_borrowed` accounting in accrue/borrow/repay/liquidate; utilization cap; tests from contracts/program.md
+- [ ] T074 [US7] S12 Savings screen: balance, current APY (`utilization × weighted APR × 0.60`), utilization bar, deposit/withdraw sheets, instant-withdrawable amount, founding saver badge
+- [ ] T075 [US1] APR bands in the Borrow sheet and Home ("APR 12.9% · drops to 9.9% under 20% LTV"), tier/founding discounts shown as off-chain previews
 
 ## Phase 7: US5 Art notes and collectibles (P2)
 
@@ -95,7 +111,7 @@ Values: parameters.md. Screens: wireframes.md.
 
 ## Phase 7b: Partner data adapters (P2, after US1–US4)
 
-- [ ] T055 [P] `app/src/lib/partners/backpack-public.ts`: SPCX asset (mint, withdraw enabled), external ticker, perp mark price, depth; Assets screen shows SPCX "Withdraw from Backpack to use" and price cross-check vs Pyth
+- [ ] T055 [P] `app/src/lib/partners/backpack-public.ts`: SPCX asset (mint, withdraw enabled), external ticker, perp mark price, depth; Assets screen shows SPCX "Withdraw from Backpack to use" and price cross-check vs the signer price
 - [ ] T050 [P] `app/src/lib/partners/xstocks.ts`: typed client for public assets, price-data, multiplier, system status, proof of reserves (integrations.md); used by Assets screen and admin guard
 - [ ] T051 [US3] `/api/admin/guards`: if xStocks halt or reserves < supply → call `update_market` to pause borrowing on that market; show "Trading halted" chip
 - [ ] T052 [P] [US5] `app/src/lib/partners/collectorcrypt.ts`: `publicNft/:mint` and `/market` reads; Assets screen lists a wallet's Collector Crypt cards as "Eligible soon" with insured value (read-only in MVP)
@@ -104,7 +120,7 @@ Values: parameters.md. Screens: wireframes.md.
 
 ## Phase 8: Android + polish + submission (Thu–Fri)
 
-- [ ] T042 PWA: `manifest.webmanifest`, icons, theme color, minimal service worker (app shell only)
+- [ ] T042 PWA: `manifest.webmanifest`, icons, theme color, minimal service worker (app shell + push handlers from T059)
 - [ ] T043 Install JDK 17 + Android SDK; `solana-mobile webshell init/build`; install APK on a device; verify MWA connect + P1 flow
 - [ ] T044 [P] 360 px pass on every screen; reduced motion; focus states
 - [ ] T045 Vercel production deploy with env; verify no console errors
@@ -119,4 +135,4 @@ Values: parameters.md. Screens: wireframes.md.
 - T016 needs T011 + T020 (program id)
 - US3/US4/US5 depend on US1 (+US2 for liquidation). They're independent of each other.
 - T011b is NOT cuttable if any real mint is used; for all-mock demo it can be reduced to the paused/frozen checks.
-- Cut order if late: T048 → T055 → T052–T054 → T041 → T029 → T040 (keep US1–US4). T010 multiplier handling is NOT cuttable for real xStocks; for the demo it's required only if the mock mints use Token-2022.
+- Cut order if late: T048 → T055 → T052–T054 → T041 → T029b → T061 (keep push on admin price change only) → T040 (keep US1–US4). T010 multiplier handling is NOT cuttable for real xStocks; for the demo it's required only if the mock mints use Token-2022.
