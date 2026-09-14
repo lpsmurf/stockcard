@@ -10,7 +10,7 @@ pub mod state;
 use instructions::*;
 use state::{AssetClass, OracleKind, PriceSource, RateBand};
 
-declare_id!("B3Rnj6RMY3oReVWktyQXyxLQSbM1oQGdUQJvLzBd1Net");
+declare_id!("HsXyxfSvp7mha6bxgh3Qr9NoVmMVe6HmynVguRfBLWrY");
 
 #[program]
 pub mod stockcard {

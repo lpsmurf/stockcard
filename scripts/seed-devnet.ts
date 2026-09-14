@@ -33,8 +33,39 @@ import * as path from "node:path";
 import bs58 from "bs58";
 
 const ROOT = path.resolve(__dirname, "..");
-const PROGRAM_ID = new PublicKey("B3Rnj6RMY3oReVWktyQXyxLQSbM1oQGdUQJvLzBd1Net");
-const RPC = process.env.NEXT_PUBLIC_SOLANA_RPC ?? "https://api.devnet.solana.com";
+const PROGRAM_ID = new PublicKey("HsXyxfSvp7mha6bxgh3Qr9NoVmMVe6HmynVguRfBLWrY");
+
+function readEnvFile(): Map<string, string> {
+  const file = path.join(ROOT, "app", ".env.local");
+  const map = new Map<string, string>();
+  if (fs.existsSync(file)) {
+    for (const line of fs.readFileSync(file, "utf8").split("\n")) {
+      const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
+      if (m) map.set(m[1], m[2]);
+    }
+  }
+  return map;
+}
+
+const RPC =
+  process.env.NEXT_PUBLIC_SOLANA_RPC ??
+  readEnvFile().get("NEXT_PUBLIC_SOLANA_RPC") ??
+  "https://api.devnet.solana.com";
+
+/** Retry on-chain calls through RPC rate limits. */
+async function withRetry<T>(fn: () => Promise<T>, label = "op"): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      const msg = String(e);
+      if (attempt >= 8 || !/429|Too many|rate|timeout|Timed out|fetch failed|Blockhash not found|blockhash/i.test(msg)) throw e;
+      const wait = Math.min(1000 * 2 ** attempt, 20_000);
+      console.log(`  retry ${label} in ${wait}ms (${msg.slice(0, 60)})`);
+      await new Promise((r) => setTimeout(r, wait));
+    }
+  }
+}
 
 const EXPO = -6;
 const usd6 = (usd: number) => new anchor.BN(Math.round(usd * 1e6));
@@ -107,17 +138,6 @@ function loadAuthorities(): Record<string, Keypair> {
   return auths;
 }
 
-function readEnvFile(): Map<string, string> {
-  const file = path.join(ROOT, "app", ".env.local");
-  const map = new Map<string, string>();
-  if (fs.existsSync(file)) {
-    for (const line of fs.readFileSync(file, "utf8").split("\n")) {
-      const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
-      if (m) map.set(m[1], m[2]);
-    }
-  }
-  return map;
-}
 
 function upsertEnvFile(updates: Record<string, string>) {
   const file = path.join(ROOT, "app", ".env.local");
@@ -192,22 +212,38 @@ async function main() {
   const collVaultPda = (market: PublicKey) => pda(Buffer.from("collateral_vault"), market.toBuffer());
   const pricePda = (market: PublicKey) => pda(Buffer.from("price"), market.toBuffer());
 
-  // dUSDC (6 decimals, mint authority = faucet authority)
+  // dUSDC (6 decimals, mint authority = faucet authority). If the env mint exists but
+  // isn't controlled by our faucet authority (e.g. Circle devnet USDC), create our own.
   let usdcMint: PublicKey;
   const existingUsdc = env.get("NEXT_PUBLIC_USDC_MINT");
+  let reuseUsdc = false;
   if (existingUsdc) {
-    usdcMint = new PublicKey(existingUsdc);
+    const addr = new PublicKey(existingUsdc);
+    const info = await withRetry(() => connection.getAccountInfo(addr), "check usdc mint");
+    if (info) {
+      const { unpackMint } = await import("@solana/spl-token");
+      const mint = unpackMint(addr, info, TOKEN_PROGRAM_ID);
+      reuseUsdc = mint.mintAuthority !== null && mint.mintAuthority.equals(auths.faucet.publicKey);
+      if (!reuseUsdc) console.log("existing USDC_MINT not controlled by faucet authority; creating fresh dUSDC");
+    }
+  }
+  if (reuseUsdc) {
+    usdcMint = new PublicKey(existingUsdc!);
   } else {
     const { createMint } = await import("@solana/spl-token");
-    usdcMint = await createMint(connection, admin, auths.faucet.publicKey, null, 6, undefined, undefined, TOKEN_PROGRAM_ID);
+    usdcMint = await withRetry(
+      () => createMint(connection, admin, auths.faucet.publicKey, null, 6, undefined, undefined, TOKEN_PROGRAM_ID),
+      "create dUSDC",
+    );
     console.log("dUSDC mint:", usdcMint.toBase58());
     updates["NEXT_PUBLIC_USDC_MINT"] = usdcMint.toBase58();
+    upsertEnvFile(updates); // incremental: never lose a created mint on crash
   }
 
   // init_config (skip if present)
-  const configInfo = await connection.getAccountInfo(configPda);
+  const configInfo = await withRetry(() => connection.getAccountInfo(configPda), "fetch config");
   if (!configInfo) {
-    await program.methods
+    await withRetry(() => program.methods
       .initConfig(4000, 9000, 5000, auths.cashback.publicKey, admin.publicKey)
       .accounts({
         admin: admin.publicKey,
@@ -216,7 +252,7 @@ async function main() {
         usdcVault: usdcVaultPda,
         tokenProgram: TOKEN_PROGRAM_ID,
       })
-      .rpc();
+      .rpc(), "init_config");
     console.log("init_config done");
   } else {
     console.log("config exists, skipping init");
@@ -225,46 +261,58 @@ async function main() {
   // mock mints + markets + prices
   for (const spec of SPECS) {
     let mint: PublicKey;
-    const existing = env.get(spec.envKey);
+    const existing = readEnvFile().get(spec.envKey); // re-read: earlier iterations upserted
     if (existing) {
       mint = new PublicKey(existing);
     } else {
-      mint = await createMockMint(connection, admin, spec, auths.faucet.publicKey, admin.publicKey);
+      mint = await withRetry(
+        () => createMockMint(connection, admin, spec, auths.faucet.publicKey, admin.publicKey),
+        `create ${spec.symbol}`,
+      );
       console.log(`${spec.symbol} mint:`, mint.toBase58());
       updates[spec.envKey] = mint.toBase58();
+      upsertEnvFile(updates); // incremental: never lose a created mint on crash
     }
     const market = marketPda(mint);
-    const marketInfo = await connection.getAccountInfo(market);
+    const marketInfo = await withRetry(() => connection.getAccountInfo(market), `fetch ${spec.symbol} market`);
     if (!marketInfo) {
-      await program.methods
-        .addMarket(
-          { [spec.assetClass]: {} },
-          { signed: {} },
-          PublicKey.default,
-          spec.risk.maxLtv,
-          spec.risk.liq,
-          spec.risk.bonus,
-          spec.risk.haircut,
-          spec.bands,
-          spec.risk.maxAge,
-          spec.risk.closedAge,
-          spec.risk.closedHaircut,
-        )
-        .accounts({
-          admin: admin.publicKey,
-          config: configPda,
-          collateralMint: mint,
-          market,
-          collateralVault: collVaultPda(market),
-          tokenProgram: spec.token2022 ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID,
-        })
-        .rpc();
+      await withRetry(
+        () =>
+          program.methods
+            .addMarket(
+              { [spec.assetClass]: {} },
+              { signed: {} },
+              PublicKey.default,
+              spec.risk.maxLtv,
+              spec.risk.liq,
+              spec.risk.bonus,
+              spec.risk.haircut,
+              spec.bands,
+              spec.risk.maxAge,
+              spec.risk.closedAge,
+              spec.risk.closedHaircut,
+            )
+            .accounts({
+              admin: admin.publicKey,
+              config: configPda,
+              collateralMint: mint,
+              market,
+              collateralVault: collVaultPda(market),
+              tokenProgram: spec.token2022 ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID,
+            })
+            .rpc(),
+        `add ${spec.symbol} market`,
+      );
       console.log(`${spec.symbol} market added`);
     }
-    await program.methods
-      .setSignedPrice(usd6(spec.priceUsd), EXPO, { [spec.source]: {} })
-      .accounts({ signer: admin.publicKey, config: configPda, market, signedPrice: pricePda(market) })
-      .rpc();
+    await withRetry(
+      () =>
+        program.methods
+          .setSignedPrice(usd6(spec.priceUsd), EXPO, { [spec.source]: {} })
+          .accounts({ signer: admin.publicKey, config: configPda, market, signedPrice: pricePda(market) })
+          .rpc(),
+      `price ${spec.symbol}`,
+    );
     console.log(`${spec.symbol} price $${spec.priceUsd}`);
   }
 
@@ -273,21 +321,25 @@ async function main() {
   try {
     await createAssociatedTokenAccount(connection, admin, usdcMint, admin.publicKey);
   } catch {}
-  const vaultBal = await connection.getTokenAccountBalance(usdcVaultPda).catch(() => null);
+  const vaultBal = await withRetry(() => connection.getTokenAccountBalance(usdcVaultPda).catch(() => null), "vault balance");
   if (!vaultBal || BigInt(vaultBal.value.amount) < 2_000_000_000_000n) {
-    await mintTo(connection, admin, usdcMint, adminUsdc, auths.faucet, 2_500_000_000_000n);
-    await program.methods
-      .depositSavings(new anchor.BN("2000000000000"))
-      .accounts({
-        saver: admin.publicKey,
-        config: configPda,
-        usdcVault: usdcVaultPda,
-        saverUsdc: adminUsdc,
-        usdcMint,
-        savingsPosition: pda(Buffer.from("savings"), admin.publicKey.toBuffer()),
-        usdcTokenProgram: TOKEN_PROGRAM_ID,
-      })
-      .rpc();
+    await withRetry(() => mintTo(connection, admin, usdcMint, adminUsdc, auths.faucet, 2_500_000_000_000n), "mint pool dUSDC");
+    await withRetry(
+      () =>
+        program.methods
+          .depositSavings(new anchor.BN("2000000000000"))
+          .accounts({
+            saver: admin.publicKey,
+            config: configPda,
+            usdcVault: usdcVaultPda,
+            saverUsdc: adminUsdc,
+            usdcMint,
+            savingsPosition: pda(Buffer.from("savings"), admin.publicKey.toBuffer()),
+            usdcTokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .rpc(),
+      "fund pool",
+    );
     console.log("pool funded with 2,000,000 dUSDC");
   } else {
     console.log("pool already funded, skipping");
@@ -295,16 +347,16 @@ async function main() {
 
   // cashback treasury: >= 1,000 of each cashback asset (NVDAx, SPYx, TIDE)
   for (const spec of SPECS.filter((s) => ["NVDAx", "SPYx", "TIDE"].includes(s.symbol))) {
-    const mint = new PublicKey(updates[spec.envKey] ?? env.get(spec.envKey)!);
+    const mint = new PublicKey(updates[spec.envKey] ?? readEnvFile().get(spec.envKey)!);
     const tokenProgram = spec.token2022 ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
     const ata = getAssociatedTokenAddressSync(mint, auths.cashback.publicKey, false, tokenProgram);
     try {
       await createAssociatedTokenAccount(connection, admin, mint, auths.cashback.publicKey, undefined, tokenProgram);
     } catch {}
-    const bal = await connection.getTokenAccountBalance(ata).catch(() => null);
+    const bal = await withRetry(() => connection.getTokenAccountBalance(ata).catch(() => null), "treasury balance");
     const target = 1000n * 10n ** BigInt(spec.decimals);
     if (!bal || BigInt(bal.value.amount) < target) {
-      await mintTo(connection, admin, mint, ata, auths.faucet, target, [], undefined, tokenProgram);
+      await withRetry(() => mintTo(connection, admin, mint, ata, auths.faucet, target, [], undefined, tokenProgram), `mint ${spec.symbol} treasury`);
       console.log(`cashback treasury: 1,000 ${spec.symbol}`);
     }
   }

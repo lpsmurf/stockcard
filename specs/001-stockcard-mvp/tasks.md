@@ -40,7 +40,7 @@ Values: parameters.md. Screens: wireframes.md.
 - [x] T013 [P] WalletProvider (Wallet Standard + MWA registration) in `app/src/components/providers.tsx`; connect button; wrong-network banner
 - [ ] T014 [P] App shell: bottom tabs / desktop rail, `MockBadge` (done) · toasts, banners, loading/empty/error states (to do)
 - [ ] T015 `app/src/lib/program.ts`: Anchor client, PDA helpers, account fetch hooks (react-query)
-- [ ] T016 `scripts/seed-devnet.ts`: mock mints matching mainnet (NVDAx, SPYx, TSLAx: Token-2022, **8 decimals**, Scaled UI Amount + Pausable + Permanent Delegate; SPCX: Token-2022, 6 decimals, same extensions; TIDE, PSA10; optional dUSDC), markets with plan.md parameters, signed prices, fund pool, set authorities
+- [x] T016 `scripts/seed-devnet.ts`: mock mints matching mainnet (NVDAx, SPYx, TSLAx: Token-2022, **8 decimals**, Scaled UI Amount + Pausable + Permanent Delegate; SPCX: Token-2022, 6 decimals, same extensions; TIDE, PSA10; optional dUSDC), markets with plan.md parameters, signed prices, fund pool, set authorities
 
 **Checkpoint**: `anchor build` passes, app connects a wallet on desktop and Android Chrome.
 
@@ -52,7 +52,7 @@ Values: parameters.md. Screens: wireframes.md.
 ### Program
 - [x] T018 [US1] `deposit_collateral` + `deposit_collateral_for` (authority check)
 - [x] T019 [US1] `borrow` with LTV and liquidity checks
-- [ ] T020 [US1] Deploy to devnet, run seed, commit program id to `.env.example` and `Anchor.toml`
+- [x] T020 [US1] Deploy to devnet, run seed, commit program id to `.env.example` and `Anchor.toml`
 
 ### App
 - [ ] T021 [P] [US1] `/api/faucet` test money (100,000 dUSDC once, 10,000/24 h) with rate limit (Redis or memory)

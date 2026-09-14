@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-stockcard = "B3Rnj6RMY3oReVWktyQXyxLQSbM1oQGdUQJvLzBd1Net"
+stockcard = "HsXyxfSvp7mha6bxgh3Qr9NoVmMVe6HmynVguRfBLWrY"
 
 [provider]
 cluster = "devnet"
