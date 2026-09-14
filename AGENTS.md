@@ -105,6 +105,17 @@ Android testing on the same network: open `http://<lan-ip>:3000` in Android Chro
 - `components/` — CreditCard, HealthBar, MockBadge, AppShell, etc. (see ui.md).
 - `lib/` — `program.ts` (Anchor client from IDL + PDA helpers + react-query hooks), `risk.ts` (previews), `prices.ts` (price signer sources), `card/{provider,mock,bridge}.ts`, `kv.ts`, `partners/*.ts`, `idl/`.
 
+## Architecture diagrams (Archify)
+
+All architecture, workflow, sequence, data-flow and lifecycle diagrams use **Archify**, vendored at `.claude/skills/archify` (v2.17.0-dev.1, MIT, from github.com/tt-a1i/archify @ 851b279). No hand-drawn SVG, Mermaid or ASCII diagrams in new docs.
+
+- Sources live in `docs/architecture/<name>.<type>.json` (typed JSON, reviewed in PRs); the HTML next to it is generated. Current map: `docs/architecture/stockcard-mvp.architecture.json`.
+- Workflow: read `.claude/skills/archify/SKILL.md`, then from `.claude/skills/archify` run
+  `node bin/archify.mjs validate <type> <file>.json --quality showcase --json` → fix diagnostics → `node bin/archify.mjs deliver <type> <file>.json <file>.html --quality showcase --json` → `node bin/archify.mjs visual-check <file>.html --json`. Only a zero-exit deliver plus a passing visual-check counts as done.
+- When a change alters the architecture (new component, route, oracle, custody or trust boundary), update the JSON in the same PR and render a before/after with `node bin/archify.mjs compare architecture <base.json> <head.json> <compare.html>`.
+- Keep facts in sync with `specs/001-stockcard-mvp` (parameters.md wins). Mark mocks and non-partners honestly in labels/cards.
+- Don't upgrade the vendored copy without asking Luis; set `ARCHIFY_UPDATE_CHECK_DISABLED=1` in CI.
+
 ## Rules and conventions
 
 - **Next.js 16 is not the Next.js you know** — breaking changes vs training data. Read the relevant guide in `app/node_modules/next/dist/docs/` before using any Next API (see `app/AGENTS.md`).

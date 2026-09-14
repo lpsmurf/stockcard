@@ -1,0 +1,304 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "StockCard MVP architecture",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "borrow-path",
+        "label": "Borrow path",
+        "focus": [
+          "wallet",
+          "app",
+          "program",
+          "vaults"
+        ],
+        "note": "The user's wallet signs every money action straight to the program."
+      },
+      {
+        "id": "server-keys",
+        "label": "Server actions",
+        "focus": [
+          "api",
+          "program",
+          "card",
+          "redis"
+        ],
+        "note": "Server keys only spend within the card limit, add cashback and mint test assets."
+      },
+      {
+        "id": "prices",
+        "label": "Price path",
+        "focus": [
+          "sources",
+          "signer",
+          "program"
+        ],
+        "note": "Public prices are posted on-chain only when two sources agree within 2%."
+      }
+    ],
+    "viewBox": [
+      1020,
+      500
+    ]
+  },
+  "components": [
+    {
+      "id": "wallet",
+      "type": "external",
+      "label": "User wallet",
+      "sublabel": "Phantom · Solflare",
+      "pos": [
+        40,
+        70
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "app",
+      "type": "frontend",
+      "label": "StockCard app",
+      "sublabel": "Next.js PWA · APK",
+      "pos": [
+        290,
+        70
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "program",
+      "type": "backend",
+      "label": "stockcard program",
+      "sublabel": "Anchor 1.2",
+      "pos": [
+        560,
+        70
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "tag": "all money rules"
+    },
+    {
+      "id": "vaults",
+      "type": "database",
+      "label": "Vaults",
+      "sublabel": "collateral · USDC pool",
+      "pos": [
+        830,
+        70
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "Route handlers",
+      "sublabel": "card · shop · alerts",
+      "pos": [
+        290,
+        240
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "Upstash Redis",
+      "sublabel": "cards · orders · push",
+      "pos": [
+        40,
+        240
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "signer",
+      "type": "backend",
+      "label": "Price signer",
+      "sublabel": "/api/prices/sync",
+      "pos": [
+        560,
+        240
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "sources",
+      "type": "external",
+      "label": "xStocks + Jupiter",
+      "sublabel": "public prices",
+      "pos": [
+        830,
+        240
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "card",
+      "type": "external",
+      "label": "Card provider",
+      "sublabel": "mock · Bridge sandbox",
+      "pos": [
+        290,
+        405
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "catalog",
+      "type": "external",
+      "label": "Collector Crypt API",
+      "sublabel": "shop items",
+      "pos": [
+        40,
+        405
+      ],
+      "size": [
+        140,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Solana devnet",
+      "wraps": [
+        "program",
+        "vaults"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Vercel server",
+      "wraps": [
+        "api",
+        "signer"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "wallet-signs",
+      "from": "wallet",
+      "to": "app",
+      "label": "sign",
+      "variant": "emphasis"
+    },
+    {
+      "id": "app-tx",
+      "from": "app",
+      "to": "program",
+      "label": "wallet-signed tx",
+      "variant": "emphasis"
+    },
+    {
+      "id": "program-custody",
+      "from": "program",
+      "to": "vaults",
+      "label": "custody",
+      "variant": "emphasis"
+    },
+    {
+      "id": "app-api",
+      "from": "app",
+      "to": "api",
+      "label": "HTTPS",
+      "labelDy": 24
+    },
+    {
+      "id": "api-program",
+      "from": "api",
+      "to": "program",
+      "label": "server keys",
+      "variant": "security"
+    },
+    {
+      "id": "api-redis",
+      "from": "api",
+      "to": "redis",
+      "label": "records"
+    },
+    {
+      "id": "api-card",
+      "from": "api",
+      "to": "card",
+      "label": "spend",
+      "labelDy": 24
+    },
+    {
+      "id": "api-catalog",
+      "from": "api",
+      "to": "catalog",
+      "label": "items",
+      "variant": "dashed"
+    },
+    {
+      "id": "sources-signer",
+      "from": "sources",
+      "to": "signer",
+      "label": "prices",
+      "variant": "dashed"
+    },
+    {
+      "id": "signer-program",
+      "from": "signer",
+      "to": "program",
+      "label": "signed price"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "On-chain",
+      "items": [
+        "Config, markets with APR bands, positions, savings shares",
+        "LTV and price age checked in every borrow, withdraw and liquidate"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Server",
+      "items": [
+        "Mock card spends via a USDC delegate limit",
+        "Demo Shop, alerts with web push, cashback deposits"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Honest demo",
+      "items": [
+        "Devnet test dUSDC and mock mints",
+        "Shop items mirror real listings, not affiliated"
+      ]
+    }
+  ]
+}

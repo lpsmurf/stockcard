@@ -12,3 +12,7 @@ test-ledger/
 id.json
 .DS_Store
 .vercel
+.devnet-wallet.json
+
+# Archify browser evidence (regenerate with visual-check)
+docs/architecture/*.visual-check.*
