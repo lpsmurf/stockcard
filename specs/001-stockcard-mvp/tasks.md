@@ -22,21 +22,21 @@ Values: parameters.md. Screens: wireframes.md.
 ## Phase 1: Setup (Mon Sept 14)
 
 - [x] T001 Install toolchain: rustup, Anchor CLI 1.2.0 (crates.io), verify `solana`, `anchor --version`
-- [ ] T002 Create Anchor workspace at repo root: `Anchor.toml`, `Cargo.toml`, `programs/stockcard/Cargo.toml` (anchor-lang 1.2, anchor-spl 1.2; no oracle crate yet), `tests/stockcard.ts`
+- [x] T002 Create Anchor workspace at repo root: `Anchor.toml`, `Cargo.toml`, `programs/stockcard/Cargo.toml` (anchor-lang 1.2, anchor-spl 1.2; no oracle crate yet), `tests/stockcard.ts`
 - [x] T003 [P] Scaffold Next.js 16 app in `app/` (TypeScript, Tailwind 4, App Router, `src/`), add `@anchor-lang/core`, `@solana/web3.js`, wallet adapter, `@solana-mobile/wallet-standard-mobile`, react-query
 - [x] T004 [P] Brand tokens and fonts in `app/src/styles/tokens.css` + `app/src/app/layout.tsx` (ui.md tokens, both themes)
-- [ ] T005 [P] Update `.env.example` with all app and server variables from contracts/api.md
-- [ ] T006 [P] `scripts/sync-idl.sh` copying IDL/types into `app/src/lib/idl/`
+- [x] T005 [P] Update `.env.example` with all app and server variables from contracts/api.md
+- [x] T006 [P] `scripts/sync-idl.sh` copying IDL/types into `app/src/lib/idl/`
 
 ## Phase 2: Foundational (Mon–Tue)
 
-- [ ] T007 `programs/stockcard/src/state.rs`: Config, Market, Position, SignedPrice, enums (data-model.md)
-- [ ] T008 [P] `programs/stockcard/src/errors.rs` + events
-- [ ] T009 [P] `programs/stockcard/src/math.rs`: accrue (position APR, reserve share), APR band selection, collateral value, ltv, seize amount, savings shares ↔ amount, utilization (u128, checked, round in protocol's favor) + unit tests
-- [ ] T010 `programs/stockcard/src/oracle.rs`: read `SignedPrice` (sources Market / Appraisal / PartnerFmv / Demo) with staleness + closed-market fallback, behind an `oracle_kind` match so a `Switchboard` arm can be added in T029b; read the Token-2022 Scaled UI Amount multiplier from the collateral mint (integrations.md)
-- [ ] T011b Issuer-control guards in `oracle.rs`/instructions: vault balance reconciliation (`impaired` market), mint `paused` and vault-frozen checks, block market if a transfer hook program is set; store extension flags in `Market` (integrations.md "Issuer controls")
-- [ ] T011 `init_config`, `add_market`, `update_market`, `set_signed_price`, `fund_pool`, `set_pause` in `programs/stockcard/src/instructions/`
-- [x] T012 [P] `app/src/lib/risk.ts`: same math as T009 for previews (**reopen**: add APR bands, reserve share, savings share math)
+- [x] T007 `programs/stockcard/src/state.rs`: Config, Market, Position, SignedPrice, enums (data-model.md)
+- [x] T008 [P] `programs/stockcard/src/errors.rs` + events
+- [x] T009 [P] `programs/stockcard/src/math.rs`: accrue (position APR, reserve share), APR band selection, collateral value, ltv, seize amount, savings shares ↔ amount, utilization (u128, checked, round in protocol's favor) + unit tests
+- [x] T010 `programs/stockcard/src/oracle.rs`: read `SignedPrice` (sources Market / Appraisal / PartnerFmv / Demo) with staleness + closed-market fallback, behind an `oracle_kind` match so a `Switchboard` arm can be added in T029b; read the Token-2022 Scaled UI Amount multiplier from the collateral mint (integrations.md)
+- [x] T011b Issuer-control guards in `oracle.rs`/instructions: vault balance reconciliation (`impaired` market), mint `paused` and vault-frozen checks, block market if a transfer hook program is set; store extension flags in `Market` (integrations.md "Issuer controls")
+- [x] T011 `init_config`, `add_market`, `update_market`, `set_signed_price`, `fund_pool`, `set_pause` in `programs/stockcard/src/instructions/`
+- [x] T012 [P] `app/src/lib/risk.ts`: same math as T009 for previews (APR bands, reserve share, savings share math — done)
 - [x] T013 [P] WalletProvider (Wallet Standard + MWA registration) in `app/src/components/providers.tsx`; connect button; wrong-network banner
 - [ ] T014 [P] App shell: bottom tabs / desktop rail, `MockBadge` (done) · toasts, banners, loading/empty/error states (to do)
 - [ ] T015 `app/src/lib/program.ts`: Anchor client, PDA helpers, account fetch hooks (react-query)
@@ -47,11 +47,11 @@ Values: parameters.md. Screens: wireframes.md.
 ## Phase 3: US1 Borrow against a stock and spend it on the card (P1) 🎯 MVP
 
 ### Tests
-- [ ] T017 [US1] `tests/stockcard.ts`: deposit; borrow at max ok; max+1 fails; stale price fails; InsufficientLiquidity
+- [x] T017 [US1] `tests/stockcard.ts`: deposit; borrow at max ok; max+1 fails; stale price fails; InsufficientLiquidity
 
 ### Program
-- [ ] T018 [US1] `deposit_collateral` + `deposit_collateral_for` (authority check)
-- [ ] T019 [US1] `borrow` with LTV and liquidity checks
+- [x] T018 [US1] `deposit_collateral` + `deposit_collateral_for` (authority check)
+- [x] T019 [US1] `borrow` with LTV and liquidity checks
 - [ ] T020 [US1] Deploy to devnet, run seed, commit program id to `.env.example` and `Anchor.toml`
 
 ### App
@@ -70,16 +70,16 @@ Values: parameters.md. Screens: wireframes.md.
 
 ## Phase 4: US2 Repay and withdraw (P1)
 
-- [ ] T030 [US2] Tests: repay all → 0 debt no dust; withdraw guarded by LTV; repay by third party
-- [ ] T031 [US2] `repay` (u64::MAX = all) and `withdraw_collateral`
+- [x] T030 [US2] Tests: repay all → 0 debt no dust; withdraw guarded by LTV; repay by third party
+- [x] T031 [US2] `repay` (u64::MAX = all) and `withdraw_collateral`
 - [ ] T032 [US2] S4 Repay sheet + withdraw in S8 with max-withdrawable preview
 
 **Checkpoint**: Full P1 loop on devnet; `scripts/smoke-devnet.ts` prints explorer links.
 
 ## Phase 5: US3 Protect my position: buffer, alerts, top-up, liquidation (P2)
 
-- [ ] T033 [US3] Tests: liquidate healthy fails; $1,000 on 10 NVDAx, crash −30% → liquidatable; liquidate $500 seizes 3.538 NVDAx and ends at 52.2%; second liquidation fails `NotLiquidatable`; close factor; top-up of 3.48 NVDAx returns LTV ≤ 50%
-- [ ] T034 [US3] `liquidate` instruction
+- [x] T033 [US3] Tests: liquidate healthy fails; $1,000 on 10 NVDAx, crash −30% → liquidatable; liquidate $500 seizes 3.538 NVDAx and ends at 52.2%; second liquidation fails `NotLiquidatable`; close factor; top-up of 3.48 NVDAx returns LTV ≤ 50%
+- [x] T034 [US3] `liquidate` instruction
 - [ ] T035 [P] [US3] `/api/admin/price` (crash/restore) and `/api/admin/liquidate`, devnet + ADMIN_TOKEN guard
 - [ ] T036 [US3] S11 Admin screen (crash −30% on Signed markets, restore, liquidate); health bar red state
 - [ ] T056 [P] [US3] `app/src/lib/risk.ts`: `liquidationPrice`, `alertBand`, `fixAmounts` (add collateral tokens / repay USDC to reach max LTV) + unit checks against the demo script numbers in parameters.md §4
@@ -100,7 +100,7 @@ Values: parameters.md. Screens: wireframes.md.
 - [ ] T070 [US8] Seed: dUSDC mint, six mirrored item markets from Collector Crypt (parameters.md §3c), TIDE; write `app/src/lib/shop-items.json` (name, grade, image, insured value, source URL)
 - [ ] T071 [P] [US8] `/api/shop/items` and `/api/shop/buy` (verify dUSDC transfer, mint token, idempotent) + `ShopOrder` records
 - [ ] T072 [US8] S13 Demo Shop screen: tabs Stocks / Cards / Watches / Art, item cards with image + insured value + credit it unlocks, buy sheet, "Lock as collateral" after purchase
-- [ ] T073 [US7] Program: `deposit_savings`, `withdraw_savings`, `claim_reserve`; reserve and `total_borrowed` accounting in accrue/borrow/repay/liquidate; utilization cap; tests from contracts/program.md
+- [x] T073 [US7] Program: `deposit_savings`, `withdraw_savings`, `claim_reserve`; reserve and `total_borrowed` accounting in accrue/borrow/repay/liquidate; utilization cap; tests from contracts/program.md
 - [ ] T074 [US7] S12 Savings screen: balance, current APY (`utilization × weighted APR × 0.60`), utilization bar, deposit/withdraw sheets, instant-withdrawable amount, founding saver badge
 - [ ] T075 [US1] APR bands in the Borrow sheet and Home ("APR 12.9% · drops to 9.9% under 20% LTV"), tier/founding discounts shown as off-chain previews
 

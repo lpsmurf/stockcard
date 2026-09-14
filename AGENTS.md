@@ -72,10 +72,13 @@ BUSINESS_MODEL.md, GTM_PARTNERSHIPS.md, FUNDRAISING.md, pitch-deck-*.html
 ## Commands
 
 ```bash
-# Program (repo root) — once the workspace exists
-anchor build
-anchor test                        # local validator, Signed markets (no oracle network in tests)
-anchor test -- --grep "<name>"     # single test file by name
+# Program (repo root)
+anchor build --arch v2            # REQUIRED: anchor 1.2 defaults to SBPFv3, solana-test-validator rejects it
+# anchor test needs a manually started validator (surfpool is not installed on this machine):
+pkill -f solana-test-validator; solana-test-validator --reset --quiet &
+sleep 8 && solana airdrop 100 .devnet-wallet.json --url http://localhost:8899
+anchor test --skip-build --skip-local-validator --provider.cluster localnet
+anchor test --skip-build --skip-local-validator --provider.cluster localnet -- --grep "<name>"
 anchor deploy --provider.cluster devnet
 ./scripts/sync-idl.sh              # copies IDL + types into app/src/lib/idl/
 npx tsx scripts/seed-devnet.ts     # mock mints, markets, signed prices, pool funding
