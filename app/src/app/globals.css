@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+/* StockCard brand tokens (specs/001-stockcard-mvp/ui.md) */
+:root {
+  --plaster: #e9ece8;
+  --surface: #f4f6f3;
+  --raised: #ffffff;
+  --ink: #141c19;
+  --ink-2: #48524d;
+  --ink-3: #7a847f;
+  --rule: rgba(20, 28, 25, 0.12);
+  --brass: #8e6a22;
+  --brass-soft: rgba(142, 106, 34, 0.12);
+  --on-brass: #ffffff;
+  --good: #2f6b4f;
+  --warn: #9a6b12;
+  --bad: #a33a2c;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --plaster: #0e1311;
+    --surface: #131916;
+    --raised: #1a211e;
+    --ink: #e6ebe7;
+    --ink-2: #aeb8b2;
+    --ink-3: #7f8984;
+    --rule: rgba(230, 235, 231, 0.12);
+    --brass: #d1ae63;
+    --brass-soft: rgba(209, 174, 99, 0.14);
+    --on-brass: #1a1406;
+    --good: #7cc39d;
+    --warn: #e0b25a;
+    --bad: #e07a6a;
+  }
+}
+
+@theme inline {
+  --color-plaster: var(--plaster);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-brass: var(--brass);
+  --color-brass-soft: var(--brass-soft);
+  --color-on-brass: var(--on-brass);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --font-display: var(--font-bodoni), "Didot", Georgia, serif;
+  --font-sans: var(--font-hanken), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+html,
+body {
+  background: var(--plaster);
+  color: var(--ink);
+}
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+.tabular {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* wallet-adapter modal in brand colors */
+.wallet-adapter-modal-wrapper { background: var(--raised) !important; color: var(--ink); }
+.wallet-adapter-modal-title { color: var(--ink) !important; }
+.wallet-adapter-modal-list .wallet-adapter-button { color: var(--ink) !important; font-family: var(--font-sans) !important; }
+.wallet-adapter-modal-list .wallet-adapter-button:hover { background: var(--brass-soft) !important; }
