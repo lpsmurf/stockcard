@@ -1,0 +1,33 @@
+{
+  "// note": "Keeps editors and agents (Kimi, Claude) from watching or indexing build output. target/ is 1.5 GB and test-ledger/ can pass 9 GB.",
+  "files.watcherExclude": {
+    "**/target/**": true,
+    "**/test-ledger/**": true,
+    "**/node_modules/**": true,
+    "**/.next/**": true,
+    "**/.anchor/**": true,
+    "**/.git/objects/**": true,
+    "**/dist/**": true
+  },
+  "search.exclude": {
+    "**/target": true,
+    "**/test-ledger": true,
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/.anchor": true,
+    "**/package-lock.json": true,
+    "**/Cargo.lock": true
+  },
+  "files.exclude": {
+    "**/target": true,
+    "**/test-ledger": true,
+    "**/.anchor": true
+  },
+  "typescript.tsserver.maxTsServerMemory": 3072,
+  "rust-analyzer.check.command": "check",
+  "rust-analyzer.cargo.buildScripts.enable": true,
+  "rust-analyzer.procMacro.enable": true,
+  "rust-analyzer.files.excludeDirs": ["target", "test-ledger", "node_modules", "app"],
+  "git.autofetch": false,
+  "git.autoRepositoryDetection": false
+}

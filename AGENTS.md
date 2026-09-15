@@ -74,8 +74,10 @@ BUSINESS_MODEL.md, GTM_PARTNERSHIPS.md, FUNDRAISING.md, pitch-deck-*.html
 ```bash
 # Program (repo root)
 anchor build --arch v2            # REQUIRED: anchor 1.2 defaults to SBPFv3, solana-test-validator rejects it
-# anchor test needs a manually started validator (surfpool is not installed on this machine):
-pkill -f solana-test-validator; solana-test-validator --reset --quiet &
+# anchor test needs a manually started validator (surfpool is not installed on this machine).
+# ALWAYS use scripts/validator.sh — it puts the ledger in /tmp with a size cap. A plain
+# `solana-test-validator --reset` in the repo root wrote a 9.4 GB test-ledger and thrashed the machine.
+scripts/validator.sh &              # add --keep to reuse the existing ledger
 sleep 8 && solana airdrop 100 .devnet-wallet.json --url http://localhost:8899
 anchor test --skip-build --skip-local-validator --provider.cluster localnet
 anchor test --skip-build --skip-local-validator --provider.cluster localnet -- --grep "<name>"
