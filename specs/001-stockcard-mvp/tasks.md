@@ -39,7 +39,7 @@ Values: parameters.md. Screens: wireframes.md.
 - [x] T012 [P] `app/src/lib/risk.ts`: same math as T009 for previews (APR bands, reserve share, savings share math — done)
 - [x] T013 [P] WalletProvider (Wallet Standard + MWA registration) in `app/src/components/providers.tsx`; connect button; wrong-network banner
 - [ ] T014 [P] App shell: bottom tabs / desktop rail, `MockBadge` (done) · toasts, banners, loading/empty/error states (to do)
-- [ ] T015 `app/src/lib/program.ts`: Anchor client, PDA helpers, account fetch hooks (react-query)
+- [x] T015 `app/src/lib/program.ts`: Anchor client, PDA helpers, account fetch hooks (react-query)
 - [x] T016 `scripts/seed-devnet.ts`: mock mints matching mainnet (NVDAx, SPYx, TSLAx: Token-2022, **8 decimals**, Scaled UI Amount + Pausable + Permanent Delegate; SPCX: Token-2022, 6 decimals, same extensions; TIDE, PSA10; optional dUSDC), markets with plan.md parameters, signed prices, fund pool, set authorities
 
 **Checkpoint**: `anchor build` passes, app connects a wallet on desktop and Android Chrome.
@@ -55,14 +55,14 @@ Values: parameters.md. Screens: wireframes.md.
 - [x] T020 [US1] Deploy to devnet, run seed, commit program id to `.env.example` and `Anchor.toml`
 
 ### App
-- [ ] T021 [P] [US1] `/api/faucet` test money (100,000 dUSDC once, 10,000/24 h) with rate limit (Redis or memory)
-- [ ] T022 [P] [US1] S7 Assets screen + S8 deposit sheet
-- [ ] T023 [US1] S2 Home: available credit, health bar, debt row
-- [ ] T024 [US1] S3 Borrow sheet with preview; destination = user's USDC ATA (card wallet)
-- [ ] T025 [P] [US1] `app/src/lib/card/provider.ts` interface, `mock.ts` (delegate transferChecked), `bridge.ts` stub behind env; `app/src/lib/kv.ts`
-- [ ] T026 [US1] `/api/card` (create/get/patch), `/api/card/simulate`, `/api/card/transactions` with wallet-signature auth
+- [x] T021 [P] [US1] `/api/faucet` test money (100,000 dUSDC once, 10,000/24 h) with rate limit (Redis or memory)
+- [x] T022 [P] [US1] S7 Assets screen + S8 deposit sheet
+- [x] T023 [US1] S2 Home: available credit, health bar, debt row
+- [x] T024 [US1] S3 Borrow sheet with preview; destination = user's USDC ATA (card wallet)
+- [x] T025 [P] [US1] `app/src/lib/card/provider.ts` interface, `mock.ts` (delegate transferChecked), `bridge.ts` stub behind env; `app/src/lib/kv.ts`
+- [x] T026 [US1] `/api/card` (create/get/patch), `/api/card/simulate`, `/api/card/transactions` with wallet-signature auth
 - [x] T027 [P] [US1] `CreditCard` component (ui.md; masking approach adapted from crd-ui, MIT, attribution in file header)
-- [ ] T028 [US1] S5 Card screen: create card, set limit (SPL approve), feed; S6 test purchase sheet
+- [x] T028 [US1] S5 Card screen: create card, set limit (SPL approve), feed; S6 test purchase sheet
 - [ ] T029c [P] [US1] (Stretch, after the P1 path works on mock) `app/src/lib/card/stripe.ts` CardProvider on Stripe Issuing (Stripe Sandbox): cardholder (first/last name + phone) + virtual Visa EUR card; `STRIPE_CARD_MODE=capture` first (our approve check → devnet transfer → Stripe force capture), `authorize` mode once Issuing top-ups are enabled: `/api/card/stripe/webhook` (authorize ≤ 2 s against devnet USDC allowance with Redis holds, settle on `issuing_transaction.created` with `transferChecked`, release on reversal), `/api/card/ephemeral-key` + Issuing Elements card details on S5, Test purchase sheet calls `test_helpers/issuing/authorizations`; set dashboard timeout to decline (parameters.md "Stripe Issuing sandbox provider")
 - [x] T029a [US1] (Claude, Sept 15: `app/src/lib/prices/signer.ts` + `signer.test.mjs` 7/7, `/api/prices/sync` with `?dryRun=1`; first live devnet run posted NVDAx/SPYx/TSLAx/SPCX. **Still open: QStash 60 s schedule once deployed**) Price signer: `/api/prices/sync` (CRON_SECRET) reads xStocks `price-data` + Jupiter Price v3 (SPCX: Backpack External + Jupiter), posts `set_signed_price` source `Market` when sources agree within 200 bps; skips markets under a `Demo` override; QStash every 60 s (parameters.md "Price signer")
 - [ ] T029b [US1] (Wed 09:00–11:00 ET spike, go/no-go 12:00) Switchboard: add `switchboard-on-demand` 0.13.x, confirm it builds with anchor-lang 1.2; create a custom SPYx devnet feed from the same sources; add `OracleKind::Switchboard` arm in `oracle.rs` + client update in the borrow tx; test. Go → SPYx/TSLAx switch; no-go → revert the branch, stay on T029a
@@ -73,7 +73,7 @@ Values: parameters.md. Screens: wireframes.md.
 
 - [x] T030 [US2] Tests: repay all → 0 debt no dust; withdraw guarded by LTV; repay by third party
 - [x] T031 [US2] `repay` (u64::MAX = all) and `withdraw_collateral`
-- [ ] T032 [US2] S4 Repay sheet + withdraw in S8 with max-withdrawable preview
+- [x] T032 [US2] S4 Repay sheet + withdraw in S8 with max-withdrawable preview
 
 **Checkpoint**: Full P1 loop on devnet; `scripts/smoke-devnet.ts` prints explorer links.
 
@@ -81,28 +81,28 @@ Values: parameters.md. Screens: wireframes.md.
 
 - [x] T033 [US3] Tests: liquidate healthy fails; $1,000 on 10 NVDAx, crash −30% → liquidatable; liquidate $500 seizes 3.538 NVDAx and ends at 52.2%; second liquidation fails `NotLiquidatable`; close factor; top-up of 3.48 NVDAx returns LTV ≤ 50%
 - [x] T034 [US3] `liquidate` instruction
-- [ ] T035 [P] [US3] `/api/admin/price` (crash/restore) and `/api/admin/liquidate`, devnet + ADMIN_TOKEN guard
-- [ ] T036 [US3] S11 Admin screen (crash −30% on Signed markets, restore, liquidate); health bar red state
+- [x] T035 [P] [US3] `/api/admin/price` (crash/restore) and `/api/admin/liquidate`, devnet + ADMIN_TOKEN guard
+- [x] T036 [US3] S11 Admin screen (crash −30% on Signed markets, restore, liquidate); health bar red state
 - [ ] T056 [P] [US3] `app/src/lib/risk.ts`: `liquidationPrice`, `alertBand`, `fixAmounts` (add collateral tokens / repay USDC to reach max LTV) + unit checks against the demo script numbers in parameters.md §4
-- [ ] T057 [US3] S3 Borrow sheet: liquidation price and "−X%" line, suggested max 35% hint
-- [ ] T058 [US3] S2 Home alert banners by band with prefilled [Add stock] → S8 deposit and (Repay) → S4; "Turn on alerts" card
+- [x] T057 [US3] S3 Borrow sheet: liquidation price and "−X%" line, suggested max 35% hint
+- [x] T058 [US3] S2 Home alert banners by band with prefilled [Add stock] → S8 deposit and (Repay) → S4; "Turn on alerts" card
 - [ ] T059 [P] [US3] Web push: VAPID keys, `web-push`, `/api/push/subscribe` (POST/DELETE, wallet-signed), `/api/push/test`, `push`/`notificationclick` handlers in `public/sw.js`, client subscribe hook
 - [ ] T060 [US3] `/api/alerts/check` (CRON_SECRET): read positions + prices, compute bands, dedupe with `alert:{owner}:{market}`, send pushes; call it inline from `/api/admin/price`
 - [ ] T061 [US3] Upstash QStash 5-minute schedule for `/api/alerts/check`; verify a push arrives on Android Chrome and desktop Chrome (and note whether the webshell APK receives it)
 
 ## Phase 6: US4 Cashback in assets (P2)
 
-- [ ] T037 [US4] `/api/cashback/process`: tier %, price lookup, `deposit_collateral_for` from cashback treasury, idempotent by txId; called after settle
-- [ ] T038 [US4] S9 Cashback screen (tier toggle, asset picker); cashback rows in feed and S6 preview
+- [x] T037 [US4] `/api/cashback/process`: tier %, price lookup, `deposit_collateral_for` from cashback treasury, idempotent by txId; called after settle
+- [x] T038 [US4] S9 Cashback screen (tier toggle, asset picker); cashback rows in feed and S6 preview
 - [ ] T039 [US4] Test: `deposit_collateral_for` rejects non-authority (in T018 suite)
 
 ## Phase 6b: US8 Demo Shop (P1 stocks, P2 items) and US7 Savings (P2)
 
-- [ ] T070 [US8] Seed: dUSDC mint, six mirrored item markets from Collector Crypt (parameters.md §3c), TIDE; write `app/src/lib/shop-items.json` (name, grade, image, insured value, source URL)
-- [ ] T071 [P] [US8] `/api/shop/items` and `/api/shop/buy` (verify dUSDC transfer, mint token, idempotent) + `ShopOrder` records
-- [ ] T072 [US8] S13 Demo Shop screen: tabs Stocks / Cards / Watches / Art, item cards with image + insured value + credit it unlocks, buy sheet, "Lock as collateral" after purchase
+- [x] T070 [US8] Seed: dUSDC mint, six mirrored item markets from Collector Crypt (parameters.md §3c), TIDE; write `app/src/lib/shop-items.json` (name, grade, image, insured value, source URL)
+- [x] T071 [P] [US8] `/api/shop/items` and `/api/shop/buy` (verify dUSDC transfer, mint token, idempotent) + `ShopOrder` records
+- [x] T072 [US8] S13 Demo Shop screen: tabs Stocks / Cards / Watches / Art, item cards with image + insured value + credit it unlocks, buy sheet, "Lock as collateral" after purchase
 - [x] T073 [US7] Program: `deposit_savings`, `withdraw_savings`, `claim_reserve`; reserve and `total_borrowed` accounting in accrue/borrow/repay/liquidate; utilization cap; tests from contracts/program.md
-- [ ] T074 [US7] S12 Savings screen: balance, current APY (`utilization × weighted APR × 0.60`), utilization bar, deposit/withdraw sheets, instant-withdrawable amount, founding saver badge
+- [x] T074 [US7] S12 Savings screen: balance, current APY (`utilization × weighted APR × 0.60`), utilization bar, deposit/withdraw sheets, instant-withdrawable amount, founding saver badge
 - [ ] T075 [US1] APR bands in the Borrow sheet and Home ("APR 12.9% · drops to 9.9% under 20% LTV"), tier/founding discounts shown as off-chain previews
 - [ ] T076 [US1] Home balances (parameters.md "Home balances"): total balance card with Locked / Wallet assets / Card buckets, wallet token list (Token + Token-2022, priced, "No price" rows), LTV of locked collateral plus secondary "Debt is x% of everything you hold"; `/api/wallet/balances` or client hook with the same shape
 - [ ] T077 [P] [US1] Price history: `/api/prices/history` (CoinGecko for xStocks, Redis `pricehist:` for Signed Appraisal/PartnerFmv, demo points), `PriceChart` SVG component (7D/30D/90D, hover tooltip, liquidation line); show on S8/D8 and in the D7 selected-asset panel

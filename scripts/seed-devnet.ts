@@ -345,6 +345,18 @@ async function main() {
     console.log("pool already funded, skipping");
   }
 
+  // shop treasury dUSDC ATA (payments land here)
+  const shopTreasuryAta = getAssociatedTokenAddressSync(usdcMint, auths.shop.publicKey);
+  await withRetry(async () => {
+    const { createAssociatedTokenAccountIdempotentInstruction, ASSOCIATED_TOKEN_PROGRAM_ID } = await import("@solana/spl-token");
+    const tx = new Transaction().add(
+      createAssociatedTokenAccountIdempotentInstruction(admin.publicKey, shopTreasuryAta, auths.shop.publicKey, usdcMint, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID),
+    );
+    const sig = await connection.sendTransaction(tx, [admin]);
+    await connection.confirmTransaction(sig, "confirmed");
+  }, "create shop treasury ATA");
+  console.log("shop treasury ATA ready");
+
   // cashback treasury: >= 1,000 of each cashback asset (NVDAx, SPYx, TIDE)
   for (const spec of SPECS.filter((s) => ["NVDAx", "SPYx", "TIDE"].includes(s.symbol))) {
     const mint = new PublicKey(updates[spec.envKey] ?? readEnvFile().get(spec.envKey)!);

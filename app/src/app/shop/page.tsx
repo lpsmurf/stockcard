@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { getAssociatedTokenAddressSync, createTransferInstruction, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import {
+  getAssociatedTokenAddressSync,
+  createAssociatedTokenAccountIdempotentInstruction,
+  createTransferInstruction,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AmountInput, parseUsd6 } from "@/components/amount-input";
@@ -202,7 +208,10 @@ function BuySheet({
       const treasuryKey = new PublicKey(treasury);
       const fromAta = getAssociatedTokenAddressSync(usdcMint, payer.publicKey);
       const toAta = getAssociatedTokenAddressSync(usdcMint, treasuryKey);
-      const payTx = new Transaction().add(createTransferInstruction(fromAta, toAta, payer.publicKey, amount, [], TOKEN_PROGRAM_ID));
+      const payTx = new Transaction().add(
+        createAssociatedTokenAccountIdempotentInstruction(payer.publicKey, toAta, treasuryKey, usdcMint, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID),
+        createTransferInstruction(fromAta, toAta, payer.publicKey, amount, [], TOKEN_PROGRAM_ID),
+      );
       const paySig = await payer.sendTransaction(payTx, payer.connection);
 
       // 2. tell the server to verify + mint
