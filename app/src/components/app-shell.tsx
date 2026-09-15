@@ -9,7 +9,8 @@ const TABS = [
   { href: "/", label: "Home" },
   { href: "/card", label: "Card" },
   { href: "/portfolio", label: "Assets" },
-  { href: "/cashback", label: "Cashback" },
+  { href: "/savings", label: "Savings" },
+  { href: "/shop", label: "Shop" },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -46,7 +47,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Mobile tab bar */}
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-rule bg-surface/95 backdrop-blur md:hidden"
+        className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-rule bg-surface/95 backdrop-blur md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         {TABS.map((t) => (

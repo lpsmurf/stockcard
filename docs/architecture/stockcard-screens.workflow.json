@@ -1,0 +1,286 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "StockCard screen flow",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "first-swipe",
+        "label": "Connect to first purchase",
+        "focus": [
+          "welcome",
+          "home",
+          "borrow",
+          "card",
+          "purchase",
+          "cashback"
+        ],
+        "note": "The demo path: connect, borrow to the card, pay, earn cashback as collateral."
+      },
+      {
+        "id": "get-collateral",
+        "label": "Get collateral",
+        "focus": [
+          "home",
+          "assets",
+          "shop",
+          "detail"
+        ],
+        "note": "Buy test assets in the Demo Shop, then lock them on the asset detail screen."
+      },
+      {
+        "id": "demo-crash",
+        "label": "Demo crash",
+        "focus": [
+          "admin",
+          "home"
+        ],
+        "note": "Devnet admin crashes a price; Home shows the alert banner."
+      },
+      {
+        "id": "cash-out",
+        "label": "Borrow to a bank account",
+        "focus": [
+          "home",
+          "bank"
+        ],
+        "note": "Borrow and send euros to your own IBAN in one signature; SEPA is simulated on devnet."
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "entry",
+      "label": "Home and credit line"
+    },
+    {
+      "id": "cardlane",
+      "label": "Card"
+    },
+    {
+      "id": "assetlane",
+      "label": "Assets and Shop"
+    },
+    {
+      "id": "ops",
+      "label": "Savings, bank and admin"
+    }
+  ],
+  "mainPath": [
+    "welcome",
+    "home",
+    "card",
+    "purchase",
+    "cashback"
+  ],
+  "nodes": [
+    {
+      "id": "welcome",
+      "lane": "entry",
+      "col": 0,
+      "type": "frontend",
+      "label": "Welcome",
+      "sublabel": "D1 \u00b7 connect",
+      "width": 150
+    },
+    {
+      "id": "home",
+      "lane": "entry",
+      "col": 1,
+      "type": "frontend",
+      "label": "Home",
+      "sublabel": "D2 \u00b7 credit, health",
+      "width": 150
+    },
+    {
+      "id": "borrow",
+      "lane": "entry",
+      "col": 2,
+      "type": "security",
+      "label": "Borrow \u00b7 Repay",
+      "sublabel": "D3/D4 dialog",
+      "tag": "wallet signs",
+      "width": 150
+    },
+    {
+      "id": "card",
+      "lane": "cardlane",
+      "col": 2,
+      "type": "frontend",
+      "label": "Card",
+      "sublabel": "D5 \u00b7 limit, activity",
+      "width": 150
+    },
+    {
+      "id": "purchase",
+      "lane": "cardlane",
+      "col": 3,
+      "type": "backend",
+      "label": "Test purchase",
+      "sublabel": "D6 dialog",
+      "width": 150
+    },
+    {
+      "id": "cashback",
+      "lane": "cardlane",
+      "col": 4,
+      "type": "frontend",
+      "label": "Cashback",
+      "sublabel": "D9 \u00b7 tier, asset",
+      "width": 150
+    },
+    {
+      "id": "assets",
+      "lane": "assetlane",
+      "col": 2,
+      "type": "frontend",
+      "label": "Assets",
+      "sublabel": "D7 \u00b7 table",
+      "width": 150
+    },
+    {
+      "id": "shop",
+      "lane": "assetlane",
+      "col": 3,
+      "type": "external",
+      "label": "Demo Shop",
+      "sublabel": "D13 \u00b7 test money",
+      "width": 150
+    },
+    {
+      "id": "detail",
+      "lane": "assetlane",
+      "col": 4,
+      "type": "security",
+      "label": "Asset detail",
+      "sublabel": "D8 \u00b7 deposit",
+      "tag": "wallet signs",
+      "width": 150
+    },
+    {
+      "id": "savings",
+      "lane": "ops",
+      "col": 2,
+      "type": "database",
+      "label": "Savings",
+      "sublabel": "D12 \u00b7 USDC pool",
+      "width": 150
+    },
+    {
+      "id": "admin",
+      "lane": "ops",
+      "col": 0,
+      "type": "backend",
+      "label": "Admin",
+      "sublabel": "D11 \u00b7 crash, liquidate",
+      "width": 150
+    },
+    {
+      "id": "bank",
+      "lane": "ops",
+      "col": 3,
+      "type": "security",
+      "label": "Send to bank",
+      "sublabel": "D14 \u00b7 SEPA to IBAN",
+      "tag": "wallet signs",
+      "width": 150
+    }
+  ],
+  "edges": [
+    {
+      "from": "welcome",
+      "to": "home",
+      "label": "connect",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "from": "home",
+      "to": "borrow",
+      "label": "borrow",
+      "role": "branch"
+    },
+    {
+      "from": "home",
+      "to": "card",
+      "role": "main"
+    },
+    {
+      "from": "card",
+      "to": "purchase",
+      "label": "pay",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "from": "purchase",
+      "to": "cashback",
+      "label": "cashback",
+      "role": "main"
+    },
+    {
+      "from": "home",
+      "to": "assets",
+      "role": "branch"
+    },
+    {
+      "from": "assets",
+      "to": "shop",
+      "label": "buy",
+      "role": "branch"
+    },
+    {
+      "from": "shop",
+      "to": "detail",
+      "label": "lock",
+      "variant": "emphasis",
+      "role": "branch"
+    },
+    {
+      "from": "home",
+      "to": "savings",
+      "role": "branch"
+    },
+    {
+      "from": "admin",
+      "to": "home",
+      "label": "price crash",
+      "variant": "dashed",
+      "role": "async"
+    },
+    {
+      "from": "home",
+      "to": "bank",
+      "label": "SEPA",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Wallet signs",
+      "items": [
+        "Borrow, repay, deposit, withdraw, savings and send-to-bank",
+        "Dialogs on desktop, bottom sheets on phone"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Server acts",
+      "items": [
+        "Test purchase spends within the card limit",
+        "Cashback deposits the chosen asset as collateral"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Demo only",
+      "items": [
+        "Shop uses test dUSDC and mirrored listings",
+        "Admin is devnet only, never in the nav"
+      ]
+    }
+  ]
+}

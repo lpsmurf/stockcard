@@ -7,9 +7,19 @@ All routes return `{ ok: true, data }` or `{ ok: false, error: { code, message }
 | `POST /api/faucet` | none | `{ signature, amount }` | Test money: 100,000 dUSDC once per wallet, then ≤ 10,000 per 24 h |
 | `GET /api/shop/items` | none | `[{ symbol, kind, name, grade?, image, priceUsd6, source }]` | Stocks at signed price, TIDE, six mirrored items (cached 60 s) |
 | `POST /api/shop/buy` | `{ symbol, amount, paySignature }` | `ShopOrder` | Wallet-signed. Verifies the dUSDC transfer to `SHOP_TREASURY_ADDRESS` (amount = price × qty), then mints the mock token; idempotent by `paySignature` |
+| `GET /api/prices/history?symbol=&days=` | none | `{ symbol, source, label, points: [[tsMs, priceUsd]], demoPoints: [[tsMs, priceUsd]] }` | `days` ∈ 7 / 30 / 90. Source per parameters.md "Price history". Redis cache 1 h. `label` e.g. "Mainnet xStock price · reference" |
+| `GET /api/wallet/balances?owner=` | none | `{ locked: Holding[], wallet: Holding[], cardUsd6, totals: { lockedUsd6, walletUsd6, cardUsd6, totalUsd6 }, debtUsd6, ltvBps, debtOfTotalBps }` | Read-only. `Holding = { mint, symbol, amount, priceUsd6 \| null, priceSource, valueUsd6, eligible }`. Definitions: parameters.md "Home balances". May be computed client-side instead; same shape |
+| `GET /api/bank-accounts` | none | `BankAccount[]` (masked) | Wallet-signed |
+| `POST /api/bank-accounts` | `{ holderName, iban, bic? }` | `BankAccount` (masked) | Wallet-signed. mod-97 + SEPA country check; Bridge mode also creates the external account and liquidation address |
+| `DELETE /api/bank-accounts/:id` | none | `{ removed: true }` | Wallet-signed |
+| `POST /api/payouts/quote` | `{ bankAccountId, eurCents, source: "borrow"\|"balance" }` | `{ usdc6, rate, rateAt, providerFeeCents, stockcardFeeCents, receiveCents, payoutAddress, rail, eta, quoteId, expiresAt }` | Quote valid 60 s. Rate: ECB reference via Frankfurter + spread (parameters.md §3d) |
+| `POST /api/payouts` | `{ quoteId, transferSig, purpose? }` | `Payout` | Wallet-signed. Verifies on-chain: signer = owner, mint = USDC, destination = quote.payoutAddress, amount = quote.usdc6. Idempotent by `transferSig` |
+| `GET /api/payouts` | none | `Payout[]` | Newest first; mock mode advances status on read |
 | `POST /api/card` | `{ holderName, network }` | `Card` | Creates via the active CardProvider |
 | `GET /api/card` | none | `Card \| null` + `{ allowanceUsd6 }` | Reads delegate allowance on-chain |
 | `PATCH /api/card` | `{ status?, tier?, cashbackMint? }` | `Card` | `cashbackMint` must be an allowed market mint |
+| `POST /api/card/stripe/webhook` | Stripe event (raw body) | `issuing_authorization.request` → `{ approved }` with `Stripe-Version` header, within 2 s; other events → `{ received: true }` | Verifies `Stripe-Signature` with `STRIPE_ISSUING_WEBHOOK_SECRET`. Handles `issuing_authorization.request`, `issuing_authorization.updated`, `issuing_transaction.created` (parameters.md "Stripe Issuing sandbox provider") |
+| `POST /api/card/ephemeral-key` | `{ nonce }` | `{ secret }` | Wallet-signed. Stripe ephemeral key for Issuing Elements; `stripe` provider only |
 | `POST /api/card/simulate` | `{ merchant, category, amountUsd6 }` | `CardTransaction` | Declines on low allowance/balance; on settle enqueues cashback |
 | `GET /api/card/transactions` | none | `CardTransaction[]` | Newest first |
 | `POST /api/cashback/process` | `{ txId }` | `CardTransaction` | Idempotent; also called inline after settle |
@@ -40,11 +50,22 @@ All routes return `{ ok: true, data }` or `{ ok: false, error: { code, message }
 **CardProvider interface** (`app/src/lib/card/provider.ts`)
 ```ts
 export interface CardProvider {
-  name: "mock" | "bridge";
+  name: "mock" | "stripe" | "bridge";
   createCard(input: { owner: string; holderName: string; network: "VISA" | "MASTERCARD" }): Promise<Card>;
   getCard(owner: string): Promise<Card | null>;
   simulatePurchase(input: { owner: string; merchant: string; category: string; amountUsd6: bigint }): Promise<CardTransaction>;
   listTransactions(owner: string): Promise<CardTransaction[]>;
+}
+```
+
+**PayoutProvider interface** (`app/src/lib/payout/provider.ts`)
+```ts
+export interface PayoutProvider {
+  name: "mock" | "bridge";
+  addBankAccount(input: { owner: string; holderName: string; iban: string; bic?: string }): Promise<BankAccount>; // bridge: POST /v0/customers/{id}/external_accounts (account_type "iban") + liquidation address (chain "solana", currency "usdc", destination payment_rail "sepa", currency "eur")
+  quote(input: { owner: string; bankAccountId: string; eurCents: bigint }): Promise<PayoutQuote>;
+  confirm(input: { owner: string; quoteId: string; transferSig: string; purpose?: string }): Promise<Payout>;   // bridge: payout starts automatically when USDC reaches the liquidation address; poll its drains for status
+  list(owner: string): Promise<Payout[]>;
 }
 ```
 

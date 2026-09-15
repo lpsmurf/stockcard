@@ -185,3 +185,14 @@ export function formatUsd(usd6: bigint, opts: { cents?: boolean } = {}): string 
 export function formatPct(bps: bigint): string {
   return `${(Number(bps) / 100).toFixed(bps % 100n === 0n ? 0 : 1)}%`;
 }
+
+/** Token amounts: up to 4 decimals, trailing zeros trimmed (parameters.md §6). */
+export function formatTokens(amount: bigint, decimals: number): string {
+  const scale = 10n ** BigInt(decimals);
+  const whole = amount / scale;
+  const frac4 = decimals >= 4 ? (amount % scale) / 10n ** BigInt(decimals - 4) : amount % scale;
+  const wholeStr = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  if (frac4 === 0n) return wholeStr;
+  const fracStr = frac4.toString().padStart(4, "0").replace(/0+$/, "");
+  return `${wholeStr}.${fracStr}`;
+}

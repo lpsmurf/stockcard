@@ -1,0 +1,13 @@
+[
+  { "symbol": "NVDAx", "kind": "stock", "name": "NVIDIA (xStock)", "image": "", "priceUsd6": null, "source": "signed price" },
+  { "symbol": "SPYx", "kind": "stock", "name": "S&P 500 ETF (xStock)", "image": "", "priceUsd6": null, "source": "signed price" },
+  { "symbol": "TSLAx", "kind": "stock", "name": "Tesla (xStock)", "image": "", "priceUsd6": null, "source": "signed price" },
+  { "symbol": "SPCX", "kind": "stock", "name": "SpaceX (Backpack)", "image": "", "priceUsd6": null, "source": "signed price" },
+  { "symbol": "TIDE", "kind": "art", "name": "Tidewater · Lot 01 note", "image": "", "priceUsd6": 10000000, "source": "fixed $10.00 per note" },
+  { "symbol": "CC-LUGIA", "kind": "item", "name": "2002 #090 Lugia-Holo 1st Edition", "grade": "PSA 10", "image": "", "priceUsd6": 54000000000, "source": "Mirrored from a real Collector Crypt listing. Not affiliated. You don't own the real item." },
+  { "symbol": "CC-RAYQUAZA", "kind": "item", "name": "2006 #3 Rayquaza-Holo Pop Series 1", "grade": "PSA 10", "image": "", "priceUsd6": 13000000000, "source": "Mirrored from a real Collector Crypt listing. Not affiliated. You don't own the real item." },
+  { "symbol": "CC-MEW", "kind": "item", "name": "2006 #101 Mew Gold Star HOLO R", "grade": "BGS 8", "image": "", "priceUsd6": 5500000000, "source": "Mirrored from a real Collector Crypt listing. Not affiliated. You don't own the real item." },
+  { "symbol": "CC-DAYTONA", "kind": "item", "name": "Rolex \"Pikachu\" Daytona", "grade": "Watch", "image": "", "priceUsd6": 74200000000, "source": "Mirrored from a real Collector Crypt listing. Not affiliated. You don't own the real item." },
+  { "symbol": "CC-ROYALOAK", "kind": "item", "name": "Audemars Piguet Royal Oak · Silver Dial", "grade": "Watch", "image": "", "priceUsd6": 51315000000, "source": "Mirrored from a real Collector Crypt listing. Not affiliated. You don't own the real item." },
+  { "symbol": "CC-SEAMASTER", "kind": "item", "name": "Omega Seamaster Diver 300M 007 Edition", "grade": "Watch", "image": "", "priceUsd6": 10600000000, "source": "Mirrored from a real Collector Crypt listing. Not affiliated. You don't own the real item." }
+]

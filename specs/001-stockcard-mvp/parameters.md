@@ -143,12 +143,42 @@ Hermes `/v2/updates/price/latest` returned 401 without a key and 403 with the Pr
 | Collector Crypt | `https://dev-api.collectorcrypt.com` (devnet) / `https://api.collectorcrypt.com` | none (optional `Bearer ccsk_…`) | `COLLECTORCRYPT_API_KEY` (optional) |
 | PSA cert | `https://api.psacard.com/publicapi` | `bearer` token, 100 calls/day | `PSA_API_TOKEN` (optional) |
 | Jupiter swaps (post-MVP) | `https://api.jup.ag` | `x-api-key` | `JUPITER_API_KEY` (optional) |
+| CoinGecko (price history) | `https://api.coingecko.com/api/v3` (public) / demo key header `x-cg-demo-api-key` | none, or free Demo key | `COINGECKO_DEMO_API_KEY` (recommended for rate limits) |
+
+### Home balances (decided Sept 15)
+Home shows what the user owns, not only the card. Three buckets, all in USD at the current price used by the app:
+
+| Bucket | What counts | Price |
+|---|---|---|
+| **Locked collateral** | Tokens in the user's positions | Market `SignedPrice` (same number the program uses) |
+| **Wallet assets** | Every token in the connected wallet with a known price: our market mints not locked, dUSDC, SOL. Tokens without a price are listed with "No price" and excluded from totals | Market mints: `SignedPrice`. SOL: Jupiter Price v3 (mainnet SOL price, labelled). dUSDC/USDC: $1.00 |
+| **Card balance** | USDC in the card wallet (the ATA the card spends from) | $1.00 |
+
+- **Total balance** = locked + wallet assets + card balance.
+- **Position LTV** = debt ÷ locked collateral value (after haircut). This is the only LTV that drives borrowing limits, alerts and liquidation. Label it "LTV" everywhere.
+- **Debt vs total balance** = debt ÷ total balance, shown as a secondary figure "Debt is {x}% of everything you hold". Never color it red/amber and never use it for alerts: wallet assets can be moved at any time and don't protect the position.
+- Example (demo): 10 NVDAx locked at $211.96 = $2,119.60 · wallet assets $4,179.40 · card $390.00 → total $6,689.00. Debt $500.00 → LTV 23.6% · debt is 7.5% of total balance.
+- Wallet tokens are read with `getParsedTokenAccountsByOwner` for both the Token and Token-2022 programs (Token-2022 amounts use the Scaled UI Amount multiplier); cache 15 s client-side.
+
+### Price history (90-day chart, decided Sept 15)
+| Asset | Source | Notes |
+|---|---|---|
+| NVDAx, SPYx, TSLAx | CoinGecko `GET /coins/{id}/market_chart?vs_currency=usd&days=90&interval=daily` with ids `nvidia-xstock`, `sp500-xstock`, `tesla-xstock` | Mainnet xStock token price. Devnet mints are mocks, so the chart is labelled "Mainnet xStock price · reference". Checked Sept 15: keyless call returns daily points |
+| SPCX | Backpack public klines if the market exists, else no chart | Empty state "No price history yet" |
+| TIDE (art note), mirrored collectibles | Our own `SignedPrice` posts (Appraisal / PartnerFmv) stored as `pricehist:{symbol}` in Redis when posted | Step line; with fewer than 2 points show "Valued once on {date}" instead of a chart |
+| Demo override | Admin crash/restore appends a point marked "Demo price" | So the crash is visible on the chart during the demo |
+
+- Route `GET /api/prices/history?symbol=&days=90` caches in Redis for 1 h (`hist:{symbol}:{days}`); never called from the client to CoinGecko directly.
+- Ranges: 7D · 30D · **90D (default)**. Y axis in USD, 3–4 ticks; X axis month-day ticks.
+- Overlays: current price dot with value; if the user has a position in this asset, a dashed **liquidation price** line labelled "Liquidation {price}". The Y range is fitted to the price series (not to zero); when the liquidation price is below the visible range, pin the label to the bottom edge as "Liquidation {price} (−{x}%) ↓" instead of stretching the axis. A thin max-LTV price line is optional (cut first).
+- Change figure: `{+/-x.x%} in 90 days` next to the price, colored good/bad only here (price movement, not health).
+- Chart implementation: small SVG area chart component (`PriceChart`) with hover crosshair + tooltip (date, price); no chart library required. Respect reduced motion (no draw-in animation).
 
 ## 3. Card & cashback
 
 | Param | Value |
 |---|---|
-| Card provider default | `mock` (`CARD_PROVIDER=mock`); `bridge` when `BRIDGE_API_KEY` is set |
+| Card provider default | `mock` (`CARD_PROVIDER=mock`); `stripe` = Stripe Issuing in a **Stripe Sandbox** (sandbox enabled by Luis on Sept 15; parent account `acct_1UFwaXDI76S6oWGD`). Use the sandbox, not legacy test mode: Bridge's card integration only supports sandboxes, so the same sandbox can be connected to Bridge later; `bridge` when `BRIDGE_API_KEY` is set |
 | Card number | Random `4` + 15 digits for VISA, `5` + 15 for MASTERCARD; store last4 only |
 | Expiry | now + 3 years |
 | Default network | VISA |
@@ -163,6 +193,25 @@ Hermes `/v2/updates/price/latest` returned 401 without a key and 403 with the Pr
 | Cashback assets | NVDAx (default), SPYx, TIDE; PSA10 shows "Pack credit" (accrues, not deposited) |
 | Cashback treasury | Holds ≥ 1,000 of each cashback asset, owned by `CASHBACK_AUTHORITY_SECRET` |
 | Cashback amount | Per purchase: top rate while month-to-date spend ≤ min(cap, 25% × average drawn balance this month), base rate after; `usd × bps / 10000 / price`, rounded down; skip if < 1 base unit |
+
+### Stripe Issuing sandbox provider (`CARD_PROVIDER=stripe`, decided Sept 15)
+Real Stripe test cards (verified Sept 15 in the NL sandbox: virtual **Visa, EUR** card issued; a €1.00 test authorization was declined with `insufficient_funds` until the Issuing balance is funded) with our devnet USDC as the money. Stripe never holds user funds; its test Issuing balance only needs enough fake funds so authorizations reach our webhook.
+
+| Step | Stripe | Our side |
+|---|---|---|
+| Create card | `POST /v1/issuing/cardholders` (name, email placeholder, billing address, **`individual[first_name]`, `individual[last_name]`** (EU requirement, else `under_review`) and **`phone_number`** (required for 3-D Secure before a card can be created)), then `POST /v1/issuing/cards` `type: virtual`, `currency` = the account's Issuing currency, `status: active`, metadata `{ owner }` | Store `stripeCardholderId`, `stripeCardId`, last4, brand, exp in `card:{owner}` |
+| Show details | Issuing Elements with an ephemeral key from `POST /v1/ephemeral_keys` (`issuing_card`, nonce) | Number/CVV render in Stripe's iframe only; never touch our server |
+| Test purchase | Dashboard → Issuing → Cards → **Create test purchase**, or `POST /v1/test_helpers/issuing/authorizations` from our "Test purchase" sheet | Same sheet as mock, calls the test helper |
+| Authorize (≤ 2 s) | Webhook `issuing_authorization.request` → reply `200` JSON `{ "approved": true\|false }` with header `Stripe-Version` | Look up owner by card metadata; read USDC delegate allowance + balance on devnet (one RPC call, cached 5 s); approve if `amount ≤ min(allowance − reserved, balance − reserved)` and card not frozen; reserve the amount in Redis `hold:{owner}:{authId}` (TTL 7 days) |
+| Settle | Webhook `issuing_transaction.created` (capture) | `transferChecked` USDC from the user's ATA to `MERCHANT_SETTLEMENT_ADDRESS` via the card delegate, release the hold, write the CardTransaction with the signature, enqueue cashback. Idempotent by transaction id |
+| Reverse / refund | `issuing_authorization.updated` (closed/expired) or refund transaction | Release hold; refunds send USDC back from the settlement wallet |
+| Timeout setting | Dashboard → Issuing settings → authorization timeout: **decline** | So a slow RPC never approves unfunded spend |
+| **Mode now: `STRIPE_CARD_MODE=capture`** | Sandbox Issuing top-ups are blocked on this account (`card_issuing: inactive`; `fund_balance` and `eu_bank_transfer` funding instructions return "Issuing top-ups of type sepa_credit_transfer cannot be done on this account"), so real authorizations decline with `insufficient_funds`. `POST /v1/test_helpers/issuing/transactions/create_force_capture` works without a balance (verified Sept 15: €4.80 "Blue Bottle" capture) | Test purchase sheet: our server runs the same approve/decline check (allowance, balance, frozen), does the devnet `transferChecked`, then records the purchase on the Stripe Visa card with a force capture (amount in EUR, merchant name/category). Declines are decided by us and shown in our feed only |
+| **Mode later: `STRIPE_CARD_MODE=authorize`** | After Stripe enables Issuing top-ups (contact Stripe support or complete Issuing onboarding) and the balance is funded | Real `issuing_authorization.request` webhook flow above |
+| Currency | Stripe amounts are in the Issuing currency (EUR for an EU account, USD for US) | Convert EUR → USDC with the payout quote rate (parameters §3d) before comparing; show both in the feed |
+| Test balance | Add test funds to the Issuing balance (EU/UK: funding instructions in test mode; US: test top-up) | One-time setup, ≥ 10,000 in test currency |
+
+Env (server only): `STRIPE_SECRET_KEY` (`sk_test_…`), `STRIPE_ISSUING_WEBHOOK_SECRET` (`whsec_…`), `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (`pk_test_…`, client, needed for Issuing Elements). Keys and the webhook secret come from the **sandbox** (Dashboard sandbox switcher → Developers → API keys). Local webhooks: Stripe CLI 1.50.11 is installed; `stripe login` paired to the sandbox, then `stripe listen --forward-to localhost:3000/api/card/stripe/webhook`, or a Vercel preview URL registered in the sandbox's Issuing settings. Label: "Sandbox card · Stripe sandbox".
 
 ## 3b. Rates, tiers, savings (decided Sept 14)
 
@@ -187,7 +236,25 @@ Examples: $500 on 10 NVDAx (23.6% LTV) → 12.9% → $0.18/day. $1,000 (47.2%) �
 | APR discount | — | −1 pt | — |
 | Savings APY boost | — | +0.5 pt | +1 pt |
 | Card | Virtual | Virtual + physical | Metal |
-| Planned perks (not contracted) | — | Priority support, early access to art drops | Airport lounges via card-network program, travel & purchase insurance, 0% FX markup, grading/vault credits, SMS liquidation alerts |
+| Planned perks (not contracted) | — | Priority support, early access to art drops, 1 eSIM data pack/year | Airport lounges via card-network program, travel & purchase insurance, 0% FX markup, grading/vault credits, SMS liquidation alerts |
+
+### Membership perks (planned, Revolut Ultra-style; decided Sept 15)
+Shown on the Cashback screen (S9/D9) and the landing page under "Planned benefits" with the footnote "Benefits depend on partner and issuer agreements and may change." None is contracted. Sourcing and partner targets: `GTM_PARTNERSHIPS.md` → "Membership perks".
+
+| Perk | Plus | Black | Sourced through (target) |
+|---|---|---|---|
+| Airport lounges | — | Unlimited passes (fair use) | Card-network tier benefit (Visa Infinite / Mastercard World Elite lounge programs) or DragonPass / Collinson |
+| Fast Track security | — | 4 per year | DragonPass / Collinson |
+| Travel insurance (medical, delay, baggage) | — | Included | Embedded insurer: Qover, AXA Partners, Chubb, Allianz Partners |
+| Purchase protection + extended warranty | Basic | Included | Same insurer; often bundled with a premium card BIN |
+| Trip / event cancellation | — | Up to 70%, max €5,000/year | Same insurer |
+| Global eSIM data | 1 pack/year | Monthly allowance | Airalo Partners / Holafly API |
+| Subscriptions | — | Pick 2 of: Financial Times, Perplexity Pro, NordVPN, Headspace, MasterClass | Direct B2B code deals or perks aggregators |
+| Collector perks (our edge) | Early access to art drops | Grading credits, vault storage credits, priority art allocation | Collector Crypt / PSA / vault partners, our own art vehicle |
+| Solana perks | — | Partner wallet / app benefits | Solflare, Backpack, Jupiter (targets) |
+| Priority support | Yes | 24/7 | In-house |
+
+Economics: perks cost is capped by `PERKS_COST` in `scripts/unit_economics.py` (Plus €1, Black €6 per member per month). A Black bundle above €6/month needs a higher price or usage caps; rerun the model before promising any perk.
 
 Risk rules never depend on tier: max LTV, liquidation threshold and bonus are the same for everyone.
 
@@ -212,6 +279,25 @@ Economics note: EU consumer card interchange is capped (0.2% debit / 0.3% credit
 | Borrow cap | New borrows blocked above 90% utilization |
 | Example | $1M pool, 80% utilization, 12.5% average APR → $100k interest/yr → savers $60k (6.0% APY) · protocol $40k (4.0%) before losses. See docs/unit-economics.md |
 | Legal flag | MiCA restricts granting interest on e-money tokens (USDC) to EU retail. Devnet demo is fine; production structure needs counsel before launch |
+
+## 3d. Send to bank: SEPA payouts (US9, decided Sept 15)
+
+| Param | Value |
+|---|---|
+| Rails | SEPA Instant (arrives in seconds when the receiving bank supports it) with SEPA Credit Transfer fallback (next business day). Mock mode simulates Instant |
+| Countries | IBANs from SEPA countries only (EU/EEA, CH, UK and the other SEPA members). Reject others with "We can only send to SEPA bank accounts for now." |
+| Min / max per payout | €10 / €50,000 in the MVP UI (mock). Real limits come from the provider and KYC level |
+| Accounts per user | 3 |
+| Exchange rate | ECB reference EUR/USD from Frankfurter (`https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR`, free, no key), cached 10 min; quote valid 60 s |
+| StockCard fee (proposal) | 0.50% of the EUR amount, min €1 (charged as a Bridge `developer_fee_percent` in production). Standard 0.50% · Plus 0.25% · Black 0% |
+| Provider fee | Mock shows €0.00 and "Provider fee confirmed at launch"; Bridge fee TBC with sales |
+| Source | `borrow` (default) or `balance` (card wallet USDC) |
+| Purpose question | Required above €10,000: Car · Home · Tax · Other |
+| Mock payout address | `PAYOUT_ADDRESS` (devnet pubkey). Status: Processing → Arrived after 10 s, SEPA reference `SC-{6 chars}` |
+| Bridge production path | SEPA endorsement on the customer; EUR/SEPA access via sales@bridge.xyz; external account `account_type: "iban"`; liquidation address on Solana USDC with `destination_payment_rail: "sepa"`, `destination_currency: "eur"`, SEPA reference text; `developer_fee_percent` for our fee |
+| Copy | Title "Send to your bank"; CTA "Confirm and sign"; row label "Simulated SEPA payout" on devnet; disclaimer "Not tax advice. Borrowing keeps your assets invested but costs interest and can lead to liquidation if prices fall." |
+
+Example (demo, ECB rate Sept 14: 1 USD = 0.86573 EUR): 10 NVDAx locked ($2,119.60), no debt, send €500 → USDC 577.55 · StockCard fee €2.50 → you receive €497.50 · new LTV 27.2% (APR 12.9%) · liquidation if NVDA < $88.85.
 
 ## 3c. Demo Shop and test money (US8)
 
@@ -292,6 +378,14 @@ The generic `PSA10` market above is replaced by these six. "Solflare Packs" card
 | `QSTASH_TOKEN` | server | Optional, creates the 5-minute schedule |
 | `PYTH_API_KEY` | server | Pyth Pro key; not used in MVP (crypto only) |
 | `JUPITER_API_KEY` | server | Optional; keyless lite endpoint is the default |
+| `PAYOUT_ADDRESS` | server | Devnet pubkey receiving mock SEPA payout USDC |
+| `BANK_ENCRYPTION_KEY` | server | 32-byte base64 key for IBAN encryption at rest |
+| `PAYOUT_PROVIDER` | server | `mock` (default) or `bridge` |
+| `CARD_PROVIDER` | server | `mock` (default) · `stripe` · `bridge` |
+| `STRIPE_CARD_MODE` | server | `capture` (now, no Issuing balance needed) · `authorize` (real-time webhook, needs funded Issuing balance) |
+| `STRIPE_ISSUING_WEBHOOK_SECRET` | server | Signing secret of the Issuing webhook endpoint (`whsec_…`) |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | client | `pk_test_…`, only for Issuing Elements card details |
+| `COINGECKO_DEMO_API_KEY` | server | Optional free Demo key for `/api/prices/history`; keyless public endpoint works but is rate limited |
 | `NEXT_PUBLIC_SWITCHBOARD_FEED_SPYX`, `NEXT_PUBLIC_SWITCHBOARD_FEED_TSLAX` | client | Switchboard feed pubkeys, set only if the Wednesday spike passes |
 | `BRIDGE_API_KEY`, `STRIPE_SECRET_KEY` | server | optional |
 

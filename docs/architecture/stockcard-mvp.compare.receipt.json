@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "compare",
+  "type": "architecture",
+  "comparatorVersion": 1,
+  "canonicalVersion": 1,
+  "completeness": "complete",
+  "proofLevel": "authored",
+  "base": {
+    "title": "StockCard MVP architecture",
+    "rawSha256": "884ea630dd0904b880ebbb4ed5b78c1c62ec8e5278025a9c710c3a73091843f1",
+    "semanticSha256": "9d2a7f0a42ba44ad3ece110777393ce9176e79f2eb217c1376bedfad6700b793",
+    "bytes": 5637
+  },
+  "head": {
+    "title": "StockCard MVP architecture",
+    "rawSha256": "5cb4482faf9b766cfca90fe3f4dc296f1ddda4da4f23a523384f75caae77405c",
+    "semanticSha256": "0709078f70861978d71d4eb6f2ce11d6803bbf56b6ce31a7eb237611050255f0",
+    "bytes": 6116
+  },
+  "summary": {
+    "components": {
+      "added": 1,
+      "changed": 2,
+      "evidenceChanged": 0,
+      "removed": 0,
+      "moved": 0
+    },
+    "connections": {
+      "added": 1,
+      "changed": 0,
+      "removed": 0,
+      "rerouted": 0
+    },
+    "boundaries": {
+      "added": 0,
+      "changed": 0,
+      "removed": 0,
+      "geometryChanged": 0
+    },
+    "presentationChanged": true,
+    "provenanceChanged": false
+  },
+  "changes": {
+    "components": [
+      {
+        "id": "api",
+        "baseLabel": "Route handlers",
+        "headLabel": "Route handlers",
+        "status": "changed",
+        "classifications": [
+          "semantic"
+        ],
+        "changedFields": [
+          "/sublabel"
+        ]
+      },
+      {
+        "id": "bank",
+        "headLabel": "Bank payouts",
+        "status": "added",
+        "classifications": [
+          "semantic"
+        ],
+        "changedFields": []
+      },
+      {
+        "id": "sources",
+        "baseLabel": "xStocks + Jupiter",
+        "headLabel": "Price APIs",
+        "status": "changed",
+        "classifications": [
+          "semantic"
+        ],
+        "changedFields": [
+          "/label",
+          "/sublabel"
+        ]
+      }
+    ],
+    "connections": [
+      {
+        "id": "api-bank",
+        "head": {
+          "from": "api",
+          "to": "bank",
+          "label": "SEPA payout"
+        },
+        "status": "added",
+        "classifications": [
+          "topology"
+        ],
+        "changedFields": []
+      }
+    ],
+    "boundaries": []
+  },
+  "identity": {
+    "components": "components[].id",
+    "connections": "connections[].id (required)",
+    "boundaries": "boundaries[].kind + boundaries[].label (derived)"
+  },
+  "view": {
+    "visualPreset": "classic"
+  },
+  "limitations": [
+    "Authored Architecture IR only; no runtime impact, causality, risk, or mergeability is inferred.",
+    "Boundary identity is conservatively derived from kind + label."
+  ],
+  "artifact": {
+    "sha256": "beab578e0daeb0b6bddf795a441af99d8e6d77ab0b4a08b4f80599134f085f62",
+    "bytes": 2219786
+  },
+  "validation": {
+    "checksPassed": 28,
+    "checkCount": 28,
+    "baseComposition": "pass",
+    "headComposition": "pass"
+  }
+}

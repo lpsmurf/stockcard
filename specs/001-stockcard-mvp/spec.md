@@ -125,6 +125,24 @@ A new user claims test money (dUSDC), opens the Demo Shop and buys tokenized sto
 
 ---
 
+### User Story 9 - Send to my bank: borrow to an IBAN via SEPA (Priority: P2)
+
+A user who needs euros for a big purchase (a car, a house deposit, a tax bill) borrows against their stocks or collectibles and sends the money straight to their own bank account by SEPA, instead of selling. One signature borrows the USDC and sends it to the payout provider, which converts it to EUR and pays the IBAN. In the MVP the payout is simulated: real devnet USDC moves to a payout address and the SEPA leg is mocked with the same interface a real provider (Bridge liquidation address) will use.
+
+**Why this priority**: It turns the credit line into money people can use anywhere, which is the core "borrow, don't sell" promise (docs/borrow-vs-sell.md). It is P2 because the card path already proves spending; the bank path is the bigger real-world use case for pitching.
+
+**Independent Test**: With 10 NVDAx locked and no debt → Home → "Send to bank" → add IBAN `NL91ABNA0417164300` for the connected name → enter €500 → preview shows USDC amount, rate, fee, you receive, new LTV and liquidation price → Confirm and sign → one transaction borrows and transfers → payout row shows Processing, then "Arrived (simulated)" with a SEPA reference.
+
+**Acceptance Scenarios**:
+
+1. **Given** an invalid IBAN (checksum fails), **When** the user adds it, **Then** the form shows "Check the IBAN: the check digits don't match." and nothing is saved.
+2. **Given** a borrow-to-bank amount that would exceed max LTV, **When** the preview renders, **Then** Confirm is disabled with the same message as the Borrow sheet.
+3. **Given** a valid request, **When** the user signs, **Then** one transaction contains `borrow` and a USDC `transferChecked` to the payout address, and it either fully succeeds or fully fails.
+4. **Given** the payout transfer is confirmed, **When** the server verifies it on-chain (amount, mint, destination, signer), **Then** it creates a Payout record and advances Processing → Arrived within 15 s in mock mode; the row links to the explorer and shows "Simulated SEPA payout".
+5. **Given** the user chooses "From card balance" instead of Borrow, **When** they send, **Then** only the transfer is signed and debt is unchanged.
+
+---
+
 ### User Story 6 - Import from Backpack (Priority: P3)
 
 The user enters a Backpack API key and sees which holdings are eligible (SPCX) and which aren't (broker-held stocks). The API secret never leaves the user's device: the browser signs only a `balanceQuery` request, and our server just forwards it.
@@ -198,6 +216,13 @@ The user enters a Backpack API key and sees which holdings are eligible (SPCX) a
 - **FR-070**: The app MUST list buyable devnet assets: stock tokens at the market price and mirrored collectible/watch items with Collector Crypt image, grade and insured value.
 - **FR-071**: A purchase MUST transfer dUSDC from the user to the shop treasury and mint the matching mock token; items MUST be labeled as demo mirrors, not real ownership.
 
+**Send to bank (SEPA)**
+- **FR-080**: Users MUST be able to save up to 3 EUR bank accounts (IBAN, account holder name, optional BIC). IBANs are validated with the ISO 13616 mod-97 checksum and a SEPA country list before saving; only the last 4 digits are shown after saving.
+- **FR-081**: A payout MUST be one wallet-signed transaction: optional `borrow` to the user's USDC account plus `transferChecked` of the same USDC amount to the payout address returned by the active PayoutProvider (mock: `PAYOUT_ADDRESS`; Bridge: the customer's liquidation address for that bank account).
+- **FR-082**: Before signing, the preview MUST show: EUR amount, USDC sent, exchange rate and its time, provider fee, StockCard fee, "You receive", rail and expected arrival, and when borrowing the new LTV, APR band and liquidation price.
+- **FR-083**: The server MUST verify the transfer on-chain before recording a Payout, be idempotent by signature, and label every mock payout "Simulated SEPA payout". No real bank data leaves the server in mock mode; IBANs are stored encrypted or only as provider references.
+- **FR-084**: Payouts above €10,000 MUST ask for a purpose (Car, Home, Tax, Other) and show "Large transfers may require extra checks by your bank and our payout partner." (AML placeholder; real limits come from the provider.)
+
 **Import**
 - **FR-050**: Users MAY import Backpack holdings. The ED25519 secret stays in the browser; the client signs a `balanceQuery` request and the server proxies `GET /api/v1/capital` with those headers (CORS workaround). Nothing is stored or logged. Fallback: demo fixture.
 
@@ -209,6 +234,8 @@ The user enters a Backpack API key and sees which holdings are eligible (SPCX) a
 - **SignedPrice**: Admin/appraiser-posted price for a market. Price, exponent, publish time.
 - **Card** *(off-chain)*: Card id, owner wallet, last 4, network, provider, status, delegate allowance.
 - **CardTransaction** *(off-chain)*: Merchant, amount, status, settlement signature, cashback amount and signature.
+- **BankAccount** *(off-chain)*: Owner, holder name, IBAN (encrypted) + last 4, country, BIC, provider external account id.
+- **Payout** *(off-chain)*: Owner, bank account, EUR and USDC amounts, rate, fees, borrow flag, transfer signature, provider transfer id, SEPA reference, status.
 
 ## Success Criteria *(mandatory)*
 

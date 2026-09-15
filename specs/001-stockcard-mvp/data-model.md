@@ -101,5 +101,11 @@ Wallets with a position or push subscription, used by the alert check to find po
 | shares | u64 | |
 | bump | u8 | |
 
+### BankAccount — hash `bank:{owner}` (Redis, max 3)
+`{ id, holderName, ibanEnc, last4, country, bic?, provider: "mock"|"bridge", providerAccountId?, payoutAddress?, createdAt }`. `ibanEnc` = AES-256-GCM with `BANK_ENCRYPTION_KEY`; the full IBAN is never returned to the client after creation.
+
+### Payout — list `payouts:{owner}` (Redis, newest first, max 100)
+`{ id, bankAccountId, eurCents, usdc6, rate, rateAt, providerFeeCents, stockcardFeeCents, receiveCents, borrowed: boolean, transferSig, providerTransferId?, sepaReference, rail: "sepa_instant"|"sepa", status: "processing"|"arrived"|"failed"|"returned", purpose?, simulated: boolean, createdAt, updatedAt }`. Idempotent by `transferSig`.
+
 ### ShopOrder — list `shop:{owner}` (Redis)
 `{ id, kind: "stock"|"art"|"item", symbol, amount, priceUsd6, paySig, mintSig, status: "paid"|"minted"|"failed", createdAt }`. Idempotent by `paySig`.

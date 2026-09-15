@@ -72,6 +72,10 @@ Source of truth: `specs/001-stockcard-mvp/parameters.md` §3b. Perks marked *pla
 | Travel & purchase insurance | — | — | Included (planned) |
 | Grading & vault credits | — | — | Included (planned) |
 | FX markup | Card network rate | Card network rate | 0% (planned) |
+| Fast Track security | — | — | 4 per year (planned) |
+| Trip / event cancellation | — | — | Up to 70%, max €5,000/year (planned) |
+| Global eSIM data | — | 1 pack/year (planned) | Monthly allowance (planned) |
+| Subscriptions | — | — | Pick 2: Financial Times, Perplexity Pro, NordVPN, Headspace, MasterClass (planned) |
 
 Safety rule: max LTV and liquidation terms never depend on tier.
 
@@ -96,7 +100,7 @@ Show a live counter of remaining founding spots only if it's real (from the wait
 ### How we compare (use in a comparison section; keep "not checked" cells honest)
 | | **StockCard** (proposed) | KAST | Nexo | Revolut Ultra | Crypto.com Visa | ether.fi Cash |
 |---|---|---|---|---|---|---|
-| Membership price | Free / €9.99 / €39.99 per month | Free / $1,000 per yr / $10,000 per yr | Free (tier = share of NEXO held) | €60/month (NL, 2026) | Subscription $4.99–29.99/month or CRO lock-up | Free Core; paid tiers |
+| Membership price | Free / €9.99 / €39.99 per month | Free / $1,000 per yr / $10,000 per yr | Free (tier = share of NEXO held) | €65/month (NL, Sept 2026) | Subscription $4.99–29.99/month or CRO lock-up | Free Core; paid tiers |
 | Top cashback | **2.5% in the real asset you pick** (on spend up to 25% of credit in use) | 3% (Private tier) | Up to 2% in NEXO (0.5% in BTC) | Not the headline benefit | 2–5% in CRO with lock-ups (8% Prime) | 3% up to $2,000/month, paid in wETH |
 | Borrow against | **Stocks, graded cards, watches, art** | — | Crypto | — | — | Crypto (Borrow Mode) |
 | Borrow rate | 9.9–14.9% (from 8.9% with discounts) | — | 2.9%–18.9% by tier and LTV | — | — | Lending-market rate (not checked) |

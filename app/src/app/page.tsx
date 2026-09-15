@@ -1,69 +1,196 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import Link from "next/link";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { usePortfolio, totals } from "@/lib/portfolio";
+import { alertBand, fixAmounts, formatPct, formatTokens, formatUsd } from "@/lib/risk";
+import { CreditCard } from "@/components/credit-card";
+import { HealthBar } from "@/components/health-bar";
+import { MockBadge } from "@/components/mock-badge";
+import { Banner } from "@/components/banner";
+
+export default function HomePage() {
+  const { publicKey, connected } = useWallet();
+  const { setVisible } = useWalletModal();
+  if (!connected || !publicKey) return <Welcome onConnect={() => setVisible(true)} />;
+  return <Home />;
+}
+
+function Welcome({ onConnect }: { onConnect: () => void }) {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="mx-auto max-w-md py-6">
+      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-brass">Real assets only · No memecoins</p>
+      <h1 className="mt-4 font-display text-[40px] leading-[1.1]">
+        Spend what you own.
+        <br />
+        <em className="text-brass">Never sell it.</em>
+      </h1>
+      <div className="mt-6">
+        <CreditCard holderName="YOUR NAME" last4="4021" expMonth={9} expYear={29} network="VISA" availableLabel="$18,420.00" />
+      </div>
+      <p className="mt-6 text-[15px] leading-relaxed text-ink-2">
+        Lock stocks, art or graded cards. Get a USDC credit line. Pay anywhere cards work.
+      </p>
+      <button
+        onClick={onConnect}
+        className="mt-8 flex min-h-[48px] w-full items-center justify-center rounded-xl bg-brass px-4 font-semibold text-on-brass"
+      >
+        Connect wallet
+      </button>
+      <p className="mt-3 flex items-center justify-center gap-2 text-xs text-ink-3">
+        Solana devnet · test assets <MockBadge />
+      </p>
+    </div>
+  );
+}
+
+function Home() {
+  const { data: assets, isLoading } = usePortfolio();
+  const t = totals(assets ?? []);
+  const worst = (assets ?? []).filter((a) => a.debt > 0n).sort((a, b) => Number(b.ltv - a.ltv))[0];
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-md space-y-4 md:max-w-none">
+        <div className="h-44 animate-pulse rounded-2xl bg-surface" />
+        <div className="h-24 animate-pulse rounded-2xl bg-surface" />
+        <div className="h-16 animate-pulse rounded-2xl bg-surface" />
+      </div>
+    );
+  }
+
+  const withCollateral = (assets ?? []).filter((a) => a.deposited > 0n);
+
+  return (
+    <div className="mx-auto max-w-md md:max-w-none md:columns-2 md:gap-8">
+      <div className="break-inside-avoid">
+        <Link href="/card" className="block">
+          <CreditCard
+            holderName="CARDHOLDER"
+            last4="4021"
+            expMonth={9}
+            expYear={29}
+            network="VISA"
+            availableLabel={formatUsd(t.availableUsd6)}
+          />
+        </Link>
+
+        <div className="mt-6">
+          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-3">Available credit</p>
+          <p className="font-display text-[44px] leading-tight tabular">{formatUsd(t.availableUsd6)}</p>
+          <p className="text-sm text-ink-3">of {formatUsd(t.creditLineUsd6)} credit line</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+
+        {worst ? (
+          <div className="mt-4">
+            <HealthBar
+              ltvBps={worst.ltv}
+              maxLtvBps={BigInt(worst.info.maxLtvBps)}
+              liqThresholdBps={BigInt(worst.info.liqThresholdBps)}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </div>
+        ) : null}
+
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="rounded-xl bg-surface p-4">
+            <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-3">Debt</p>
+            <p className="mt-1 font-mono text-lg tabular">{formatUsd(t.debtUsd6)}</p>
+          </div>
+          <div className="rounded-xl bg-surface p-4">
+            <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-3">APR</p>
+            <p className="mt-1 font-mono text-lg tabular">{worst ? formatPct(BigInt(worst.aprBps)) : "—"}</p>
+            <p className="text-xs text-ink-3">by LTV</p>
+          </div>
         </div>
-      </main>
+
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <Link
+            href="/borrow"
+            className="flex min-h-[48px] items-center justify-center rounded-xl bg-brass px-4 font-semibold text-on-brass"
+          >
+            Borrow to card
+          </Link>
+          <Link
+            href="/borrow?mode=repay"
+            className="flex min-h-[48px] items-center justify-center rounded-xl border border-rule px-4 font-semibold text-ink"
+          >
+            Repay
+          </Link>
+        </div>
+      </div>
+
+      <div className="mt-6 break-inside-avoid space-y-3 md:mt-0">
+        {withCollateral.length === 0 ? (
+          <div className="rounded-xl bg-surface p-5 text-center">
+            <p className="text-ink-2">Add an asset to open your credit line</p>
+            <Link
+              href="/portfolio"
+              className="mt-4 flex min-h-[48px] items-center justify-center rounded-xl bg-brass px-4 font-semibold text-on-brass"
+            >
+              Add assets
+            </Link>
+          </div>
+        ) : null}
+
+        {(assets ?? [])
+          .filter((a) => a.debt > 0n)
+          .map((a) => {
+            const band = alertBand(
+              a.ltv,
+              BigInt(a.info.maxLtvBps),
+              BigInt(a.info.liqThresholdBps),
+              a.info.assetClass === "Equity" ? "equity" : a.info.assetClass === "ArtNote" ? "artNote" : "collectible",
+            );
+            if (band === "healthy" || band === "watch") {
+              return band === "watch" ? (
+                <p key={a.info.symbol} className="text-sm text-ink-2">
+                  You can&apos;t borrow more until {a.info.symbol} LTV is under {formatPct(BigInt(a.info.maxLtvBps))}.
+                </p>
+              ) : null;
+            }
+            const fix = fixAmounts(
+              a.debt,
+              a.deposited,
+              a.info.multiplierMicro,
+              a.priceUsd6,
+              BigInt(a.info.haircutBps),
+              BigInt(a.info.maxLtvBps),
+              a.info.decimals,
+            );
+            const title =
+              band === "liquidatable"
+                ? "Your position can be liquidated."
+                : band === "urgent"
+                  ? "You're close to liquidation."
+                  : `${a.info.symbol.replace(/x$/, "")} dropped.`;
+            return (
+              <Banner
+                key={a.info.symbol}
+                variant={band === "warning" ? "warn" : "bad"}
+                title={title}
+                actions={
+                  <>
+                    <Link
+                      href={`/portfolio/${a.info.symbol}?mode=deposit&amount=${formatTokens(fix.addTokens, a.info.decimals)}`}
+                      className="flex min-h-[44px] items-center rounded-lg bg-brass px-4 text-sm font-semibold text-on-brass"
+                    >
+                      Add stock
+                    </Link>
+                    <Link
+                      href={`/borrow?mode=repay&market=${a.info.symbol}&amount=${(Number(fix.repayUsd6) / 1e6).toFixed(2)}`}
+                      className="flex min-h-[44px] items-center rounded-lg border border-current px-4 text-sm font-semibold"
+                    >
+                      Repay {formatUsd(fix.repayUsd6)}
+                    </Link>
+                  </>
+                }
+              >
+                Add {formatTokens(fix.addTokens, a.info.decimals)} {a.info.symbol} or repay {formatUsd(fix.repayUsd6)} to stay safe.
+              </Banner>
+            );
+          })}
+      </div>
     </div>
   );
 }

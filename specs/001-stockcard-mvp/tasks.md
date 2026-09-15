@@ -63,7 +63,8 @@ Values: parameters.md. Screens: wireframes.md.
 - [ ] T026 [US1] `/api/card` (create/get/patch), `/api/card/simulate`, `/api/card/transactions` with wallet-signature auth
 - [x] T027 [P] [US1] `CreditCard` component (ui.md; masking approach adapted from crd-ui, MIT, attribution in file header)
 - [ ] T028 [US1] S5 Card screen: create card, set limit (SPL approve), feed; S6 test purchase sheet
-- [ ] T029a [US1] Price signer: `/api/prices/sync` (CRON_SECRET) reads xStocks `price-data` + Jupiter Price v3 (SPCX: Backpack External + Jupiter), posts `set_signed_price` source `Market` when sources agree within 200 bps; skips markets under a `Demo` override; QStash every 60 s (parameters.md "Price signer")
+- [ ] T029c [P] [US1] (Stretch, after the P1 path works on mock) `app/src/lib/card/stripe.ts` CardProvider on Stripe Issuing (Stripe Sandbox): cardholder (first/last name + phone) + virtual Visa EUR card; `STRIPE_CARD_MODE=capture` first (our approve check → devnet transfer → Stripe force capture), `authorize` mode once Issuing top-ups are enabled: `/api/card/stripe/webhook` (authorize ≤ 2 s against devnet USDC allowance with Redis holds, settle on `issuing_transaction.created` with `transferChecked`, release on reversal), `/api/card/ephemeral-key` + Issuing Elements card details on S5, Test purchase sheet calls `test_helpers/issuing/authorizations`; set dashboard timeout to decline (parameters.md "Stripe Issuing sandbox provider")
+- [x] T029a [US1] (Claude, Sept 15: `app/src/lib/prices/signer.ts` + `signer.test.mjs` 7/7, `/api/prices/sync` with `?dryRun=1`; first live devnet run posted NVDAx/SPYx/TSLAx/SPCX. **Still open: QStash 60 s schedule once deployed**) Price signer: `/api/prices/sync` (CRON_SECRET) reads xStocks `price-data` + Jupiter Price v3 (SPCX: Backpack External + Jupiter), posts `set_signed_price` source `Market` when sources agree within 200 bps; skips markets under a `Demo` override; QStash every 60 s (parameters.md "Price signer")
 - [ ] T029b [US1] (Wed 09:00–11:00 ET spike, go/no-go 12:00) Switchboard: add `switchboard-on-demand` 0.13.x, confirm it builds with anchor-lang 1.2; create a custom SPYx devnet feed from the same sources; add `OracleKind::Switchboard` arm in `oracle.rs` + client update in the borrow tx; test. Go → SPYx/TSLAx switch; no-go → revert the branch, stay on T029a
 
 **Checkpoint**: US1 acceptance scenarios 1–4 pass on devnet.
@@ -103,6 +104,12 @@ Values: parameters.md. Screens: wireframes.md.
 - [x] T073 [US7] Program: `deposit_savings`, `withdraw_savings`, `claim_reserve`; reserve and `total_borrowed` accounting in accrue/borrow/repay/liquidate; utilization cap; tests from contracts/program.md
 - [ ] T074 [US7] S12 Savings screen: balance, current APY (`utilization × weighted APR × 0.60`), utilization bar, deposit/withdraw sheets, instant-withdrawable amount, founding saver badge
 - [ ] T075 [US1] APR bands in the Borrow sheet and Home ("APR 12.9% · drops to 9.9% under 20% LTV"), tier/founding discounts shown as off-chain previews
+- [ ] T076 [US1] Home balances (parameters.md "Home balances"): total balance card with Locked / Wallet assets / Card buckets, wallet token list (Token + Token-2022, priced, "No price" rows), LTV of locked collateral plus secondary "Debt is x% of everything you hold"; `/api/wallet/balances` or client hook with the same shape
+- [ ] T077 [P] [US1] Price history: `/api/prices/history` (CoinGecko for xStocks, Redis `pricehist:` for Signed Appraisal/PartnerFmv, demo points), `PriceChart` SVG component (7D/30D/90D, hover tooltip, liquidation line); show on S8/D8 and in the D7 selected-asset panel
+- [ ] T079 [P] [US9] `app/src/lib/payout/{provider,mock,bridge}.ts` (bridge = stub behind `PAYOUT_PROVIDER`), IBAN mod-97 + SEPA country validation (`app/src/lib/iban.ts` with unit checks), `/api/bank-accounts`, `/api/payouts/quote`, `/api/payouts` with on-chain transfer verification; BankAccount + Payout records
+- [ ] T080 [US9] S14/D14 "Send to bank" sheet/dialog: source Borrow / Card balance, EUR amount, bank account select + Add IBAN dialog, preview rows per FR-082, one transaction `borrow` + `transferChecked`, payout status rows (Processing → Arrived, "Simulated SEPA payout"), purpose question above €10,000; entry points on Home and Card
+- [ ] T081 [US9] (Post-demo unless Bridge SEPA access arrives) Bridge adapter: external account `iban`, liquidation address with `destination_payment_rail: "sepa"`, drains polling for status, `developer_fee_percent`
+- [ ] T078 [US4] Cashback screen perks block: planned Revolut Ultra-style perks per tier from parameters.md "Membership perks", all under "Planned benefits" with the footnote; no perk shown as active
 
 ## Phase 7: US5 Art notes and collectibles (P2)
 
@@ -123,6 +130,7 @@ Values: parameters.md. Screens: wireframes.md.
 - [ ] T042 PWA: `manifest.webmanifest`, icons, theme color, minimal service worker (app shell + push handlers from T059)
 - [ ] T043 Install JDK 17 + Android SDK; `solana-mobile webshell init/build`; install APK on a device; verify MWA connect + P1 flow
 - [ ] T044 [P] 360 px pass on every screen; reduced motion; focus states
+- [ ] T044b [P] Desktop pass per wireframes.md "Desktop" (D1–D13): 12-col grid ≥ 1024 px, top bar (price age, alert bell, wallet pill), sheets → 480 px dialogs, tables for Assets/Card activity/Admin; check 1024, 1280×800, 1440×900
 - [ ] T045 Vercel production deploy with env; verify no console errors
 - [ ] T046 [P] README: architecture, risk params, what's mocked, run steps, screenshots, APK link
 - [ ] T047 Record 2–3 min demo video (US1→US4 in one take)

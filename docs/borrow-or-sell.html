@@ -1,0 +1,336 @@
+<title>Borrow or Sell?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;0,6..96,600;1,6..96,500&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --plaster:#E9ECE8;--surface:#F4F6F3;--raised:#FFFFFF;--rule:#D3D9D4;--rule-2:#BFC7C1;
+  --ink:#141C19;--ink-2:#48524D;--ink-3:#6F7974;
+  --brass:#8E6A22;--brass-soft:#EFE5CF;--on-brass:#FFFFFF;
+  --good:#2F6B4F;--warn:#9A6B12;--bad:#A33A2C;--good-soft:#DCEBE2;--bad-soft:#F3DAD5;
+  --display:"Bodoni Moda",Didot,"Times New Roman",serif;
+  --ui:"Hanken Grotesk",-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --plaster:#0E1311;--surface:#131916;--raised:#18201C;--rule:#26302B;--rule-2:#34403A;
+  --ink:#E6EBE7;--ink-2:#AEB8B2;--ink-3:#8A948F;
+  --brass:#D1AE63;--brass-soft:#2E2718;--on-brass:#141C19;
+  --good:#7CC39D;--warn:#E0B25A;--bad:#E07A6A;--good-soft:#1B2E24;--bad-soft:#35201C;
+}}
+:root[data-theme="dark"]{
+  --plaster:#0E1311;--surface:#131916;--raised:#18201C;--rule:#26302B;--rule-2:#34403A;
+  --ink:#E6EBE7;--ink-2:#AEB8B2;--ink-3:#8A948F;
+  --brass:#D1AE63;--brass-soft:#2E2718;--on-brass:#141C19;
+  --good:#7CC39D;--warn:#E0B25A;--bad:#E07A6A;--good-soft:#1B2E24;--bad-soft:#35201C;
+}
+*{box-sizing:border-box}
+body{background:var(--plaster);color:var(--ink);font:400 17px/1.6 var(--ui);margin:0;padding-inline:clamp(16px,4vw,56px);padding-block:0 96px}
+.wrap{max-width:1120px;margin:0 auto}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.mono{font-family:var(--mono)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-block:20px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.word{font:600 22px/1 var(--display)}
+.top nav{display:flex;gap:4px;flex-wrap:wrap}
+.top nav a{color:var(--ink-2);text-decoration:none;font-size:14px;padding:6px 10px;border-radius:6px}
+.top nav a:hover{background:var(--surface);color:var(--ink)}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--brass)}
+.hero{padding-block:64px 36px;max-width:820px}
+h1{font:500 clamp(44px,7vw,84px)/1 var(--display);margin:16px 0 22px;letter-spacing:-.015em;text-wrap:balance}
+h1 em{color:var(--brass)}
+.lede{font-size:20px;color:var(--ink-2);max-width:62ch;margin:0}
+.verdicts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--ink);margin-top:40px}
+.verdicts div{padding:18px 22px 20px 0;border-right:1px solid var(--rule)}
+.verdicts div+div{padding-left:22px}
+.verdicts div:last-child{border-right:0}
+.verdicts b{display:block;font:500 26px/1.15 var(--display);margin:8px 0 6px}
+.verdicts p{margin:0;color:var(--ink-2);font-size:15px}
+section{padding-block:60px 10px;border-top:1px solid var(--rule)}
+h2{font:500 clamp(32px,4.4vw,48px)/1.08 var(--display);margin:10px 0 14px;text-wrap:balance}
+.sub{color:var(--ink-2);max-width:66ch;margin:0 0 30px}
+h3{font:600 18px/1.3 var(--ui);margin:0 0 6px}
+
+/* calculator */
+.calc{display:grid;grid-template-columns:340px minmax(0,1fr);gap:32px;align-items:start}
+.inputs{display:grid;gap:16px;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:20px}
+.field{display:grid;gap:6px}
+.field label,.field .lab{font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.field .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.field output{font:500 15px var(--mono);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--brass)}
+select,input[type=number]{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--rule-2);border-radius:6px;background:var(--raised);color:var(--ink);width:100%}
+.seg{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;background:var(--raised);border:1px solid var(--rule-2);border-radius:8px;padding:3px}
+.seg button{all:unset;cursor:pointer;text-align:center;padding:7px 6px;border-radius:5px;font-size:14px;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--plaster);font-weight:600}
+.seg button:focus-visible{outline:2px solid var(--brass)}
+.hint{font-size:12px;color:var(--ink-3);margin:0}
+.results{display:grid;gap:18px}
+.answer{border-radius:10px;padding:22px 24px;border:1px solid var(--rule-2);background:var(--raised)}
+.answer .eyebrow{color:var(--ink-3)}
+.answer .big{font:500 clamp(30px,4vw,44px)/1.1 var(--display);margin:8px 0 6px;text-wrap:balance}
+.answer.win{border-color:var(--good);background:linear-gradient(0deg,var(--good-soft),var(--raised) 70%)}
+.answer.lose{border-color:var(--bad);background:linear-gradient(0deg,var(--bad-soft),var(--raised) 70%)}
+.answer p{margin:0;color:var(--ink-2)}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.card{background:var(--raised);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;display:grid;gap:10px;align-content:start}
+.card .hd{display:flex;justify-content:space-between;align-items:baseline}
+.card .hd b{font:500 22px var(--display)}
+dl.kv{display:grid;grid-template-columns:1fr auto;gap:6px 14px;margin:0;font-size:14px}
+dl.kv dt{color:var(--ink-2)}dl.kv dd{margin:0;font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+dl.kv .tot{border-top:1px solid var(--rule);padding-top:6px;font-weight:600;color:var(--ink)}
+.bars{display:grid;gap:8px}
+.bar{display:grid;grid-template-columns:70px 1fr 104px;gap:10px;align-items:center;font-size:13px}
+.bar .track{height:14px;background:var(--surface);border-radius:3px;overflow:hidden}
+.bar .fill{height:100%;background:var(--ink-3)}
+.bar.b .fill{background:var(--brass)}
+.bar span:last-child{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.scale{position:relative;height:56px;margin-top:6px}
+.scale .line{position:absolute;left:0;right:0;top:22px;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--good) 0 var(--be,30%),var(--bad) var(--be,30%) 100%);opacity:.8}
+.scale .mk{position:absolute;top:0;transform:translateX(-50%);font:11px var(--mono);white-space:nowrap;text-align:center}
+.scale .mk i{display:block;width:2px;height:16px;margin:2px auto 0;background:var(--ink)}
+.scale .mk.be{top:30px}.scale .mk.be i{margin:0 auto 2px}
+.note{font-size:13px;color:var(--ink-3);margin:8px 0 0}
+
+/* lists and tables */
+.adv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 40px}
+.adv div{padding:18px 0;border-bottom:1px solid var(--rule)}
+.adv p{margin:0;color:var(--ink-2);font-size:15px}
+.tag{display:inline-block;font:500 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:4px 7px;border-radius:999px;border:1px solid currentColor;margin-left:6px;vertical-align:2px}
+.tag.s{color:var(--good)}.tag.m{color:var(--warn)}.tag.w{color:var(--ink-3)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px;min-width:720px;font-variant-numeric:tabular-nums}
+th{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:10px;border-bottom:1px solid var(--rule-2)}
+td{padding:12px 10px;border-bottom:1px solid var(--rule);vertical-align:top}
+td.n{font-family:var(--mono);text-align:right;white-space:nowrap}
+td.pos{color:var(--good)}td.neg{color:var(--bad)}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:36px}
+ul.clean{margin:0;padding-left:18px;display:grid;gap:10px;color:var(--ink-2)}
+ul.clean b{color:var(--ink)}
+.callout{border-left:3px solid var(--brass);padding:6px 0 6px 20px;margin:0 0 26px;max-width:74ch}
+.callout p{margin:6px 0 0;color:var(--ink-2)}
+ol.recs{margin:0;padding:0;list-style:none;counter-reset:r;display:grid;gap:16px}
+ol.recs li{counter-increment:r;display:grid;grid-template-columns:36px 1fr;gap:12px}
+ol.recs li::before{content:counter(r);font:500 22px/1 var(--display);color:var(--brass)}
+ol.recs p{margin:4px 0 0;color:var(--ink-2)}
+footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--rule);font-size:13px;color:var(--ink-3)}
+@media (max-width:900px){.calc,.two,.adv{grid-template-columns:1fr}.verdicts{grid-template-columns:1fr}.verdicts div{border-right:0;border-bottom:1px solid var(--rule);padding-left:0!important}}
+@media (max-width:520px){.pair{grid-template-columns:1fr}.bar{grid-template-columns:56px 1fr 90px}}
+</style>
+
+<div class="wrap">
+<header class="top"><span class="word">StockCard</span>
+  <nav aria-label="Sections"><a href="#calc">Calculator</a><a href="#why">Why borrow</a><a href="#catch">The catch</a><a href="#tax">Tax</a><a href="#bank">Car &amp; house</a><a href="#us">For StockCard</a></nav>
+</header>
+
+<div class="hero">
+  <div class="eyebrow">Business model research · Sept 15, 2026 · not tax advice</div>
+  <h1>Borrow or <em>sell?</em></h1>
+  <p class="lede">Borrowing against what you own keeps it invested and skips a taxable sale. But the tax only moves to later and the loan charges interest. This page shows when borrowing really wins, with the numbers.</p>
+  <div class="verdicts">
+    <div><span class="eyebrow">Stocks, 1–3 years</span><b>Selling is usually cheaper</b><p>At 9.9–14.9% APR. Borrowing wins below a ~5–7% rate, or for short loans repaid from income.</p></div>
+    <div><span class="eyebrow">Watches, cards, art</span><b>About even, and you keep it</b><p>Can't sell 10% of a watch; selling costs 10–25%. Banks don't lend against them.</p></div>
+    <div><span class="eyebrow">Our pitch</span><b>Cash in minutes, without selling</b><p>Not "cheaper than tax". Strongest for collectibles, on-chain stocks and short needs.</p></div>
+  </div>
+</div>
+
+<!-- CALCULATOR -->
+<section id="calc">
+  <div class="eyebrow">Try your own case</div>
+  <h2>The calculator</h2>
+  <p class="sub">Same model as <span class="mono">scripts/borrow_vs_sell.py</span>. Compares what you'd own at the end if you then sold everything and paid all tax, the strictest comparison.</p>
+  <div class="calc">
+    <form class="inputs" id="f" onsubmit="return false">
+      <div class="field"><span class="lab">Asset</span><div class="seg" role="group" aria-label="Asset type"><button type="button" id="a-stock" aria-pressed="true">Stocks</button><button type="button" id="a-item" aria-pressed="false">Watch · card · art</button></div></div>
+      <div class="field"><label for="country">Tax country</label>
+        <select id="country"><option value="DE">Germany · 26.375%, €1,000 allowance</option><option value="BE">Belgium · 10%, ~€10,000 exemption</option><option value="NL">Netherlands · no tax on sale (box 3)</option><option value="FR">France · ~30% flat</option><option value="NONE">No tax on this sale</option></select>
+        <p class="hint" id="countryhint"></p></div>
+      <div class="field"><div class="row"><label for="value">Value of what you own</label><output id="o-value"></output></div><input type="range" id="value" min="10000" max="1000000" step="5000" value="150000"></div>
+      <div class="field"><div class="row"><label for="basis">What you paid for it</label><output id="o-basis"></output></div><input type="range" id="basis" min="0" max="1000000" step="5000" value="60000"></div>
+      <div class="field"><div class="row"><label for="need">Cash you need</label><output id="o-need"></output></div><input type="range" id="need" min="1000" max="500000" step="1000" value="40000"></div>
+      <div class="field"><div class="row"><label for="years">Years until repaid</label><output id="o-years"></output></div><input type="range" id="years" min="0.25" max="5" step="0.25" value="1"></div>
+      <div class="field"><div class="row"><label for="growth">Expected return per year</label><output id="o-growth"></output></div><input type="range" id="growth" min="-0.3" max="0.2" step="0.01" value="0.07"></div>
+      <div class="field"><div class="row"><label for="apr">Loan APR</label><output id="o-apr"></output></div><input type="range" id="apr" min="0.02" max="0.2" step="0.001" value="0.129"><p class="hint"><label><input type="checkbox" id="auto" checked> Use StockCard's band for this LTV</label></p></div>
+    </form>
+
+    <div class="results" aria-live="polite">
+      <div class="answer" id="answer"><span class="eyebrow">Result</span><div class="big" id="headline"></div><p id="subline"></p></div>
+      <div class="pair">
+        <div class="card"><div class="hd"><b>Sell</b><span class="mono" id="s-sold" style="font-size:13px;color:var(--ink-3)"></span></div>
+          <dl class="kv"><dt>Tax paid today</dt><dd id="s-tax"></dd><dt>Selling costs</dt><dd id="s-cost"></dd><dt>Still invested</dt><dd id="s-rest"></dd><dt class="tot">You own at the end</dt><dd class="tot" id="s-end"></dd></dl></div>
+        <div class="card"><div class="hd"><b>Borrow</b><span class="mono" id="b-ltv" style="font-size:13px;color:var(--ink-3)"></span></div>
+          <dl class="kv"><dt>Interest over the period</dt><dd id="b-int"></dd><dt>Tax postponed (paid at end)</dt><dd id="b-tax"></dd><dt>Price fall to liquidation</dt><dd id="b-liq"></dd><dt class="tot">You own at the end</dt><dd class="tot" id="b-end"></dd></dl></div>
+      </div>
+      <div class="card">
+        <div class="bars" id="bars"></div>
+        <div><span class="eyebrow" style="color:var(--ink-3)">Where your APR sits against the break-even rate</span>
+          <div class="scale" id="scale"><div class="line"></div></div>
+          <p class="note" id="scalenote"></p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY -->
+<section id="why">
+  <div class="eyebrow">The real advantages</div>
+  <h2>Why people borrow instead of selling</h2>
+  <p class="sub">Private banks have offered this for decades as Lombard loans. The benefits are real, but they're not equally strong.</p>
+  <div class="adv">
+    <div><h3>You keep the thing itself <span class="tag s">Very strong · collectibles</span></h3><p>You can't sell 10% of a Daytona or a PSA 10 card. A €15k loan keeps the €60k watch yours, safely in the vault.</p></div>
+    <div><h3>No selling costs <span class="tag s">Strong · collectibles, art</span></h3><p>Stocks cost ~0.1–0.5% to sell. Watch dealers buy well below retail, card marketplaces take fees, and art auctions often cost 20%+ in commissions and premiums.</p></div>
+    <div><h3>No taxable sale now <span class="tag m">Depends on country</span></h3><p>A loan isn't income or a sale, so capital gains tax isn't triggered. It's postponed until you sell, not cancelled. In the Netherlands there's no tax on the sale at all.</p></div>
+    <div><h3>No forced timing <span class="tag s">Strong</span></h3><p>Need money in a dip? Selling locks in the loss. Borrowing lets you wait, as long as the fall doesn't reach liquidation.</p></div>
+    <div><h3>Speed <span class="tag s">Strong</span></h3><p>One signature to the card, SEPA Instant to your bank in seconds. Selling stocks settles T+1, then a transfer; selling art takes weeks or months.</p></div>
+    <div><h3>Keep the upside and income <span class="tag m">Depends on APR</span></h3><p>Everything stays invested and dividends keep accruing. It only pays off if the assets grow faster than the loan costs.</p></div>
+    <div><h3>Flexible repayment <span class="tag m">Moderate</span></h3><p>No schedule, no early-repayment fee, interest only on what you've drawn.</p></div>
+    <div><h3>No credit check (for now) <span class="tag w">Temporary</span></h3><p>The collateral secures the loan. The EU Consumer Credit Directive 2023/2225 applies from 20 Nov 2026 and brings creditworthiness rules. Don't lead with this.</p></div>
+  </div>
+</section>
+
+<!-- CATCH -->
+<section id="catch">
+  <div class="eyebrow">What the model shows</div>
+  <h2>The catch: interest, liquidation, and tax that only moves</h2>
+  <div class="callout"><b>If you'll sell eventually anyway, the loan has to cost less than your assets earn.</b><p>For a stock portfolio expected to return 7% a year, that break-even APR is about 5–7%. If prices fall, having sold earlier always wins. A liquidation also realises the gain, so the tax arrives anyway.</p></div>
+  <div class="tw"><table>
+    <thead><tr><th>Case</th><th>Tax if sold today</th><th>APR</th><th>Borrow vs sell, all sold at the end</th><th>Break-even APR</th></tr></thead>
+    <tbody>
+      <tr><td>Germany · €40k from €150k of stocks (basis €60k), 1 yr</td><td class="n">€7,229</td><td class="n">12.9%</td><td class="n neg">−€3,219</td><td class="n">4.9%</td></tr>
+      <tr><td>Germany · same, 3 years</td><td class="n">€7,229</td><td class="n">12.9%</td><td class="n neg">−€8,204</td><td class="n">6.1%</td></tr>
+      <tr><td>Germany · same, at a broker's 3.7%, 3 years</td><td class="n">€7,229</td><td class="n">3.7%</td><td class="n pos">+€2,891</td><td class="n">6.1%</td></tr>
+      <tr><td>Germany · smaller €25k loan, 1 yr</td><td class="n">€4,401</td><td class="n">9.9%</td><td class="n neg">−€1,363</td><td class="n">4.5%</td></tr>
+      <tr><td>Belgium · €100k house deposit from €400k, 1 yr</td><td class="n">€5,625</td><td class="n">12.9%</td><td class="n neg">−€7,816</td><td class="n">5.1%</td></tr>
+      <tr><td>Netherlands · €40k from €150k, 1 yr</td><td class="n">€0</td><td class="n">12.9%</td><td class="n neg">−€2,587</td><td class="n">6.5%</td></tr>
+      <tr><td>Watch · €15k from a €60k watch, +5%/yr, 1 yr</td><td class="n">€0</td><td class="n">15.9%</td><td class="n pos">+€78 and you keep it</td><td class="n">16.4%</td></tr>
+      <tr><td>Watch · same, flat price</td><td class="n">€0</td><td class="n">15.9%</td><td class="n neg">−€2,472</td><td class="n">never</td></tr>
+      <tr><td>Germany stocks · prices fall 20% in the year</td><td class="n">€7,229</td><td class="n">12.9%</td><td class="n neg">−€12,599</td><td class="n">never</td></tr>
+    </tbody></table></div>
+  <div class="two" style="margin-top:34px">
+    <div><h3>Where borrowing clearly wins</h3><ul class="clean">
+      <li><b>Short bridges repaid from income.</b> 6 months on €40k at 12.9% is ~€2,590 of interest, against €7,229 of tax and trading costs today, with 27% of the portfolio pulled out of the market.</li>
+      <li><b>Things you can't split or that cost a lot to sell:</b> watches, graded cards, art.</li>
+      <li><b>Low APRs</b> around 3.7–6%.</li>
+      <li><b>Decades-long holders</b>, where deferral compounds.</li></ul></div>
+    <div><h3>Where selling wins</h3><ul class="clean">
+      <li><b>Loans that run for years at 10%+</b> on stocks.</li>
+      <li><b>Falling markets</b>: the sold part didn't fall.</li>
+      <li><b>No tax on sale</b> (Netherlands box 3), unless it's a collectible or speed matters.</li>
+      <li><b>Belgium's annual exemption</b>: spreading small sales across years can beat a loan.</li></ul></div>
+  </div>
+</section>
+
+<!-- TAX -->
+<section id="tax">
+  <div class="eyebrow">Simplified, 2026, residents holding directly</div>
+  <h2>Tax where our members live</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Country</th><th>Tax when you sell</th><th>Effect on borrow vs sell</th></tr></thead>
+    <tbody>
+      <tr><td><b>Germany</b></td><td>25% + solidarity surcharge = 26.375% (plus church tax if applicable), €1,000 yearly allowance. Personal items (watches, art, collectibles) held over 1 year are generally tax-free to sell.</td><td>Big deferral on stock gains. For collectibles the win is selling costs, not tax.</td></tr>
+      <tr><td><b>Netherlands</b></td><td>No tax on the sale: box 3 taxes wealth yearly. The Wet werkelijk rendement box 3 (passed by the Tweede Kamer on 12 Feb 2026, planned for 2028) taxes actual returns including unrealised gains on shares each year.</td><td>No tax deferral for stocks. Sell the speed, keeping assets, and collectibles.</td></tr>
+      <tr><td><b>Belgium</b></td><td>New 10% tax on realised gains on financial assets from 1 Jan 2026, with a yearly exemption (around €10,000).</td><td>Moderate deferral; spreading sales is a real alternative.</td></tr>
+      <tr><td><b>France · Spain · Italy</b></td><td>Roughly 26–30% on gains (Spain progressive 19–30%).</td><td>Similar to Germany.</td></tr>
+    </tbody></table></div>
+  <div class="callout" style="margin-top:28px"><b>Two traps we must clear before launch</b><p>1. In some countries, moving tokens into a smart contract can itself count as a sale (UK guidance on DeFi lending looks at beneficial ownership). We need a written tax opinion per country. 2. Loan interest for a car or a house deposit is usually not tax-deductible for individuals. Never imply it is. Tokenized stocks can also be taxed differently from shares.</p></div>
+</section>
+
+<!-- BANK -->
+<section id="bank">
+  <div class="eyebrow">The new Send-to-bank feature</div>
+  <h2>Car and house: borrow straight to your IBAN</h2>
+  <p class="sub">One signature borrows USDC and sends it to a payout address; the provider converts to EUR and pays your bank by SEPA Instant. In the demo the SEPA leg is simulated; in production it's a Bridge liquidation address routed to SEPA.</p>
+  <div class="two">
+    <div><h3>Car</h3><ul class="clean">
+      <li><b>Good fit:</b> €15–60k, often repaid from salary within 1–2 years.</li>
+      <li><b>Compare:</b> Dutch banks advertise car loans from 7.5% (ABN AMRO) and 9.9–11.9% (ING). Our 9.9–12.9% is in range, with no schedule and no sale.</li>
+      <li><b>Cheaper elsewhere:</b> broker securities loans (IBKR EUR ~3.7%, German online brokers ~4.9–7%).</li></ul></div>
+    <div><h3>House deposit</h3><ul class="clean">
+      <li><b>Works for short bridges</b>, e.g. until an old home is sold.</li>
+      <li><b>Mortgage lenders ask where the deposit comes from</b> and count other debts; a loan-funded deposit can cut what they lend. Check with an adviser first (in NL, also BKR).</li>
+      <li><b>Large payouts get AML checks</b>; the app asks for a purpose above €10,000.</li>
+      <li><b>Big amounts, big stakes:</b> keep the suggested max 35% LTV in view.</li></ul></div>
+  </div>
+</section>
+
+<!-- US -->
+<section id="us">
+  <div class="eyebrow">Decisions for Luis and Bart</div>
+  <h2>What this means for StockCard</h2>
+  <div class="two" style="margin-bottom:34px">
+    <div><h3>Where we're clearly valuable</h3><ul class="clean">
+      <li><b>Collectibles, watches, art.</b> No bank Lombard for normal customers; the alternatives are selling or pawn-style loans that typically cost far more than 15.9% a year.</li>
+      <li><b>On-chain stock holders.</b> xStocks and SPCX holders have no broker to borrow from.</li>
+      <li><b>Speed and spend.</b> Card or IBAN in minutes, 24/7.</li></ul></div>
+    <div><h3>Where we're weak</h3><ul class="clean">
+      <li><b>Stock holders with a broker</b> can borrow at ~3.7–7%. At 9.9–14.9% we can't claim to beat the tax for them.</li></ul></div>
+  </div>
+  <ol class="recs">
+    <li><div><b>Change the pitch line</b><p>"Get cash from what you own in minutes, without selling it." Use tax only with the caveat "Selling can trigger tax. Borrowing postpones it but costs interest." Never "tax-free" or "cheaper than tax".</p></div></li>
+    <li><div><b>Put this calculator in the app</b><p>On the Send-to-bank sheet above €10,000, with the member's country. It builds trust and helps with consumer-credit duties.</p></div></li>
+    <li><div><b>Consider a "Prime" stock band</b><p>About 6.9–7.9% at ≤ 20% LTV would make the tax story true for many cases. Savers get ~6%, so it needs cheaper liquidity, a lower-APY tranche or subscription revenue; rerun the unit economics first.</p></div></li>
+    <li><div><b>Keep the margin in collectibles and art</b><p>11.9–15.9% is competitive there and the member benefit is largest.</p></div></li>
+    <li><div><b>Get two opinions before launch</b><p>Tax (deposit into the vault as a disposal; tokenized-stock treatment) and consumer credit (CCD2 from 20 Nov 2026).</p></div></li>
+  </ol>
+</section>
+
+<footer>Sources checked Sept 15, 2026: rijksoverheid.nl and Deloitte NL (box 3), Loyens &amp; Loeff and BNP Paribas Fortis (Belgium), Finanztip and Raisin (German allowance), extraETF (Wertpapierkredit rates), Interactive Brokers margin rates, ABN AMRO and ING car loans, EUR-Lex and PwC Legal (CCD2), Bridge API docs (SEPA off-ramp). Full notes in docs/borrow-vs-sell.md. Not tax, legal or investment advice.</footer>
+</div>
+
+<script>
+(function(){
+  var STOCK=[[.20,.099],[.35,.129],[.50,.149]], ITEM=[[.20,.119],[.40,.159]], FEE=.005;
+  var C={DE:{r:.26375,a:1000,h:"Abgeltungssteuer incl. Soli; church tax not included."},BE:{r:.10,a:10000,h:"Exemption shown as €10,000; check the current indexed amount."},NL:{r:0,a:0,h:"Box 3 taxes wealth yearly, not the sale. From 2028 unrealised gains are taxed yearly either way."},FR:{r:.30,a:0,h:"Flat tax approximation."},NONE:{r:0,a:0,h:"E.g. personal items held over a year in Germany."}};
+  var $=function(id){return document.getElementById(id)};
+  var eur=function(v){return (v<0?"−":"")+"€"+Math.round(Math.abs(v)).toLocaleString("en-US")};
+  var pct=function(v,d){return (v*100).toFixed(d==null?1:d)+"%"};
+  var asset="stock";
+  function band(ltv,b){for(var i=0;i<b.length;i++)if(ltv<=b[i][0])return b[i][1];return null}
+  function tax(amount,gf,r,a){return Math.max(0,amount*gf-a)*r}
+  function grossUp(need,gf,r,a,c){var lo=need,hi=need*3;for(var i=0;i<80;i++){var m=(lo+hi)/2,net=m-c*m-tax(m,gf,r,a);if(net<need)lo=m;else hi=m}return hi}
+  function model(p,apr){
+    var gf=Math.max(0,(p.value-p.basis)/p.value), s, taxNow, rest, restBasis, surplus=0, costNow;
+    if(p.divisible){s=grossUp(p.need,gf,p.r,p.a,p.cost);taxNow=tax(s,gf,p.r,p.a);rest=p.value-s;restBasis=p.basis*rest/p.value}
+    else{s=p.value;taxNow=tax(s,gf,p.r,p.a);rest=0;restBasis=0;surplus=s-p.cost*s-taxNow-p.need}
+    costNow=p.cost*s;
+    var restEnd=rest*Math.pow(1+p.g,p.y);
+    var sellEnd=restEnd+surplus-p.cost*restEnd-(restEnd?tax(restEnd,Math.max(0,(restEnd-restBasis)/restEnd),p.r,p.a):0);
+    var loan=p.need/(1-FEE), debt=loan*(1+apr*p.y), vEnd=p.value*Math.pow(1+p.g,p.y);
+    var taxLater=tax(vEnd,Math.max(0,(vEnd-p.basis)/vEnd),p.r,p.a);
+    var borrowEnd=vEnd-p.cost*vEnd-taxLater-debt;
+    return {s:s,taxNow:taxNow,costNow:costNow,rest:rest,sellEnd:sellEnd,loan:loan,ltv:loan/p.value,interest:debt-loan,taxLater:taxLater,borrowEnd:borrowEnd,liqDrop:1-(loan/.65)/p.value};
+  }
+  function breakeven(p){var f=function(a){var m=model(p,a);return m.borrowEnd-m.sellEnd};if(f(0)<0)return null;var lo=0,hi=.6;if(f(hi)>0)return hi;for(var i=0;i<60;i++){var m=(lo+hi)/2;if(f(m)>0)lo=m;else hi=m}return lo}
+  function update(){
+    var value=+$("value").value, basis=Math.min(+$("basis").value,value*3), need=+$("need").value, y=+$("years").value, g=+$("growth").value;
+    var c=C[$("country").value]; $("countryhint").textContent=c.h;
+    var p={value:value,basis:basis,need:need,y:y,g:g,r:c.r,a:c.a,cost:asset==="stock"?.0025:.15,divisible:asset==="stock"};
+    var bands=asset==="stock"?STOCK:ITEM, maxLtv=asset==="stock"?.5:.4;
+    var ltv=need/(1-FEE)/value, auto=band(ltv,bands);
+    if($("auto").checked&&auto!=null){$("apr").value=auto}
+    var apr=+$("apr").value;
+    $("o-value").textContent=eur(value);$("o-basis").textContent=eur(basis);$("o-need").textContent=eur(need);
+    $("o-years").textContent=y+(y===1?" year":" years");$("o-growth").textContent=(g>=0?"+":"")+pct(g,0);$("o-apr").textContent=pct(apr);
+    var ans=$("answer");
+    if(ltv>maxLtv){ans.className="answer lose";$("headline").textContent="That's more than you can borrow";$("subline").textContent="The loan would be "+pct(ltv)+" of the value; the maximum is "+pct(maxLtv,0)+". Lower the amount or add collateral.";return}
+    if(!p.divisible&&need>value*(1-p.cost)){ans.className="answer lose";$("headline").textContent="Selling wouldn't raise enough";$("subline").textContent="After selling costs the item brings less than you need.";}
+    var m=model(p,apr), diff=m.borrowEnd-m.sellEnd, be=breakeven(p);
+    ans.className="answer "+(diff>=0?"win":"lose");
+    $("headline").textContent=diff>=0?"Borrowing leaves you "+eur(diff)+" better off":"Selling leaves you "+eur(-diff)+" better off";
+    $("subline").textContent=(p.divisible?"":"Borrowing also lets you keep the item. ")+"After "+$("o-years").textContent+", if you then sold everything and paid all tax.";
+    $("s-sold").textContent="sell "+eur(m.s);$("s-tax").textContent=eur(m.taxNow);$("s-cost").textContent=eur(m.costNow);$("s-rest").textContent=eur(m.rest);$("s-end").textContent=eur(m.sellEnd);
+    $("b-ltv").textContent="LTV "+pct(m.ltv)+(auto!=null&&$("auto").checked?" · band "+pct(auto):"");$("b-int").textContent=eur(m.interest);$("b-tax").textContent=eur(m.taxLater);$("b-liq").textContent="−"+pct(m.liqDrop,0);$("b-end").textContent=eur(m.borrowEnd);
+    var mx=Math.max(m.sellEnd,m.borrowEnd,1);
+    $("bars").innerHTML=[["Sell","",m.sellEnd],["Borrow","b",m.borrowEnd]].map(function(r){return '<div class="bar '+r[1]+'"><span>'+r[0]+'</span><div class="track"><div class="fill" style="width:'+Math.max(0,r[2]/mx*100).toFixed(1)+'%"></div></div><span>'+eur(r[2])+'</span></div>'}).join("");
+    var MAXS=.20, sc=$("scale"), bePos=be==null?0:Math.min(be,MAXS)/MAXS*100;
+    sc.style.setProperty("--be",bePos+"%");
+    sc.innerHTML='<div class="line"></div><div class="mk" style="left:'+(Math.min(apr,MAXS)/MAXS*100)+'%">your '+pct(apr)+'<i></i></div>'+(be==null?'':'<div class="mk be" style="left:'+bePos+'%"><i></i>break-even '+(be>=MAXS?"≥20%":pct(be))+'</div>');
+    $("scalenote").textContent=be==null?"No APR makes borrowing win here: with these returns and costs, selling now keeps more.":"Green: rates where borrowing wins. Red: rates where selling wins. Scale 0–20%.";
+  }
+  ["value","basis","need","years","growth","country","auto"].forEach(function(id){$(id).addEventListener("input",update)});
+  $("apr").addEventListener("input",function(){$("auto").checked=false;update()});
+  [["a-stock","stock"],["a-item","item"]].forEach(function(b){$(b[0]).addEventListener("click",function(){asset=b[1];$("a-stock").setAttribute("aria-pressed",asset==="stock");$("a-item").setAttribute("aria-pressed",asset==="item");
+    if(asset==="item"){$("country").value="NONE";$("value").value=60000;$("basis").value=25000;$("need").value=15000;$("growth").value=.05}
+    else{$("country").value="DE";$("value").value=150000;$("basis").value=60000;$("need").value=40000;$("growth").value=.07}
+    $("auto").checked=true;update()})});
+  update();
+})();
+</script>

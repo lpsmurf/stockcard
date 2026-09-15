@@ -49,7 +49,7 @@
       "id": "wallet",
       "type": "external",
       "label": "User wallet",
-      "sublabel": "Phantom · Solflare",
+      "sublabel": "Phantom \u00b7 Solflare",
       "pos": [
         40,
         70
@@ -63,7 +63,7 @@
       "id": "app",
       "type": "frontend",
       "label": "StockCard app",
-      "sublabel": "Next.js PWA · APK",
+      "sublabel": "Next.js PWA \u00b7 APK",
       "pos": [
         290,
         70
@@ -92,7 +92,7 @@
       "id": "vaults",
       "type": "database",
       "label": "Vaults",
-      "sublabel": "collateral · USDC pool",
+      "sublabel": "collateral \u00b7 USDC pool",
       "pos": [
         830,
         70
@@ -106,7 +106,7 @@
       "id": "api",
       "type": "backend",
       "label": "Route handlers",
-      "sublabel": "card · shop · alerts",
+      "sublabel": "card \u00b7 shop \u00b7 alerts \u00b7 history",
       "pos": [
         290,
         240
@@ -120,7 +120,7 @@
       "id": "redis",
       "type": "database",
       "label": "Upstash Redis",
-      "sublabel": "cards · orders · push",
+      "sublabel": "cards \u00b7 orders \u00b7 push",
       "pos": [
         40,
         240
@@ -147,8 +147,8 @@
     {
       "id": "sources",
       "type": "external",
-      "label": "xStocks + Jupiter",
-      "sublabel": "public prices",
+      "label": "Price APIs",
+      "sublabel": "xStocks \u00b7 Jupiter \u00b7 CoinGecko",
       "pos": [
         830,
         240
@@ -162,7 +162,7 @@
       "id": "card",
       "type": "external",
       "label": "Card provider",
-      "sublabel": "mock · Bridge sandbox",
+      "sublabel": "mock \u00b7 Bridge sandbox",
       "pos": [
         290,
         405
@@ -183,6 +183,20 @@
       ],
       "size": [
         140,
+        64
+      ]
+    },
+    {
+      "id": "bank",
+      "type": "external",
+      "label": "Bank payouts",
+      "sublabel": "SEPA \u00b7 mock \u2192 Bridge",
+      "pos": [
+        560,
+        405
+      ],
+      "size": [
+        150,
         64
       ]
     }
@@ -273,6 +287,13 @@
       "from": "signer",
       "to": "program",
       "label": "signed price"
+    },
+    {
+      "id": "api-bank",
+      "from": "api",
+      "to": "bank",
+      "label": "SEPA payout",
+      "variant": "dashed"
     }
   ],
   "cards": [
@@ -288,8 +309,8 @@
       "dot": "cyan",
       "title": "Server",
       "items": [
-        "Mock card spends via a USDC delegate limit",
-        "Demo Shop, alerts with web push, cashback deposits"
+        "Mock card spends via a USDC delegate limit; mock SEPA payouts to IBAN",
+        "Demo Shop, alerts with web push, cashback, 90-day price history"
       ]
     },
     {
