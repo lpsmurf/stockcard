@@ -13,6 +13,7 @@ import { useToast } from "@/components/toast";
 import { MARKETS, USDC_MINT } from "@/lib/config";
 import { usePortfolio } from "@/lib/portfolio";
 import { formatTokens, formatUsd } from "@/lib/risk";
+import { useWalletAuth } from "@/lib/wallet-auth";
 
 interface ShopItem {
   symbol: string;
@@ -34,7 +35,8 @@ const TABS = [
 const MIRROR_NOTE = "Mirrored from a real Collector Crypt listing. Not affiliated. You don't own the real item.";
 
 export default function ShopPage() {
-  const { publicKey, connected, signMessage, sendTransaction } = useWallet();
+  const { publicKey, connected, sendTransaction } = useWallet();
+  const walletAuth = useWalletAuth();
   const { connection } = useConnection();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -71,18 +73,11 @@ export default function ShopPage() {
   };
 
   async function claimTestMoney() {
-    if (!publicKey || !signMessage) return;
+    if (!publicKey) return;
     try {
-      const timestamp = Date.now().toString();
-      const sig = await signMessage(new TextEncoder().encode(`stockcard:/api/faucet:${timestamp}`));
       const res = await fetch("/api/faucet", {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-wallet": publicKey.toBase58(),
-          "x-timestamp": timestamp,
-          "x-signature": Buffer.from(sig).toString("base64"),
-        },
+        headers: await walletAuth("/api/faucet"),
         body: "{}",
       });
       const json = await res.json();
@@ -164,7 +159,7 @@ export default function ShopPage() {
             queryClient.invalidateQueries({ queryKey: ["portfolio"] });
           }}
           treasury={treasury}
-          payer={{ publicKey: publicKey!, signMessage: signMessage!, sendTransaction: sendTransaction!, connection }}
+          payer={{ publicKey: publicKey!, walletAuth, sendTransaction: sendTransaction!, connection }}
         />
       ) : null}
     </div>
@@ -186,7 +181,7 @@ function BuySheet({
   treasury: string;
   payer: {
     publicKey: PublicKey;
-    signMessage: (m: Uint8Array) => Promise<Uint8Array>;
+    walletAuth: (route: string) => Promise<Record<string, string>>;
     sendTransaction: (tx: Transaction, c: Connection) => Promise<string>;
     connection: Connection;
   };
@@ -211,16 +206,9 @@ function BuySheet({
       const paySig = await payer.sendTransaction(payTx, payer.connection);
 
       // 2. tell the server to verify + mint
-      const timestamp = Date.now().toString();
-      const sig = await payer.signMessage(new TextEncoder().encode(`stockcard:/api/shop/buy:${timestamp}`));
       const res = await fetch("/api/shop/buy", {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-wallet": payer.publicKey.toBase58(),
-          "x-timestamp": timestamp,
-          "x-signature": Buffer.from(sig).toString("base64"),
-        },
+        headers: await payer.walletAuth("/api/shop/buy"),
         body: JSON.stringify({ symbol: item.symbol, amount: amount.toString(), paySignature: paySig }),
       });
       const json = await res.json();

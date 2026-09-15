@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useWalletAuth } from "@/lib/wallet-auth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MockBadge } from "@/components/mock-badge";
 import { useToast } from "@/components/toast";
 import { MARKETS, CASHBACK_ASSETS } from "@/lib/config";
 import { usePortfolio } from "@/lib/portfolio";
 import { formatTokens, formatUsd } from "@/lib/risk";
-import { PublicKey } from "@solana/web3.js";
 
 interface CardRecord {
   tier: "standard" | "plus" | "black";
@@ -23,7 +23,8 @@ const TIERS = [
 ] as const;
 
 export default function CashbackPage() {
-  const { publicKey, connected, signMessage } = useWallet();
+  const { publicKey, connected } = useWallet();
+  const walletAuth = useWalletAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: assets } = usePortfolio();
@@ -59,19 +60,12 @@ export default function CashbackPage() {
   }
 
   async function save(patch: { tier?: string; cashbackMint?: string }) {
-    if (!publicKey || !signMessage) return;
+    if (!publicKey) return;
     setBusy(true);
     try {
-      const timestamp = Date.now().toString();
-      const sig = await signMessage(new TextEncoder().encode(`stockcard:/api/card:${timestamp}`));
       const res = await fetch("/api/card", {
         method: "PATCH",
-        headers: {
-          "content-type": "application/json",
-          "x-wallet": publicKey.toBase58(),
-          "x-timestamp": timestamp,
-          "x-signature": Buffer.from(sig).toString("base64"),
-        },
+        headers: await walletAuth("/api/card"),
         body: JSON.stringify(patch),
       });
       const json = await res.json();

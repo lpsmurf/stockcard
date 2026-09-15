@@ -13,6 +13,7 @@ import { Sheet } from "@/components/sheet";
 import { AmountInput, parseUsd6 } from "@/components/amount-input";
 import { PreviewRow } from "@/components/preview-row";
 import { useToast } from "@/components/toast";
+import { useWalletAuth } from "@/lib/wallet-auth";
 import { usePortfolio, totals } from "@/lib/portfolio";
 import { USDC_MINT } from "@/lib/config";
 import { formatTokens, formatUsd } from "@/lib/risk";
@@ -53,7 +54,8 @@ export default function CardPage() {
 function CardScreen() {
   const params = useSearchParams();
   const simulate = params.get("simulate") === "1";
-  const { publicKey, connected, signMessage, sendTransaction } = useWallet();
+  const { publicKey, connected, sendTransaction } = useWallet();
+  const walletAuth = useWalletAuth();
   const { connection } = useConnection();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -66,18 +68,7 @@ function CardScreen() {
   const [limitStr, setLimitStr] = useState("500");
   const [busy, setBusy] = useState(false);
 
-  const authHeaders = async (route: string): Promise<Record<string, string>> => {
-    if (!publicKey || !signMessage) throw new Error("Connect wallet");
-    const timestamp = Date.now().toString();
-    const message = new TextEncoder().encode(`stockcard:${route}:${timestamp}`);
-    const sig = await signMessage(message);
-    return {
-      "content-type": "application/json",
-      "x-wallet": publicKey.toBase58(),
-      "x-timestamp": timestamp,
-      "x-signature": Buffer.from(sig).toString("base64"),
-    };
-  };
+  const authHeaders = walletAuth;
 
   const cardQuery = useQuery({
     queryKey: ["card", publicKey?.toBase58()],
