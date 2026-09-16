@@ -272,7 +272,13 @@ async function main() {
   }
 
   // mock mints + markets + prices
-  for (const spec of SPECS) {
+  // SEED_ONLY=T-OPENAI,PRE-SPACEX limits this loop to those markets. Without it every market's
+  // price is re-posted at its seed value, which rewinds live prices and clears a Demo crash.
+  const only = (process.env.SEED_ONLY ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const unknown = only.filter((s) => !SPECS.some((spec) => spec.symbol === s));
+  if (unknown.length) throw new Error(`SEED_ONLY has unknown symbols: ${unknown.join(", ")}`);
+  if (only.length) console.log(`SEED_ONLY: ${only.join(", ")} (other markets untouched)`);
+  for (const spec of SPECS.filter((s) => only.length === 0 || only.includes(s.symbol))) {
     let mint: PublicKey;
     const existing = readEnvFile().get(spec.envKey); // re-read: earlier iterations upserted
     if (existing) {
