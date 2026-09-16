@@ -4,6 +4,7 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { AppShell } from "@/components/app-shell";
+import { SwRegister } from "@/components/sw-register";
 
 const bodoni = Bodoni_Moda({ variable: "--font-bodoni", subsets: ["latin"], style: ["normal", "italic"] });
 const hanken = Hanken_Grotesk({ variable: "--font-hanken", subsets: ["latin"] });
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full">
         <Providers>
           <AppShell>{children}</AppShell>
+          <SwRegister />
         </Providers>
       </body>
     </html>
