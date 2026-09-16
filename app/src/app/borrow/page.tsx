@@ -4,6 +4,7 @@ import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { AprLine } from "@/components/apr-line";
 import { AmountInput, parseUsd6 } from "@/components/amount-input";
 import { PreviewRow } from "@/components/preview-row";
 import { Sheet } from "@/components/sheet";
@@ -168,6 +169,8 @@ function BorrowSheet() {
           <span className="font-mono text-sm">{asset.info.symbol} position</span>
         )}
       </div>
+
+      <AprLine className="mt-2 text-xs text-ink-3" bands={asset.info.aprBands} ltvBps={preview?.ltv ?? asset.ltv} />
 
       <div className="mt-4 rounded-xl bg-raised p-4">
         {mode === "borrow" && preview ? (

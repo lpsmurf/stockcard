@@ -10,6 +10,8 @@ import { HealthBar } from "@/components/health-bar";
 import { MockBadge } from "@/components/mock-badge";
 import { Banner } from "@/components/banner";
 import { AlertsCard } from "@/components/alerts-card";
+import { BalanceSummary } from "@/components/balance-summary";
+import { AprLine } from "@/components/apr-line";
 
 export default function HomePage() {
   const { publicKey, connected } = useWallet();
@@ -105,6 +107,8 @@ function Home() {
           </div>
         </div>
 
+        {worst ? <AprLine className="mt-2 text-xs text-ink-3" bands={worst.info.aprBands} ltvBps={worst.ltv} /> : null}
+
         <div className="mt-4 grid grid-cols-2 gap-3">
           <Link
             href="/borrow"
@@ -118,6 +122,10 @@ function Home() {
           >
             Repay
           </Link>
+        </div>
+
+        <div className="mt-6">
+          <BalanceSummary />
         </div>
       </div>
 
