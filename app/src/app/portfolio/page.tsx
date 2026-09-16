@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useState } from "react";
 import { MockBadge } from "@/components/mock-badge";
+import { PriceChart } from "@/components/price-chart";
 import { usePortfolio, totals } from "@/lib/portfolio";
 import { formatPct, formatTokens, formatUsd } from "@/lib/risk";
 
@@ -13,6 +15,8 @@ export default function PortfolioPage() {
   const { connected } = useWallet();
   const { data: assets, isLoading } = usePortfolio();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("All");
+  const [selSymbol, setSelSymbol] = useState<string | null>(null);
+  const router = useRouter();
 
   const list = (assets ?? []).filter((a) => {
     if (filter === "Stocks") return a.info.assetClass === "Equity";
@@ -20,6 +24,14 @@ export default function PortfolioPage() {
     if (filter === "Collect.") return a.info.assetClass === "Collectible";
     return true;
   });
+  const selected = list.find((a) => a.info.symbol === selSymbol) ?? list[0];
+
+  function moveSelection(delta: number) {
+    if (list.length === 0) return;
+    const idx = selected ? list.indexOf(selected) : 0;
+    const next = Math.max(0, Math.min(list.length - 1, idx + delta));
+    setSelSymbol(list[next].info.symbol);
+  }
   const locked = (assets ?? []).reduce((s, a) => s + a.valueUsd6, 0n);
   const creditLine = totals(assets ?? []).creditLineUsd6;
   const inWallet = (assets ?? []).reduce(
@@ -98,52 +110,102 @@ export default function PortfolioPage() {
             ))}
           </ul>
 
-          {/* Desktop: table */}
-          <div className="mt-4 hidden overflow-hidden rounded-xl bg-surface md:block">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-rule text-left font-mono text-[11px] uppercase tracking-[0.12em] text-ink-3">
-                  <th className="px-4 py-3 font-medium">Asset</th>
-                  <th className="px-4 py-3 text-right font-medium">Price · source</th>
-                  <th className="px-4 py-3 text-right font-medium">Locked</th>
-                  <th className="hidden px-4 py-3 text-right font-medium xl:table-cell">Wallet</th>
-                  <th className="px-4 py-3 text-right font-medium">Max LTV</th>
-                  <th className="px-4 py-3 text-right font-medium"><span className="sr-only">Deposit</span></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-rule">
-                {list.map((a) => (
-                  <tr key={a.info.symbol} className="group hover:bg-plaster/60">
-                    <td className="px-4 py-3">
-                      <Link href={`/portfolio/${a.info.symbol}`} className="flex items-center gap-2">
-                        <span className="font-semibold">{a.info.symbol}</span>
-                        <span className="rounded-full bg-plaster px-2 py-0.5 text-[11px] text-ink-2">
-                          {a.info.assetClass === "ArtNote" ? "Art note" : a.info.assetClass}
-                        </span>
-                        <MockBadge />
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono tabular">
-                      {formatUsd(a.priceUsd6)}{" "}
-                      <span className="text-xs text-ink-3">
-                        · {a.info.priceSource === "PartnerFmv" ? "Partner" : a.info.priceSource}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono tabular">{formatTokens(a.deposited, a.info.decimals)}</td>
-                    <td className="hidden px-4 py-3 text-right font-mono tabular xl:table-cell">{formatTokens(a.walletBalance, a.info.decimals)}</td>
-                    <td className="px-4 py-3 text-right font-mono tabular text-ink-2">{formatPct(BigInt(a.info.maxLtvBps))}</td>
-                    <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/portfolio/${a.info.symbol}?mode=deposit`}
-                        className="inline-block rounded-lg border border-rule px-3 py-1.5 text-sm text-ink group-hover:border-brass"
-                      >
-                        Deposit
-                      </Link>
-                    </td>
+          {/* Desktop: table + selected-asset panel */}
+          <div className="mt-4 hidden md:grid md:grid-cols-12 md:gap-6">
+            <div className="overflow-hidden rounded-xl bg-surface md:col-span-7">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-rule text-left font-mono text-[11px] uppercase tracking-[0.12em] text-ink-3">
+                    <th className="px-4 py-3 font-medium">Asset</th>
+                    <th className="px-4 py-3 text-right font-medium">Price · source</th>
+                    <th className="px-4 py-3 text-right font-medium">Locked</th>
+                    <th className="hidden px-4 py-3 text-right font-medium xl:table-cell">Wallet</th>
+                    <th className="px-4 py-3 text-right font-medium">Max LTV</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody
+                  className="divide-y divide-rule"
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      moveSelection(1);
+                    } else if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      moveSelection(-1);
+                    }
+                  }}
+                >
+                  {list.map((a) => {
+                    const isSel = selected?.info.symbol === a.info.symbol;
+                    return (
+                      <tr
+                        key={a.info.symbol}
+                        aria-selected={isSel}
+                        tabIndex={0}
+                        onClick={() => setSelSymbol(a.info.symbol)}
+                        onFocus={() => setSelSymbol(a.info.symbol)}
+                        onDoubleClick={() => router.push(`/portfolio/${a.info.symbol}`)}
+                        className={`cursor-pointer outline-none hover:bg-plaster/60 focus-visible:bg-plaster/60 ${isSel ? "bg-plaster/60" : ""}`}
+                        style={isSel ? { boxShadow: "inset 3px 0 0 var(--color-brass)" } : undefined}
+                      >
+                        <td className="px-4 py-3">
+                          <span className="flex items-center gap-2">
+                            <span className="font-semibold">{a.info.symbol}</span>
+                            <span className="rounded-full bg-plaster px-2 py-0.5 text-[11px] text-ink-2">
+                              {a.info.assetClass === "ArtNote" ? "Art note" : a.info.assetClass}
+                            </span>
+                            <MockBadge />
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono tabular">
+                          {formatUsd(a.priceUsd6)}{" "}
+                          <span className="text-xs text-ink-3">
+                            · {a.info.priceSource === "PartnerFmv" ? "Partner" : a.info.priceSource}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono tabular">{formatTokens(a.deposited, a.info.decimals)}</td>
+                        <td className="hidden px-4 py-3 text-right font-mono tabular xl:table-cell">{formatTokens(a.walletBalance, a.info.decimals)}</td>
+                        <td className="px-4 py-3 text-right font-mono tabular text-ink-2">{formatPct(BigInt(a.info.maxLtvBps))}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Selected asset panel (D7) */}
+            {selected ? (
+              <aside className="self-start rounded-xl bg-surface p-4 md:col-span-5" aria-label={`${selected.info.symbol} details`}>
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="font-semibold">
+                    {selected.info.symbol} <span className="font-normal text-ink-3">· {selected.info.name}</span>
+                  </p>
+                  <Link href={`/portfolio/${selected.info.symbol}`} className="shrink-0 text-sm font-semibold text-brass">
+                    Details ›
+                  </Link>
+                </div>
+                <div className="mt-2">
+                  <PriceChart symbol={selected.info.symbol} compact defaultDays={90} />
+                </div>
+                <p className="mt-2 font-mono text-xs tabular text-ink-2">
+                  Wallet {formatTokens(selected.walletBalance, selected.info.decimals)} · Locked {formatTokens(selected.deposited, selected.info.decimals)}
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <Link
+                    href={`/portfolio/${selected.info.symbol}?mode=deposit`}
+                    className="flex min-h-[44px] items-center justify-center rounded-lg bg-brass px-3 text-sm font-semibold text-on-brass"
+                  >
+                    Deposit
+                  </Link>
+                  <Link
+                    href={`/portfolio/${selected.info.symbol}?mode=withdraw`}
+                    className="flex min-h-[44px] items-center justify-center rounded-lg border border-rule px-3 text-sm font-semibold text-ink"
+                  >
+                    Withdraw
+                  </Link>
+                </div>
+              </aside>
+            ) : null}
           </div>
         </>
       )}

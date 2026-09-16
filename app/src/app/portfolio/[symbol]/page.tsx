@@ -9,10 +9,11 @@ import { AmountInput, parseTokens } from "@/components/amount-input";
 import { MockBadge } from "@/components/mock-badge";
 import { PreviewRow } from "@/components/preview-row";
 import { useToast } from "@/components/toast";
+import { PriceChart } from "@/components/price-chart";
 import { depositCollateral, withdrawCollateral } from "@/lib/actions";
 import { useProgram } from "@/lib/program";
 import { usePortfolio } from "@/lib/portfolio";
-import { formatPct, formatTokens, formatUsd, ltvBps } from "@/lib/risk";
+import { formatPct, formatTokens, formatUsd, liquidationPrice, ltvBps } from "@/lib/risk";
 
 export default function AssetDetailPage() {
   return (
@@ -104,11 +105,24 @@ function AssetDetail() {
     <div className="mx-auto w-full max-w-md md:max-w-xl">
       <Link href="/portfolio" className="inline-flex min-h-[44px] items-center text-sm text-brass">‹ Assets</Link>
 
-      <div className="mt-2 flex h-40 items-center justify-center rounded-2xl bg-surface">
-        <div className="text-center">
-          <p className="font-display text-4xl">{asset.info.symbol}</p>
-          <p className="mt-1 text-sm text-ink-3">{asset.info.name}</p>
-        </div>
+      <div className="mt-2 rounded-2xl bg-surface p-4">
+        <PriceChart
+          symbol={asset.info.symbol}
+          liquidationPriceUsd={
+            asset.debt > 0n && asset.deposited > 0n
+              ? Number(
+                  liquidationPrice(
+                    asset.debt,
+                    asset.deposited,
+                    asset.info.multiplierMicro,
+                    BigInt(asset.info.haircutBps),
+                    BigInt(asset.info.liqThresholdBps),
+                    asset.info.decimals,
+                  ),
+                ) / 1e6
+              : null
+          }
+        />
       </div>
 
       <h1 className="mt-4 font-display text-2xl">{asset.info.name}</h1>
