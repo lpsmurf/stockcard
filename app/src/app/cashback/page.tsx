@@ -5,6 +5,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletAuth } from "@/lib/wallet-auth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MockBadge } from "@/components/mock-badge";
+import { PerksTable } from "@/components/perks-table";
 import { useToast } from "@/components/toast";
 import { MARKETS, CASHBACK_ASSETS } from "@/lib/config";
 import { usePortfolio } from "@/lib/portfolio";
@@ -162,6 +163,8 @@ export default function CashbackPage() {
           </p>
         </>
       )}
+
+      <PerksTable tier={card?.tier ?? "standard"} />
     </div>
   );
 }
