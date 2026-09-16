@@ -33,6 +33,11 @@ export interface MarketInfo {
   /** Mirrored-item metadata (US8), filled by seed for CC-* markets. */
   grade?: string;
   insuredValueUsd6?: bigint;
+  /**
+   * Pre-IPO SPV token (Tessera, PreStocks). On-chain these are `Equity` so the program needs no
+   * new variant; the UI labels them "Pre-IPO" and they carry their own LTV, haircut and bands.
+   */
+  preIpo?: { provider: "tessera" | "prestocks"; label: string };
 }
 
 const EQUITY_BANDS = [
@@ -48,6 +53,11 @@ const ART_BANDS = [
   { maxLtvBps: 1500, aprBps: 1190 },
   { maxLtvBps: 3000, aprBps: 1590 },
 ];
+/** Pre-IPO SPV tokens: illiquid and privately valued, so tighter than listed equities. */
+const PREIPO_BANDS = [
+  { maxLtvBps: 2000, aprBps: 1190 },
+  { maxLtvBps: 3000, aprBps: 1590 },
+];
 
 // Risk parameters mirror parameters.md §2 + §3c. Mints come from the seed script.
 export const MARKETS: MarketInfo[] = [
@@ -55,6 +65,10 @@ export const MARKETS: MarketInfo[] = [
   { symbol: "SPYx", name: "S&P 500 ETF (xStock)", assetClass: "Equity", priceSource: "Market", maxLtvBps: 5000, liqThresholdBps: 6500, liqBonusBps: 500, haircutBps: 0, decimals: 8, multiplierMicro: 1_005_715n, mintEnvKey: "NEXT_PUBLIC_MINT_SPYX", aprBands: EQUITY_BANDS, shopKind: "stock", token2022: true },
   { symbol: "TSLAx", name: "Tesla (xStock)", assetClass: "Equity", priceSource: "Market", maxLtvBps: 5000, liqThresholdBps: 6500, liqBonusBps: 500, haircutBps: 0, decimals: 8, multiplierMicro: 1_000_000n, mintEnvKey: "NEXT_PUBLIC_MINT_TSLAX", aprBands: EQUITY_BANDS, shopKind: "stock", token2022: true },
   { symbol: "SPCX", name: "SpaceX (Backpack)", assetClass: "Equity", priceSource: "Market", maxLtvBps: 5000, liqThresholdBps: 6500, liqBonusBps: 500, haircutBps: 1000, decimals: 6, multiplierMicro: 1_000_000n, mintEnvKey: "NEXT_PUBLIC_MINT_SPCX", aprBands: EQUITY_BANDS, shopKind: "stock", token2022: true },
+  { symbol: "T-OPENAI", name: "OpenAI (Tessera)", assetClass: "Equity", priceSource: "Market", maxLtvBps: 3000, liqThresholdBps: 4500, liqBonusBps: 800, haircutBps: 2500, decimals: 6, multiplierMicro: 1_000_000n, mintEnvKey: "NEXT_PUBLIC_MINT_T_OPENAI", aprBands: PREIPO_BANDS, shopKind: "stock", token2022: true, preIpo: { provider: "tessera", label: "Pre-IPO" } },
+  { symbol: "T-KALSHI", name: "Kalshi (Tessera)", assetClass: "Equity", priceSource: "Market", maxLtvBps: 3000, liqThresholdBps: 4500, liqBonusBps: 800, haircutBps: 2500, decimals: 6, multiplierMicro: 1_000_000n, mintEnvKey: "NEXT_PUBLIC_MINT_T_KALSHI", aprBands: PREIPO_BANDS, shopKind: "stock", token2022: true, preIpo: { provider: "tessera", label: "Pre-IPO" } },
+  { symbol: "PRE-ANTHROPIC", name: "Anthropic (PreStocks)", assetClass: "Equity", priceSource: "Market", maxLtvBps: 3000, liqThresholdBps: 4500, liqBonusBps: 800, haircutBps: 2500, decimals: 6, multiplierMicro: 1_000_000n, mintEnvKey: "NEXT_PUBLIC_MINT_PRE_ANTHROPIC", aprBands: PREIPO_BANDS, shopKind: "stock", token2022: true, preIpo: { provider: "prestocks", label: "Pre-IPO" } },
+  { symbol: "PRE-SPACEX", name: "SpaceX (PreStocks)", assetClass: "Equity", priceSource: "Market", maxLtvBps: 3000, liqThresholdBps: 4500, liqBonusBps: 800, haircutBps: 2500, decimals: 6, multiplierMicro: 1_000_000n, mintEnvKey: "NEXT_PUBLIC_MINT_PRE_SPACEX", aprBands: PREIPO_BANDS, shopKind: "stock", token2022: true, preIpo: { provider: "prestocks", label: "Pre-IPO" } },
   { symbol: "TIDE", name: "Tidewater · Lot 01 note", assetClass: "ArtNote", priceSource: "Appraisal", maxLtvBps: 3000, liqThresholdBps: 4500, liqBonusBps: 1000, haircutBps: 2000, decimals: 6, multiplierMicro: 1_000_000n, mintEnvKey: "NEXT_PUBLIC_MINT_TIDE", aprBands: ART_BANDS, shopKind: "art", token2022: false },
   { symbol: "CC-LUGIA", name: "2002 #090 Lugia-Holo 1st Edition", assetClass: "Collectible", priceSource: "PartnerFmv", maxLtvBps: 4000, liqThresholdBps: 5500, liqBonusBps: 800, haircutBps: 2500, decimals: 0, multiplierMicro: 1_000_000n, mintEnvKey: "NEXT_PUBLIC_MINT_CC_LUGIA", aprBands: COLLECTIBLE_BANDS, token2022: false, shopKind: "card", grade: "PSA 10", insuredValueUsd6: 54_000_000_000n },
   { symbol: "CC-RAYQUAZA", name: "2006 #3 Rayquaza-Holo Pop Series 1", assetClass: "Collectible", priceSource: "PartnerFmv", maxLtvBps: 4000, liqThresholdBps: 5500, liqBonusBps: 800, haircutBps: 2500, decimals: 0, multiplierMicro: 1_000_000n, mintEnvKey: "NEXT_PUBLIC_MINT_CC_RAYQUAZA", aprBands: COLLECTIBLE_BANDS, token2022: false, shopKind: "card", grade: "PSA 10", insuredValueUsd6: 13_000_000_000n },

@@ -85,6 +85,12 @@ const ART_BANDS = [
   { maxLtvBps: 3000, aprBps: 1590 },
   { maxLtvBps: 0, aprBps: 0 },
 ];
+/** Pre-IPO SPV tokens (Tessera, PreStocks): illiquid and privately valued. */
+const PREIPO_BANDS = [
+  { maxLtvBps: 2000, aprBps: 1190 },
+  { maxLtvBps: 3000, aprBps: 1590 },
+  { maxLtvBps: 0, aprBps: 0 },
+];
 
 interface MintSpec {
   envKey: string;
@@ -104,6 +110,13 @@ const SPECS: MintSpec[] = [
   { envKey: "NEXT_PUBLIC_MINT_SPYX", symbol: "SPYx", decimals: 8, token2022: true, multiplier: 1.005715, priceUsd: 761.76, assetClass: "equity", source: "market", risk: { maxLtv: 5000, liq: 6500, bonus: 500, haircut: 0, maxAge: 180, closedAge: 259200, closedHaircut: 1000 }, bands: EQUITY_BANDS },
   { envKey: "NEXT_PUBLIC_MINT_TSLAX", symbol: "TSLAx", decimals: 8, token2022: true, multiplier: 1.0, priceUsd: 363.36, assetClass: "equity", source: "market", risk: { maxLtv: 5000, liq: 6500, bonus: 500, haircut: 0, maxAge: 180, closedAge: 259200, closedHaircut: 1000 }, bands: EQUITY_BANDS },
   { envKey: "NEXT_PUBLIC_MINT_SPCX", symbol: "SPCX", decimals: 6, token2022: true, multiplier: 1.0, priceUsd: 150.77, assetClass: "equity", source: "market", risk: { maxLtv: 5000, liq: 6500, bonus: 500, haircut: 1000, maxAge: 180, closedAge: 259200, closedHaircut: 2000 }, bands: EQUITY_BANDS },
+  // Pre-IPO SPV tokens. On-chain they are `equity` (they track private-company equity) so the
+  // program needs no new variant; the tighter LTV/haircut and the "Pre-IPO" label do the work.
+  // Seed prices are the conservative (NAV vs traded, whichever is lower) reading of Sept 16.
+  { envKey: "NEXT_PUBLIC_MINT_T_OPENAI", symbol: "T-OPENAI", decimals: 6, token2022: true, multiplier: 1.0, priceUsd: 812.79, assetClass: "equity", source: "market", risk: { maxLtv: 3000, liq: 4500, bonus: 800, haircut: 2500, maxAge: 3600, closedAge: 0, closedHaircut: 0 }, bands: PREIPO_BANDS },
+  { envKey: "NEXT_PUBLIC_MINT_T_KALSHI", symbol: "T-KALSHI", decimals: 6, token2022: true, multiplier: 1.0, priceUsd: 413.8, assetClass: "equity", source: "market", risk: { maxLtv: 3000, liq: 4500, bonus: 800, haircut: 2500, maxAge: 3600, closedAge: 0, closedHaircut: 0 }, bands: PREIPO_BANDS },
+  { envKey: "NEXT_PUBLIC_MINT_PRE_ANTHROPIC", symbol: "PRE-ANTHROPIC", decimals: 6, token2022: true, multiplier: 1.0, priceUsd: 961.13, assetClass: "equity", source: "market", risk: { maxLtv: 3000, liq: 4500, bonus: 800, haircut: 2500, maxAge: 3600, closedAge: 0, closedHaircut: 0 }, bands: PREIPO_BANDS },
+  { envKey: "NEXT_PUBLIC_MINT_PRE_SPACEX", symbol: "PRE-SPACEX", decimals: 6, token2022: true, multiplier: 1.0, priceUsd: 113.43, assetClass: "equity", source: "market", risk: { maxLtv: 3000, liq: 4500, bonus: 800, haircut: 2500, maxAge: 3600, closedAge: 0, closedHaircut: 0 }, bands: PREIPO_BANDS },
   { envKey: "NEXT_PUBLIC_MINT_TIDE", symbol: "TIDE", decimals: 6, token2022: false, priceUsd: 10.0, assetClass: "artNote", source: "appraisal", risk: { maxLtv: 3000, liq: 4500, bonus: 1000, haircut: 2000, maxAge: 8640000, closedAge: 0, closedHaircut: 0 }, bands: ART_BANDS },
   { envKey: "NEXT_PUBLIC_MINT_CC_LUGIA", symbol: "CC-LUGIA", decimals: 0, token2022: false, priceUsd: 54000, assetClass: "collectible", source: "partnerFmv", risk: { maxLtv: 4000, liq: 5500, bonus: 800, haircut: 2500, maxAge: 691200, closedAge: 0, closedHaircut: 0 }, bands: COLLECTIBLE_BANDS },
   { envKey: "NEXT_PUBLIC_MINT_CC_RAYQUAZA", symbol: "CC-RAYQUAZA", decimals: 0, token2022: false, priceUsd: 13000, assetClass: "collectible", source: "partnerFmv", risk: { maxLtv: 4000, liq: 5500, bonus: 800, haircut: 2500, maxAge: 691200, closedAge: 0, closedHaircut: 0 }, bands: COLLECTIBLE_BANDS },

@@ -6,6 +6,7 @@ import { kvGet, kvSet } from "@/lib/kv";
 import { MARKETS, RPC_URL, marketMint } from "@/lib/config";
 import { MAINNET_MINTS, decide, readSources, type SignerDecision } from "@/lib/prices/signer";
 import { parseFeedOverrides, readPyth } from "@/lib/prices/pyth";
+import { readPreIpo } from "@/lib/prices/preipo";
 
 /**
  * Price signer (T029a, parameters.md "Price signer"). Called by QStash every 60 s.
@@ -64,7 +65,9 @@ export async function POST(req: Request) {
     process.env.PYTH_API_KEY,
     parseFeedOverrides(process.env.PYTH_FEED_IDS),
   ).catch(() => ({}));
-  const readings = await readSources(SIGNED_SYMBOLS, fetch, process.env.JUPITER_API_KEY, pyth);
+  // Pre-IPO markets price off their issuer's public API (Tessera, PreStocks); keyless.
+  const preIpo = await readPreIpo(SIGNED_SYMBOLS, fetch).catch(() => ({}));
+  const readings = await readSources(SIGNED_SYMBOLS, fetch, process.env.JUPITER_API_KEY, pyth, preIpo);
 
   const posted: { symbol: string; price: number; priceE6: number; spreadBps: number | null; sources?: string[]; sig?: string; note?: string }[] = [];
   const skipped: { symbol: string; reason: string }[] = [];

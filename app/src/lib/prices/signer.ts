@@ -36,6 +36,11 @@ export const MAINNET_MINTS: Record<string, string> = {
   SPYx: "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
   TSLAx: "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB",
   SPCX: "SPCXxcqXj6e5dJDVNovHN8744zkbhM2bYudU45BimGb",
+  // Pre-IPO (Tessera, PreStocks). Their own APIs are the primary source; Jupiter is the cross-check.
+  "T-OPENAI": "oPAiAikWTaFj9RYoRFD35ccfwhnMcB3ThgBZRHSkjTZ",
+  "T-KALSHI": "TKLSidmLVt3cqGaaodG8tyRzoANfQwoh67AccjmubeZ",
+  "PRE-ANTHROPIC": "Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw",
+  "PRE-SPACEX": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
 };
 
 export interface JupiterPrice {
@@ -44,9 +49,11 @@ export interface JupiterPrice {
   stockData?: { id: string; price: number; updatedAt: string };
 }
 
+export type PrimarySource = "xstocks" | "backpack" | "tessera" | "prestocks";
+
 export interface SourceReading {
   symbol: string;
-  primary: { name: "xstocks" | "backpack"; price: number } | null;
+  primary: { name: PrimarySource; price: number } | null;
   jupiter: JupiterPrice | null;
   pyth: PythReading | null;
   marketOpen: boolean | null;
@@ -223,6 +230,7 @@ export async function readSources(
   f: Fetch = fetch,
   jupiterKey?: string,
   pyth: Record<string, PythReading> = {},
+  preIpo: Record<string, { provider: PrimarySource; price: number }> = {},
 ): Promise<SourceReading[]> {
   const mints = symbols.map((s) => MAINNET_MINTS[s]).filter(Boolean);
   const jup = await fetchJupiter(mints, f, jupiterKey).catch(() => ({}) as Record<string, JupiterPrice>);
@@ -230,6 +238,11 @@ export async function readSources(
     symbols.map(async (symbol): Promise<SourceReading> => {
       const jupiter = jup[MAINNET_MINTS[symbol]] ?? null;
       const pythReading = pyth[symbol] ?? null;
+      const pre = preIpo[symbol];
+      if (pre) {
+        // Pre-IPO tokens trade 24/7 and have no issuer trading calendar.
+        return { symbol, primary: { name: pre.provider, price: pre.price }, jupiter, pyth: pythReading, marketOpen: null, halted: false };
+      }
       if (symbol === "SPCX") {
         const price = await fetchBackpackSpcx(f).catch(() => null);
         return { symbol, primary: price ? { name: "backpack", price } : null, jupiter, pyth: pythReading, marketOpen: null, halted: false };

@@ -64,10 +64,27 @@ Every concrete value the implementation needs lives here. If code disagrees with
 | SPYx | Equity | 8 | Signed/Market → Switchboard if the spike passes Wed 12:00 ET | 5000 | 6500 | 500 | 0 | 180 s | 259,200 s / 1000 | 761.76 | 5 |
 | TSLAx | Equity | 8 | Signed/Market → Switchboard if the spike passes Wed 12:00 ET | 5000 | 6500 | 500 | 0 | 180 s | 259,200 s / 1000 | 363.36 | 10 |
 | SPCX | Equity | 6 | Signed/Market (Backpack External + Jupiter) | 5000 | 6500 | 500 | 1000 | 180 s | 259,200 s / 2000 | 150.77 | 20 |
+| T-OPENAI | Equity (Pre-IPO) | 6 | Signed/Market (Tessera + Jupiter) | 3000 | 4500 | 800 | 2500 | 3,600 s | n/a | 812.79 | 2 |
+| T-KALSHI | Equity (Pre-IPO) | 6 | Signed/Market (Tessera + Jupiter) | 3000 | 4500 | 800 | 2500 | 3,600 s | n/a | 413.80 | 5 |
+| PRE-ANTHROPIC | Equity (Pre-IPO) | 6 | Signed/Market (PreStocks + Jupiter) | 3000 | 4500 | 800 | 2500 | 3,600 s | n/a | 961.13 | 2 |
+| PRE-SPACEX | Equity (Pre-IPO) | 6 | Signed/Market (PreStocks + Jupiter) | 3000 | 4500 | 800 | 2500 | 3,600 s | n/a | 113.43 | 20 |
 | TIDE | ArtNote | 6 | Signed/Appraisal | 3000 | 4500 | 1000 | 2000 | 8,640,000 s (100 d) | n/a | 10.00 per note | 1,000 |
 | PSA10 (graded Pokémon card, PSA 10, devnet mock) | Collectible | 0 | Signed/PartnerFmv | 4000 | 5500 | 800 | 2500 | 691,200 s (8 d) | n/a | 4,800.00 per item | 1 (once per wallet) |
 
 Validation rule in `add_market`/`update_market`: `0 < max_ltv < liq_threshold ≤ 9000`, `liq_bonus ≤ 2000`, `haircut < 10000`.
+
+### Pre-IPO collateral (decided Sept 16 — Stocklana Tessera and PreStocks bounties)
+Tokenized pre-IPO exposure (Tessera T-Tokens, PreStocks) is a fourth collateral type. It is **`AssetClass::Equity` on-chain** — these tokens track private-company equity and the program needs no new variant or redeploy — but it carries its own risk band and is labelled **"Pre-IPO"** everywhere in the UI, never as a listed stock.
+
+| Param | Value |
+|---|---|
+| Sources | Tessera `GET https://rest-api.tessera.pe/v1/public/token-details` → `markPrice` (keyless) · PreStocks `GET https://prestocks.com/api/prestocks` → `markPrice` + `tokenPrice` (keyless). Both cross-checked against Jupiter on the real mainnet mint, same 200 bps rule as xStocks |
+| Which price | The **lower** of SPV net asset value (`markPrice`) and the traded price (`tokenPrice`). Checked Sept 16: SPACEX traded 21% *under* NAV, ANDURIL 1.3% over. A premium is sentiment and sentiment goes first in a liquidation, so we never lend against it |
+| Risk band | Max LTV 3000, liq. threshold 4500, liq. bonus 800, haircut 2500 — tighter than listed equities (5000/6500/500/0) because these are illiquid and privately valued |
+| APR bands | ≤20% LTV 11.9%, ≤30% LTV 15.9% (same shape as collectibles) |
+| Staleness | 3,600 s. These trade 24/7, so there is no closed-market fallback and no trading calendar |
+| Mainnet mints (price lookup only) | T-OpenAI `oPAiAikWTaFj9RYoRFD35ccfwhnMcB3ThgBZRHSkjTZ` · T-Kalshi `TKLSidmLVt3cqGaaodG8tyRzoANfQwoh67AccjmubeZ` · ANTHROPIC `Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw` · SPACEX `PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh` |
+| Honesty | Tessera and PreStocks are **data sources, not partners**. Devnet collateral mints are our own mocks. Never imply the underlying companies endorse or are affiliated with StockCard; PreStocks itself states its tokens give economic exposure only, with no ownership rights, and are unavailable in the US |
 
 Decimals match the real mainnet mints (xStocks 8, SPCX 6). Demo prices are xStocks indicative prices and the Backpack external SPCX price from Sept 14, 2026. SPCX market deposit cap: $250,000 (thin on-chain liquidity). Equity mock mints are **Token-2022 with the Scaled UI Amount extension** (multipliers below). Collateral value = raw × multiplier × price × (1 − haircut); see integrations.md.
 
