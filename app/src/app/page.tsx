@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { usePortfolio, totals } from "@/lib/portfolio";
-import { alertBand, fixAmounts, formatPct, formatTokens, formatUsd } from "@/lib/risk";
+import { alertBand, fixAmounts, formatPct, formatTokens, formatUsd, liquidationPrice } from "@/lib/risk";
 import { CreditCard } from "@/components/credit-card";
 import { HealthBar } from "@/components/health-bar";
 import { MockBadge } from "@/components/mock-badge";
@@ -201,6 +201,52 @@ function Home() {
 
         <AlertsCard />
       </div>
+
+      {/* D2 positions strip (desktop/tablet): one row per market with collateral */}
+      {withCollateral.length > 0 ? (
+        <section className="mt-8 hidden md:block lg:col-span-12" aria-label="Your positions">
+          <h2 className="text-sm font-semibold text-ink-2">Your positions</h2>
+          <ul className="mt-2 divide-y divide-rule rounded-xl bg-surface">
+            {withCollateral.map((a) => {
+              const liqPx =
+                a.debt > 0n
+                  ? liquidationPrice(
+                      a.debt,
+                      a.deposited,
+                      a.info.multiplierMicro,
+                      BigInt(a.info.haircutBps),
+                      BigInt(a.info.liqThresholdBps),
+                      a.info.decimals,
+                    )
+                  : 0n;
+              const ltvPct = Number(a.ltv) / 100;
+              return (
+                <li key={a.info.symbol}>
+                  <Link href={`/portfolio/${a.info.symbol}`} className="flex items-center gap-4 px-4 py-3 hover:bg-plaster/60">
+                    <span className="w-24 shrink-0 font-semibold">{a.info.symbol}</span>
+                    <span className="font-mono text-sm tabular text-ink-2">
+                      {formatTokens(a.deposited, a.info.decimals)} locked · {formatUsd(a.valueUsd6)}
+                    </span>
+                    <span className="ml-auto flex items-center gap-2">
+                      <span className="font-mono text-sm tabular">LTV {formatPct(a.ltv)}</span>
+                      <span className="h-1.5 w-20 overflow-hidden rounded-full bg-rule" aria-hidden="true">
+                        <span
+                          className="block h-full rounded-full bg-brass"
+                          style={{ width: `${Math.min(100, (ltvPct / (a.info.liqThresholdBps / 100)) * 100)}%` }}
+                        />
+                      </span>
+                    </span>
+                    <span className="font-mono text-sm tabular text-ink-3">
+                      {liqPx > 0n ? `Liquidation < ${formatUsd(liqPx)}` : "No debt"}
+                    </span>
+                    <span aria-hidden="true" className="text-ink-3">›</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }
