@@ -2,8 +2,10 @@ import * as anchor from "@anchor-lang/core";
 import { Keypair, PublicKey, Transaction, VersionedTransaction } from "@solana/web3.js";
 import bs58 from "bs58";
 import { err, ok } from "@/lib/api";
+import { kvGet, kvSet } from "@/lib/kv";
 import { MARKETS, RPC_URL, marketMint } from "@/lib/config";
 import { MAINNET_MINTS, decide, readSources, type SignerDecision } from "@/lib/prices/signer";
+import { parseFeedOverrides, readPyth } from "@/lib/prices/pyth";
 
 /**
  * Price signer (T029a, parameters.md "Price signer"). Called by QStash every 60 s.
@@ -29,6 +31,22 @@ function keypairWallet(kp: Keypair) {
   };
 }
 
+/** Keep one point per symbol per hour for /api/prices/history (90-day window). */
+async function recordHistory(symbol: string, price: number) {
+  try {
+    const key = `pricehist:${symbol}`;
+    const series = (await kvGet<[number, number][]>(key)) ?? [];
+    const now = Date.now();
+    const last = series[series.length - 1];
+    if (last && now - last[0] < 3_600_000) return;
+    const cutoff = now - 90 * 86_400_000;
+    const next = [...series.filter(([t]) => t >= cutoff), [now, Math.round(price * 100) / 100] as [number, number]];
+    await kvSet(key, next);
+  } catch {
+    // history is best-effort; never fail a price post because of it
+  }
+}
+
 function pda(programId: PublicKey, ...seeds: Buffer[]) {
   return PublicKey.findProgramAddressSync(seeds, programId)[0];
 }
@@ -39,9 +57,16 @@ export async function POST(req: Request) {
   }
   const dryRun = new URL(req.url).searchParams.get("dryRun") === "1";
 
-  const readings = await readSources(SIGNED_SYMBOLS, fetch, process.env.JUPITER_API_KEY);
+  // Pyth is an extra source, never a hard dependency: without PYTH_API_KEY this returns {}.
+  const pyth = await readPyth(
+    SIGNED_SYMBOLS,
+    fetch,
+    process.env.PYTH_API_KEY,
+    parseFeedOverrides(process.env.PYTH_FEED_IDS),
+  ).catch(() => ({}));
+  const readings = await readSources(SIGNED_SYMBOLS, fetch, process.env.JUPITER_API_KEY, pyth);
 
-  const posted: { symbol: string; price: number; priceE6: number; spreadBps: number | null; sig?: string; note?: string }[] = [];
+  const posted: { symbol: string; price: number; priceE6: number; spreadBps: number | null; sources?: string[]; sig?: string; note?: string }[] = [];
   const skipped: { symbol: string; reason: string }[] = [];
 
   let program: anchor.Program | null = null;
@@ -91,7 +116,8 @@ export async function POST(req: Request) {
           signedPrice: pda(program.programId, Buffer.from("price"), market.toBuffer()),
         })
         .rpc();
-      posted.push({ symbol: decision.symbol, price: decision.price, priceE6: decision.priceE6, spreadBps: decision.spreadBps, sig, note: decision.note });
+      posted.push({ symbol: decision.symbol, price: decision.price, priceE6: decision.priceE6, spreadBps: decision.spreadBps, sources: decision.sources, sig, note: decision.note });
+      await recordHistory(decision.symbol, decision.price);
     } catch (e) {
       skipped.push({ symbol: decision.symbol, reason: `post failed: ${(e as Error).message.slice(0, 160)}` });
     }

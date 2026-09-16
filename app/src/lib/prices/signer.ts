@@ -11,6 +11,24 @@
 export const AGREEMENT_BPS = 200;
 export const MIN_JUPITER_LIQUIDITY_USD = 100_000;
 export const MAX_STOCKDATA_AGE_MS = 15 * 60 * 1000;
+/** Equity prints are slower than crypto; a Pyth reading older than this counts as closed/stale. */
+export const MAX_PYTH_AGE_MS = 5 * 60 * 1000;
+/** Pyth's confidence band. Wider than 1% means its publishers disagree; don't lend against it. */
+export const MAX_PYTH_CONF_BPS = 100;
+
+export interface PythReading {
+  feedId: string;
+  price: number;
+  confBps: number;
+  publishTime: number;
+}
+
+/** A Pyth reading we're willing to lend against: fresh enough and tight enough. */
+export function usablePyth(r: PythReading | null, now: number): boolean {
+  if (!r || !(r.price > 0)) return false;
+  if (now - r.publishTime > MAX_PYTH_AGE_MS) return false;
+  return r.confBps <= MAX_PYTH_CONF_BPS;
+}
 
 /** Mainnet mints used only to look up prices; devnet collateral mints are mocks. */
 export const MAINNET_MINTS: Record<string, string> = {
@@ -30,25 +48,82 @@ export interface SourceReading {
   symbol: string;
   primary: { name: "xstocks" | "backpack"; price: number } | null;
   jupiter: JupiterPrice | null;
+  pyth: PythReading | null;
   marketOpen: boolean | null;
   halted: boolean;
 }
 
 export type SignerDecision =
-  | { action: "post"; symbol: string; price: number; priceE6: number; spreadBps: number | null; note?: string }
+  | {
+      action: "post";
+      symbol: string;
+      price: number;
+      priceE6: number;
+      spreadBps: number | null;
+      sources: string[];
+      note?: string;
+    }
   | { action: "skip"; symbol: string; reason: string };
 
 export function spreadBps(a: number, b: number): number {
   return Math.round((Math.abs(a - b) / ((a + b) / 2)) * 10_000);
 }
 
-/** Decide whether to post a Market price for one symbol. `lastSource` is the on-chain SignedPrice source. */
+type Candidate = { name: string; price: number };
+
+/** Widest disagreement across the candidates we're about to average. */
+function maxSpread(candidates: Candidate[]): number {
+  let worst = 0;
+  for (let i = 0; i < candidates.length; i += 1) {
+    for (let j = i + 1; j < candidates.length; j += 1) {
+      worst = Math.max(worst, spreadBps(candidates[i].price, candidates[j].price));
+    }
+  }
+  return worst;
+}
+
+function mean(candidates: Candidate[]): number {
+  return candidates.reduce((sum, c) => sum + c.price, 0) / candidates.length;
+}
+
+/**
+ * With three sources we can drop a single outlier instead of skipping the whole post:
+ * if exactly one pair agrees within the limit and the third disagrees with both, that third
+ * source is the odd one out. Returns null when the readings are genuinely irreconcilable.
+ */
+function agreeingPair(candidates: Candidate[]): { kept: Candidate[]; dropped: Candidate; bps: number } | null {
+  let best: { kept: Candidate[]; dropped: Candidate; bps: number } | null = null;
+  for (let i = 0; i < candidates.length; i += 1) {
+    for (let j = i + 1; j < candidates.length; j += 1) {
+      const bps = spreadBps(candidates[i].price, candidates[j].price);
+      if (bps > AGREEMENT_BPS) continue;
+      if (best && bps >= best.bps) continue;
+      const dropped = candidates.find((_, k) => k !== i && k !== j);
+      if (!dropped) continue;
+      best = { kept: [candidates[i], candidates[j]], dropped, bps };
+    }
+  }
+  return best;
+}
+
+/**
+ * Decide whether to post a Market price for one symbol. `lastSource` is the on-chain SignedPrice source.
+ *
+ * Sources are xStocks (or Backpack for SPCX), Jupiter and — when `PYTH_API_KEY` is configured —
+ * Pyth. Two sources must agree within 200 bps; a third lets us drop one outlier instead of going
+ * dark, and lets us keep pricing when the primary issuer API is down.
+ */
 export function decide(r: SourceReading, lastSource: string | null, now: number): SignerDecision {
   const skip = (reason: string): SignerDecision => ({ action: "skip", symbol: r.symbol, reason });
 
   if (lastSource && lastSource.toLowerCase() === "demo") return skip("demo override active; restore to resume");
   if (r.halted) return skip("trading halted at issuer");
-  if (!r.primary || !(r.primary.price > 0)) return skip("primary source unavailable");
+
+  const pyth = usablePyth(r.pyth, now) ? r.pyth : null;
+  if (!r.primary || !(r.primary.price > 0)) {
+    // Pyth can stand in for a down issuer API, but never price collateral on its own.
+    if (!pyth) return skip("primary source unavailable");
+  }
 
   const stockUpdated = r.jupiter?.stockData?.updatedAt ? Date.parse(r.jupiter.stockData.updatedAt) : NaN;
   if (Number.isFinite(stockUpdated) && now - stockUpdated > MAX_STOCKDATA_AGE_MS) {
@@ -57,15 +132,46 @@ export function decide(r: SourceReading, lastSource: string | null, now: number)
   if (r.marketOpen === false) return skip("market closed; closed-market max-age applies");
 
   const jup = r.jupiter;
-  if (!jup || !(jup.usdPrice > 0) || jup.liquidity < MIN_JUPITER_LIQUIDITY_USD) {
-    const price = r.primary.price;
-    return { action: "post", symbol: r.symbol, price, priceE6: toE6(price), spreadBps: null, note: "Jupiter missing or thin liquidity; primary only (log extra 500 bps haircut flag)" };
+  const jupiterUsable = Boolean(jup && jup.usdPrice > 0 && jup.liquidity >= MIN_JUPITER_LIQUIDITY_USD);
+
+  const candidates: Candidate[] = [];
+  if (r.primary && r.primary.price > 0) candidates.push({ name: r.primary.name, price: r.primary.price });
+  if (jup && jupiterUsable) candidates.push({ name: "jupiter", price: jup.usdPrice });
+  if (pyth) candidates.push({ name: "pyth", price: pyth.price });
+
+  if (candidates.length === 0) return skip("no usable price source");
+
+  const post = (used: Candidate[], bps: number | null, note?: string): SignerDecision => {
+    const price = mean(used);
+    return {
+      action: "post",
+      symbol: r.symbol,
+      price,
+      priceE6: toE6(price),
+      spreadBps: bps,
+      sources: used.map((c) => c.name),
+      note,
+    };
+  };
+
+  if (candidates.length === 1) {
+    const only = candidates[0];
+    const note =
+      only.name === "pyth"
+        ? "Pyth only; issuer and Jupiter unavailable (log extra 500 bps haircut flag)"
+        : "Jupiter missing or thin liquidity; primary only (log extra 500 bps haircut flag)";
+    return post([only], null, note);
   }
 
-  const bps = spreadBps(r.primary.price, jup.usdPrice);
-  if (bps > AGREEMENT_BPS) return skip(`sources disagree by ${bps} bps (limit ${AGREEMENT_BPS})`);
-  const price = (r.primary.price + jup.usdPrice) / 2;
-  return { action: "post", symbol: r.symbol, price, priceE6: toE6(price), spreadBps: bps };
+  const worst = maxSpread(candidates);
+  if (worst <= AGREEMENT_BPS) return post(candidates, worst);
+
+  const pair = candidates.length >= 3 ? agreeingPair(candidates) : null;
+  if (pair) {
+    const off = spreadBps(pair.dropped.price, mean(pair.kept));
+    return post(pair.kept, pair.bps, `dropped ${pair.dropped.name} as outlier (${off} bps off the other two)`);
+  }
+  return skip(`sources disagree by ${worst} bps (limit ${AGREEMENT_BPS})`);
 }
 
 export function toE6(price: number): number {
@@ -108,19 +214,28 @@ export async function fetchBackpackSpcx(f: Fetch = fetch): Promise<number | null
   return Number.isFinite(price) && price > 0 ? price : null;
 }
 
-/** Read all sources for the given symbols (subset of MAINNET_MINTS). */
-export async function readSources(symbols: string[], f: Fetch = fetch, jupiterKey?: string): Promise<SourceReading[]> {
+/**
+ * Read all sources for the given symbols (subset of MAINNET_MINTS).
+ * Pyth readings are passed in (see `lib/prices/pyth.ts`) so this module stays dependency-free.
+ */
+export async function readSources(
+  symbols: string[],
+  f: Fetch = fetch,
+  jupiterKey?: string,
+  pyth: Record<string, PythReading> = {},
+): Promise<SourceReading[]> {
   const mints = symbols.map((s) => MAINNET_MINTS[s]).filter(Boolean);
   const jup = await fetchJupiter(mints, f, jupiterKey).catch(() => ({}) as Record<string, JupiterPrice>);
   return Promise.all(
     symbols.map(async (symbol): Promise<SourceReading> => {
       const jupiter = jup[MAINNET_MINTS[symbol]] ?? null;
+      const pythReading = pyth[symbol] ?? null;
       if (symbol === "SPCX") {
         const price = await fetchBackpackSpcx(f).catch(() => null);
-        return { symbol, primary: price ? { name: "backpack", price } : null, jupiter, marketOpen: null, halted: false };
+        return { symbol, primary: price ? { name: "backpack", price } : null, jupiter, pyth: pythReading, marketOpen: null, halted: false };
       }
       const x = await fetchXStocks(symbol, f).catch(() => ({ price: null, open: null, halted: false }));
-      return { symbol, primary: x.price ? { name: "xstocks", price: x.price } : null, jupiter, marketOpen: x.open, halted: x.halted };
+      return { symbol, primary: x.price ? { name: "xstocks", price: x.price } : null, jupiter, pyth: pythReading, marketOpen: x.open, halted: x.halted };
     }),
   );
 }

@@ -85,7 +85,10 @@ Decimals match the real mainnet mints (xStocks 8, SPCX 6). Demo prices are xStoc
 | Schedule | Every 60 s via Upstash QStash (same account as the alert check); also called right before the demo |
 | Sources (xStocks) | `GET https://api.backed.fi/api/v2/public/assets/{symbol}/price-data` → `quote` (checked Sept 14: NVDAx 212.245) and `GET https://lite-api.jup.ag/price/v3?ids={mainnet_mint}` → `usdPrice` (checked Sept 14: NVDAx 212.18, no key needed; `api.jup.ag` with `JUPITER_API_KEY` if rate-limited) |
 | Sources (SPCX) | Backpack `GET /ticker?symbol=SPCX.US_USDC&source=External` → `lastPrice` and Jupiter `usdPrice` for `SPCXxcqXj6e5dJDVNovHN8744zkbhM2bYudU45BimGb` |
-| Agreement check | Post the mean only if the two sources differ by ≤ 200 bps; otherwise skip, log, and let the price go stale (borrowing pauses) |
+| Sources (Pyth) | `GET https://pyth.dourolabs.app/hermes/v2/updates/price/latest?ids[]=0x…&parsed=true`, header `Authorization: Bearer PYTH_API_KEY` (required since 26 Aug 2026). Feed ids are resolved at runtime from `/v2/price_feeds?query={TICKER}&asset_type=equity` matching `Equity.US.{TICKER}/USD`, cached 24 h, overridable with `PYTH_FEED_IDS`. No Pyth feed exists for SPCX (pre-IPO). Reading is used only if `publish_time` is within 5 min and `conf/price` ≤ 100 bps |
+| Agreement check | Post the mean of every usable source only if all of them differ by ≤ 200 bps; otherwise skip, log, and let the price go stale (borrowing pauses) |
+| Outlier rule (3 sources) | With xStocks/Backpack + Jupiter + Pyth, if exactly one pair agrees within 200 bps, post that pair's mean and log the dropped source instead of going dark. If no pair agrees, skip |
+| Issuer fallback | If the issuer API (xStocks/Backpack) is down, Jupiter + Pyth may price the market between them. Pyth alone never prices collateral without the 500 bps single-source haircut flag |
 | Liquidity floor | Ignore Jupiter if its reported `liquidity` < $100,000; then post the xStocks/Backpack price alone with an extra 500 bps haircut flag in the log (program haircut unchanged) |
 | Per-token pricing | Jupiter prices the token; xStocks `quote` is checked against `usdPrice` and NVDA × `scaledUiConfig.multiplier` before first use; record which one is per token |
 | Closed market | If xStocks `stockData.updatedAt` is older than 15 min, don't post; the market's closed-market max-age and haircut apply |
@@ -376,7 +379,8 @@ The generic `PSA10` market above is replaced by these six. "Solflare Packs" card
 | `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | server | Private key; subject `mailto:littleplu@gmail.com` |
 | `CRON_SECRET` | server | Shared secret for `/api/alerts/check` |
 | `QSTASH_TOKEN` | server | Optional, creates the 5-minute schedule |
-| `PYTH_API_KEY` | server | Pyth Pro key; not used in MVP (crypto only) |
+| `PYTH_API_KEY` | server | Hermes API key (required by Pyth since 26 Aug 2026). Optional: without it the signer runs on xStocks + Jupiter |
+| `PYTH_FEED_IDS` | server | Optional JSON map `{"NVDAx":"0x…"}` pinning feed ids instead of resolving them |
 | `JUPITER_API_KEY` | server | Optional; keyless lite endpoint is the default |
 | `PAYOUT_ADDRESS` | server | Devnet pubkey receiving mock SEPA payout USDC |
 | `BANK_ENCRYPTION_KEY` | server | 32-byte base64 key for IBAN encryption at rest |
