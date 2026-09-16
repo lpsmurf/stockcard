@@ -117,7 +117,9 @@ export function liquidationPrice(
   decimals: number,
 ): bigint {
   if (collateralAmount === 0n || liqThresholdBps === 0n) return 0n;
-  const num = debt * BPS * 10n ** BigInt(decimals) * MULTIPLIER_SCALE;
+  // value at liquidation = debt × BPS / liq_threshold, then solve for price:
+  // price = debt × BPS² × 10^decimals × MULTIPLIER_SCALE / (amount × multiplier × (BPS − haircut) × liq_threshold)
+  const num = debt * BPS * BPS * 10n ** BigInt(decimals) * MULTIPLIER_SCALE;
   const den = collateralAmount * multiplierMicro * (BPS - haircutBps) * liqThresholdBps;
   return num / den;
 }

@@ -121,6 +121,30 @@ All architecture, workflow, sequence, data-flow and lifecycle diagrams use **Arc
 - Keep facts in sync with `specs/001-stockcard-mvp` (parameters.md wins). Mark mocks and non-partners honestly in labels/cards.
 - Don't upgrade the vendored copy without asking Luis; set `ARCHIFY_UPDATE_CHECK_DISABLED=1` in CI.
 
+## Session hygiene and token budget (added Sept 16 after a token blow-out)
+
+Every step an agent takes re-sends the whole session. A 200k-token session over 100 steps bills ~20M tokens, so the cost driver is session size, not code written. Keep sessions small:
+
+- **One task per session.** Start a fresh session for each task id, state the task and the one spec section it needs, then stop. Don't carry a session across tasks.
+- **Never open these files** (they are pure context poison): `package-lock.json` (~107k tokens), `Cargo.lock`, `app/src/lib/idl/stockcard.json`, anything under `target/`, `.next/`, `node_modules/`, `test-ledger/`, or any validator log. If one is opened by accident, restart the session rather than continue.
+- **Read the narrowest spec section**, not whole files: `parameters.md` and `wireframes.md` are ~9k and ~11k tokens each. Grep for the screen or parameter you need (e.g. `grep -n "S7 Assets" -A 40 specs/001-stockcard-mvp/wireframes.md`).
+- **Trim command output**: `anchor test --skip-local-validator --arch v2 2>&1 | tail -40`, `npx tsc --noEmit 2>&1 | head -20`, `cargo build 2>&1 | tail -20`. Never paste full build logs back into the session.
+- **Local validator**: always `scripts/validator.sh` (ledger in `/tmp`, size-capped). Never run `solana-test-validator` in the repo root; it wrote a 9.4 GB `test-ledger/` that crashed the machine.
+- **Model**: default `K3-256k`. Use the 1M-context model only for a task that genuinely needs the whole spec at once.
+- **Commit at least once an hour** so a crash costs minutes, not a day.
+- **Background tasks**: max 2 (each one carries its own session).
+
+## Who does what (Sept 16 → submission)
+
+To avoid two agents editing the same file and to keep Kimi's budget for the demo:
+
+| Owner | Scope |
+|---|---|
+| **Kimi** | Everything the user sees: `app/src/app/**/page.tsx`, `app/src/components/**`, screen states, styling, the desktop pass, the demo video |
+| **Claude** | Non-UI only: `app/src/app/api/alerts/**`, `api/push/**`, `api/prices/**`, `api/payouts/**`, `api/bank-accounts/**`, `app/src/lib/{prices,payout,partners,push,iban}*`, `programs/**`, `scripts/**`, specs and docs |
+
+If a task needs both, Claude lands the lib/route with a typed export and Kimi wires the screen to it. Don't edit the other agent's files; leave a note in `tasks.md` instead.
+
 ## Rules and conventions
 
 - **Next.js 16 is not the Next.js you know** — breaking changes vs training data. Read the relevant guide in `app/node_modules/next/dist/docs/` before using any Next API (see `app/AGENTS.md`).
