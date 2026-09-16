@@ -9,6 +9,7 @@ import { CreditCard } from "@/components/credit-card";
 import { HealthBar } from "@/components/health-bar";
 import { MockBadge } from "@/components/mock-badge";
 import { Banner } from "@/components/banner";
+import { AlertsCard } from "@/components/alerts-card";
 
 export default function HomePage() {
   const { publicKey, connected } = useWallet();
@@ -190,6 +191,8 @@ function Home() {
               </Banner>
             );
           })}
+
+        <AlertsCard />
       </div>
     </div>
   );
