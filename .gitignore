@@ -16,3 +16,6 @@ id.json
 
 # Archify browser evidence (regenerate with visual-check)
 docs/architecture/*.visual-check.*
+
+# devnet test-wallet keys written by scripts/devnet-wallets.ts
+scripts/.test-wallets/
