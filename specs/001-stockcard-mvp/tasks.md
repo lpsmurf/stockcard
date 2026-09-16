@@ -10,8 +10,26 @@ description: "Task list for StockCard MVP"
 
 **Tests**: Program tests are required (SC-003). App tests are manual smoke runs (quickstart.md).
 
-## Status (Sept 14, handoff to Kimi Code)
-Done: toolchain (Rust 1.98.1, Anchor CLI 1.2.0), Next.js 16 scaffold + deps, brand tokens/fonts, wallet providers with MWA, AppShell, ConnectButton, CreditCard, HealthBar, MockBadge, risk.ts. `npx tsc --noEmit` passes. `app/src/app/page.tsx` is still the create-next-app template. Program workspace not created yet.
+## Status (Wed Sept 16, end of day — handoff to a fresh Claude session)
+
+Deadline: submit Fri Sept 18, 4:00 PM ET (aim for noon ET). Program `HsXyxfSvp7mha6bxgh3Qr9NoVmMVe6HmynVguRfBLWrY` on devnet. Split: Kimi (VS Code plugin) = UI blocks; Claude = API, libs, scripts, program, infra.
+
+**Done today (all committed):** Pyth as third price source + free NYSE market-hours calendar (`54d33d5`); pre-IPO collateral T-OPENAI / T-KALSHI / PRE-ANTHROPIC / PRE-SPACEX, seeded and verified on devnet (`aa0a5c6`, `c9380a6`); `useBalances()` data layer (`e680aec`); Kimi Blocks 1b alerts card (`b9a72ec`), 2 Home balances + APR line (`1393a92`), 3 desktop pass (`a519346`); 20-wallet devnet run — **18 pass, 0 fail, 2 skip** (`7285558`, report `docs/testing/devnet-20-wallets.md`, rerun with `npx tsx scripts/devnet-wallets.ts --concurrency 2 --crash-market PRE-SPACEX`).
+
+**In progress:** Kimi Block 4a — T042 PWA icons (ImageResponse routes), manifest icons, register `/sw.js` on app start. Verify when done: author `littleplu@gmail.com`, `npx tsc --noEmit`, `npm run lint`.
+
+**Demo blockers, in order:**
+1. **Vercel deploy (T045)** — waiting on Luis's go-ahead, because it uploads secrets from `app/.env.local` (Stripe, ADMIN_SECRET, VAPID, BANK_ENCRYPTION_KEY) to Vercel env. Claude does it, not Kimi.
+2. **Price signer schedule (T029a / T061)** — nothing refreshes prices. Pre-IPO prices go stale 60 min after a post (borrowing then fails `StalePrice`); equities are in closed-market mode (+10% haircut, SPCX +20%, 3-day limit) and the desktop top bar shows an amber "Prices · Nh ago". Needs the deployed URL: QStash every 60 s → `POST /api/prices/sync` with `CRON_SECRET`, and every 5 min → `/api/alerts/check`. Until then prices can be refreshed with the signer's own rules (readSources + decide, never overriding a Demo source).
+3. **Tessera API down** — `https://rest-api.tessera.pe/v1/public/token-details` returned HTTP 500 on Sept 16, so T-OPENAI and T-KALSHI are unpriced and stale (Tessera bounty markets). Recheck Thursday morning; if still down, tell Tessera. The code correctly skips instead of posting a bad price.
+
+**Waiting on Luis (browser, dev server `cd app && npm run dev`, stop with Ctrl-C after):** alerts "Send test notification" arrives in Chrome (Block 1b, never verified); Home total balance / grey debt line / wallet tokens / APR line updating in the Borrow sheet (Block 2); desktop layout at 1024, 1280×800, 1440×900 (Block 3); whether the four pre-IPO assets appear in Assets. Also: rotate the Pyth key (printed in a Claude session Sept 16), optionally rotate the Google key for the `stitch` MCP (first 16 chars printed), DNS A record `deck` → `76.76.21.21` at Squarespace for deck.hfsp.xyz (until then send https://stockcard-deck.vercel.app).
+
+**Kimi queue after 4a (one block per new chat, prompts must forbid dev servers and deploys):** 5 = T077 UI PriceChart on D7/D8 from `/api/prices/history`; 6 = T080 Send to bank (S14/D14, `/api/payouts/quote` → one tx borrow + transfer → `/api/payouts`); T085 Pre-IPO chip + "trading X% below NAV" line; T083 price-source chips; T078 perks; then T046 README, T047 demo video, T049 submission.
+
+**Claude queue:** deploy + schedules above; T040 seed TIDE/PSA10 test for stale appraisal (markets exist); T050–T055 partner adapters (P2, only if time). Bounties: Pyth (market hours live, prices need Pro — the prize), Tessera + PreStocks (backend done, UI is T085). Skip Meteora and Clawpump.
+
+**Known state, no action needed:** Kimi fixed the `anchor.Wallet` ESM issue in the admin routes long ago (only type casts remain). `withdraw.rs` raises `InsufficientCollateral` for an LTV-breaking withdraw, which matches the spec copy. Luis's own positions are owners `2yY7…` and `BvPJ…` (NVDAx). A few collateral-only test positions from the first 20-wallet run remain on devnet with no debt; harmless. Hostinger MCP servers are disabled for this project (`~/.claude.json`). Kimi crashes = memory starvation or a pending approval, see Claude's memory note; never launch Kimi.app.
 
 Values: parameters.md. Screens: wireframes.md.
 
