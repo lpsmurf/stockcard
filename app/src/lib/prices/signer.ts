@@ -229,7 +229,7 @@ export async function readSources(
   symbols: string[],
   f: Fetch = fetch,
   jupiterKey?: string,
-  pyth: Record<string, PythReading> = {},
+  pyth: Record<string, { reading: PythReading | null; marketOpen: boolean | null }> = {},
   preIpo: Record<string, { provider: PrimarySource; price: number }> = {},
 ): Promise<SourceReading[]> {
   const mints = symbols.map((s) => MAINNET_MINTS[s]).filter(Boolean);
@@ -237,7 +237,9 @@ export async function readSources(
   return Promise.all(
     symbols.map(async (symbol): Promise<SourceReading> => {
       const jupiter = jup[MAINNET_MINTS[symbol]] ?? null;
-      const pythReading = pyth[symbol] ?? null;
+      const pythReading = pyth[symbol]?.reading ?? null;
+      /** Pyth's NYSE calendar knows holidays and half-days; prefer it over the issuer's flag. */
+      const pythOpen = pyth[symbol]?.marketOpen ?? null;
       const pre = preIpo[symbol];
       if (pre) {
         // Pre-IPO tokens trade 24/7 and have no issuer trading calendar.
@@ -248,7 +250,7 @@ export async function readSources(
         return { symbol, primary: price ? { name: "backpack", price } : null, jupiter, pyth: pythReading, marketOpen: null, halted: false };
       }
       const x = await fetchXStocks(symbol, f).catch(() => ({ price: null, open: null, halted: false }));
-      return { symbol, primary: x.price ? { name: "xstocks", price: x.price } : null, jupiter, pyth: pythReading, marketOpen: x.open, halted: x.halted };
+      return { symbol, primary: x.price ? { name: "xstocks", price: x.price } : null, jupiter, pyth: pythReading, marketOpen: pythOpen ?? x.open, halted: x.halted };
     }),
   );
 }

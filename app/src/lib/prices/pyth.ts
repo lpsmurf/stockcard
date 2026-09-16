@@ -37,6 +37,28 @@ interface HermesParsed {
 interface HermesFeed {
   id: string;
   attributes?: { symbol?: string; asset_type?: string };
+  market_hours?: { is_open?: boolean; next_open?: number; next_close?: number };
+}
+
+/**
+ * What Pyth can tell us about one market. `reading` needs a Pyth Pro grant for equities
+ * (the free tier answers 403 "Not entitled" for asset type 'equity'), but `marketOpen` comes
+ * from the feed metadata, which is free — so the trading calendar works with or without Pro.
+ */
+export interface PythFeedStatus {
+  feedId: string;
+  reading: PythReading | null;
+  /** Pyth's own NYSE calendar: holidays and half-days included. Null when unknown. */
+  marketOpen: boolean | null;
+  nextOpen?: number;
+  /** False when the key can read metadata but not prices for this asset class. */
+  entitled: boolean;
+}
+
+interface FeedMeta {
+  id: string;
+  marketOpen: boolean | null;
+  nextOpen?: number;
 }
 
 type Fetch = typeof fetch;
@@ -62,8 +84,13 @@ function headers(apiKey: string) {
   return { Authorization: `Bearer ${apiKey}`, accept: "application/json" };
 }
 
-/** Feed ids change rarely; cache them for a day so the 60 s signer loop doesn't re-resolve. */
+/**
+ * Feed ids change rarely, so they're cached for a day. Market hours are re-read every
+ * MARKET_HOURS_TTL_MS — an open/closed flag we cached for a day would be worse than useless.
+ */
 const feedCache = new Map<string, { id: string; at: number }>();
+const hoursCache = new Map<string, { marketOpen: boolean | null; nextOpen?: number; at: number }>();
+const MARKET_HOURS_TTL_MS = 60 * 1000;
 
 export function parseFeedOverrides(raw: string | undefined): Record<string, string> {
   if (!raw) return {};
@@ -75,47 +102,66 @@ export function parseFeedOverrides(raw: string | undefined): Record<string, stri
   }
 }
 
-/** Resolve our symbols to Hermes feed ids. Unknown symbols are dropped, never guessed. */
+/**
+ * Resolve our symbols to Hermes feed ids and their trading calendar.
+ * Unknown symbols are dropped, never guessed. The `Equity.Index.<T>/USD` 24/7 variant is not
+ * the listed market and is deliberately not matched.
+ */
 export async function resolveFeedIds(
   symbols: string[],
   f: Fetch = fetch,
   apiKey?: string,
   overrides: Record<string, string> = {},
   now = Date.now(),
-): Promise<Record<string, string>> {
-  const out: Record<string, string> = {};
+): Promise<Record<string, FeedMeta>> {
+  const out: Record<string, FeedMeta> = {};
   if (!apiKey) return out;
 
   for (const symbol of symbols) {
     const feedSymbol = PYTH_SYMBOLS[symbol];
     if (!feedSymbol) continue;
-    if (overrides[symbol]) {
-      out[symbol] = overrides[symbol];
+
+    const cachedId = overrides[symbol] ?? feedCache.get(symbol)?.id;
+    const cachedIdFresh = Boolean(overrides[symbol]) || (feedCache.get(symbol) && now - feedCache.get(symbol)!.at < FEED_CACHE_TTL_MS);
+    const cachedHours = hoursCache.get(symbol);
+    if (cachedId && cachedIdFresh && cachedHours && now - cachedHours.at < MARKET_HOURS_TTL_MS) {
+      out[symbol] = { id: cachedId, marketOpen: cachedHours.marketOpen, nextOpen: cachedHours.nextOpen };
       continue;
     }
-    const cached = feedCache.get(symbol);
-    if (cached && now - cached.at < FEED_CACHE_TTL_MS) {
-      out[symbol] = cached.id;
-      continue;
-    }
+
     const ticker = feedSymbol.split(".")[2]?.split("/")[0] ?? symbol;
     try {
       const res = await f(`${PYTH_HERMES_BASE}/v2/price_feeds?query=${encodeURIComponent(ticker)}&asset_type=equity`, {
         headers: headers(apiKey),
         cache: "no-store",
       });
-      if (!res.ok) continue;
+      if (!res.ok) {
+        if (cachedId) out[symbol] = { id: cachedId, marketOpen: null };
+        continue;
+      }
       const feeds = (await res.json()) as HermesFeed[];
       const match = feeds.find((feed) => feed.attributes?.symbol === feedSymbol);
       if (!match?.id) continue;
       const id = normalizeFeedId(match.id);
+      const marketOpen = typeof match.market_hours?.is_open === "boolean" ? match.market_hours.is_open : null;
+      const nextOpen = match.market_hours?.next_open ? match.market_hours.next_open * 1000 : undefined;
       feedCache.set(symbol, { id, at: now });
-      out[symbol] = id;
+      hoursCache.set(symbol, { marketOpen, nextOpen, at: now });
+      out[symbol] = { id, marketOpen, nextOpen };
     } catch {
       // Pyth is an extra source, never a hard dependency: fall through to the other sources.
+      if (cachedId) out[symbol] = { id: cachedId, marketOpen: null };
     }
   }
   return out;
+}
+
+/** Thrown when the key is valid but has no grant for this asset class (free tier on equities). */
+export class PythNotEntitledError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PythNotEntitledError";
+  }
 }
 
 /** Latest prices for the given feed ids, keyed by normalized feed id. */
@@ -130,6 +176,9 @@ export async function fetchPythLatest(
     headers: headers(apiKey),
     cache: "no-store",
   });
+  if (res.status === 403) {
+    throw new PythNotEntitledError("Pyth key has no grant for these feeds (equities need Pyth Pro)");
+  }
   if (!res.ok) throw new Error(`Pyth ${res.status}`);
   const body = (await res.json()) as { parsed?: HermesParsed[] };
   const out: Record<string, PythReading> = {};
@@ -142,25 +191,40 @@ export async function fetchPythLatest(
   return out;
 }
 
-/** One call for the signer: symbols in, readings out. Returns `{}` when no API key is configured. */
+/**
+ * One call for the signer: symbols in, price + trading calendar out.
+ * Returns `{}` when no API key is configured. On a free-tier key the prices come back null and
+ * `entitled: false`, but the market-hours flags are still populated and still useful.
+ */
 export async function readPyth(
   symbols: string[],
   f: Fetch = fetch,
   apiKey?: string,
   overrides: Record<string, string> = {},
-): Promise<Record<string, PythReading>> {
-  const ids = await resolveFeedIds(symbols, f, apiKey, overrides);
-  const entries = Object.entries(ids);
+): Promise<Record<string, PythFeedStatus>> {
+  const metas = await resolveFeedIds(symbols, f, apiKey, overrides);
+  const entries = Object.entries(metas);
   if (entries.length === 0) return {};
+
+  let entitled = true;
   const byFeed = await fetchPythLatest(
-    entries.map(([, id]) => id),
+    entries.map(([, meta]) => meta.id),
     f,
     apiKey,
-  ).catch(() => ({}) as Record<string, PythReading>);
-  const out: Record<string, PythReading> = {};
-  for (const [symbol, id] of entries) {
-    const reading = byFeed[id];
-    if (reading) out[symbol] = reading;
+  ).catch((e: unknown) => {
+    if (e instanceof PythNotEntitledError) entitled = false;
+    return {} as Record<string, PythReading>;
+  });
+
+  const out: Record<string, PythFeedStatus> = {};
+  for (const [symbol, meta] of entries) {
+    out[symbol] = {
+      feedId: meta.id,
+      reading: byFeed[meta.id] ?? null,
+      marketOpen: meta.marketOpen,
+      nextOpen: meta.nextOpen,
+      entitled,
+    };
   }
   return out;
 }

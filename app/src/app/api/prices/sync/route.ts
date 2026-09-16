@@ -59,7 +59,7 @@ export async function POST(req: Request) {
   const dryRun = new URL(req.url).searchParams.get("dryRun") === "1";
 
   // Pyth is an extra source, never a hard dependency: without PYTH_API_KEY this returns {}.
-  const pyth = await readPyth(
+  const pyth: Awaited<ReturnType<typeof readPyth>> = await readPyth(
     SIGNED_SYMBOLS,
     fetch,
     process.env.PYTH_API_KEY,
@@ -126,5 +126,19 @@ export async function POST(req: Request) {
     }
   }
 
-  return ok({ posted, skipped, dryRun });
+  // Surface Pyth's state so "why isn't Pyth contributing?" is answerable without reading logs.
+  const pythSymbols = Object.keys(pyth);
+  const pythStatus = pythSymbols.length
+    ? {
+        feeds: pythSymbols.length,
+        prices: pythSymbols.filter((s) => pyth[s].reading).length,
+        entitled: pythSymbols.every((s) => pyth[s].entitled),
+        marketOpen: pyth[pythSymbols[0]].marketOpen,
+        note: pythSymbols.every((s) => pyth[s].entitled)
+          ? undefined
+          : "Key has no equity price grant (Pyth Pro); using Pyth market hours only.",
+      }
+    : { feeds: 0, prices: 0, entitled: false, marketOpen: null, note: "PYTH_API_KEY not set" };
+
+  return ok({ posted, skipped, dryRun, pyth: pythStatus });
 }
