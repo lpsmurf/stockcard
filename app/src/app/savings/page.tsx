@@ -101,7 +101,7 @@ export default function SavingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md">
+    <div className="mx-auto w-full max-w-md md:max-w-xl">
       <h1 className="font-display text-3xl">Savings</h1>
       <p className="mt-1 text-[15px] text-ink-2">Earn on USDC. It funds the credit lines.</p>
 

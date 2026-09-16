@@ -156,22 +156,21 @@ function CardScreen() {
   if (!connected) return null;
 
   return (
-    <div className="mx-auto max-w-md">
-      <h1 className="font-display text-3xl">Card</h1>
+    <div className="w-full">
+      <h1 className="font-display text-3xl md:hidden">Card</h1>
 
       {card ? (
-        <>
-          <div className="mt-4">
-            <CreditCard
-              holderName={card.holderName}
-              last4={card.last4}
-              expMonth={card.expMonth}
-              expYear={card.expYear}
-              network={card.network}
-              availableLabel={formatUsd(t.availableUsd6)}
-              frozen={card.status === "frozen"}
-            />
-          </div>
+        <div className="mt-4 lg:grid lg:grid-cols-12 lg:gap-8">
+          <div className="lg:col-span-5">
+          <CreditCard
+            holderName={card.holderName}
+            last4={card.last4}
+            expMonth={card.expMonth}
+            expYear={card.expYear}
+            network={card.network}
+            availableLabel={formatUsd(t.availableUsd6)}
+            frozen={card.status === "frozen"}
+          />
           <div className="mt-2"><MockBadge label="Sandbox card" /></div>
 
           <div className="mt-4 rounded-xl bg-surface p-4">
@@ -207,9 +206,13 @@ function CardScreen() {
           >
             Test purchase
           </Link>
+          </div>
 
-          <h2 className="mt-6 text-sm font-semibold text-ink-2">Activity</h2>
-          <ul className="mt-2 divide-y divide-rule rounded-xl bg-surface">
+          <div className="mt-6 lg:col-span-7 lg:mt-0">
+          <h2 className="text-sm font-semibold text-ink-2">Activity</h2>
+
+          {/* Mobile: list */}
+          <ul className="mt-2 divide-y divide-rule rounded-xl bg-surface md:hidden">
             {(txsQuery.data ?? []).length === 0 ? (
               <li className="px-4 py-6 text-center text-sm text-ink-3">No purchases yet: try a test purchase</li>
             ) : (
@@ -243,9 +246,61 @@ function CardScreen() {
               ))
             )}
           </ul>
-        </>
+
+          {/* Desktop: table */}
+          <div className="mt-2 hidden overflow-hidden rounded-xl bg-surface md:block">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-rule text-left font-mono text-[11px] uppercase tracking-[0.12em] text-ink-3">
+                  <th className="px-4 py-3 font-medium">Merchant</th>
+                  <th className="hidden px-4 py-3 font-medium lg:table-cell">Category</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 text-right font-medium">Amount</th>
+                  <th className="hidden px-4 py-3 text-right font-medium lg:table-cell">Cashback</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-rule">
+                {(txsQuery.data ?? []).length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-6 text-center text-sm text-ink-3">
+                      No purchases yet: try a test purchase
+                    </td>
+                  </tr>
+                ) : (
+                  (txsQuery.data ?? []).map((tx) => (
+                    <tr key={tx.id} className="hover:bg-plaster/60">
+                      <td className="px-4 py-3 font-medium">{tx.merchant}</td>
+                      <td className="hidden px-4 py-3 text-ink-2 lg:table-cell">{tx.category}</td>
+                      <td className={`px-4 py-3 capitalize ${tx.status === "declined" ? "text-bad" : "text-ink-2"}`}>
+                        {tx.status === "declined" ? `Declined · ${tx.declineReason}` : tx.status}
+                        {tx.settlementSig ? (
+                          <>
+                            {" "}
+                            <a
+                              className="text-brass"
+                              target="_blank"
+                              rel="noreferrer"
+                              href={`https://explorer.solana.com/tx/${tx.settlementSig}?cluster=devnet`}
+                            >
+                              ↗
+                            </a>
+                          </>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono tabular">−{formatUsd(BigInt(tx.amountUsd6))}</td>
+                      <td className="hidden px-4 py-3 text-right font-mono tabular text-brass lg:table-cell">
+                        {tx.cashback && tx.cashback.status !== "failed" ? `+${formatTokens(BigInt(tx.cashback.amount), 8)}` : "—"}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          </div>
+        </div>
       ) : (
-        <div className="mt-6 rounded-2xl bg-surface p-5">
+        <div className="mt-6 max-w-md rounded-2xl bg-surface p-5">
           <h2 className="font-display text-xl">Get your virtual card</h2>
           <label className="mt-4 block text-sm text-ink-2">
             Name on card

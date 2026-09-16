@@ -54,10 +54,10 @@ function AssetDetail() {
     return raw < asset.deposited ? raw : asset.deposited;
   }, [asset]);
 
-  if (isLoading) return <div className="mx-auto h-64 max-w-md animate-pulse rounded-2xl bg-surface" />;
+  if (isLoading) return <div className="mx-auto h-64 w-full max-w-md animate-pulse rounded-2xl bg-surface" />;
   if (!asset) {
     return (
-      <div className="mx-auto max-w-md">
+      <div className="mx-auto w-full max-w-md md:max-w-xl">
         <Link href="/portfolio" className="text-sm text-brass">‹ Assets</Link>
         <p className="mt-4 text-ink-2">Unknown asset.</p>
       </div>
@@ -101,7 +101,7 @@ function AssetDetail() {
   }
 
   return (
-    <div className="mx-auto max-w-md">
+    <div className="mx-auto w-full max-w-md md:max-w-xl">
       <Link href="/portfolio" className="inline-flex min-h-[44px] items-center text-sm text-brass">‹ Assets</Link>
 
       <div className="mt-2 flex h-40 items-center justify-center rounded-2xl bg-surface">

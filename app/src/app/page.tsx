@@ -22,28 +22,30 @@ export default function HomePage() {
 
 function Welcome({ onConnect }: { onConnect: () => void }) {
   return (
-    <div className="mx-auto max-w-md py-6">
-      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-brass">Real assets only · No memecoins</p>
-      <h1 className="mt-4 font-display text-[40px] leading-[1.1]">
-        Spend what you own.
-        <br />
-        <em className="text-brass">Never sell it.</em>
-      </h1>
-      <div className="mt-6">
+    <div className="mx-auto max-w-md py-6 md:grid md:max-w-3xl md:grid-cols-2 md:items-center md:gap-12 lg:max-w-5xl">
+      <div>
+        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-brass">Real assets only · No memecoins</p>
+        <h1 className="mt-4 font-display text-[40px] leading-[1.1] lg:text-[64px]">
+          Spend what you own.
+          <br />
+          <em className="text-brass">Never sell it.</em>
+        </h1>
+        <p className="mt-6 text-[15px] leading-relaxed text-ink-2">
+          Lock stocks, art or graded cards. Get a USDC credit line. Pay anywhere cards work.
+        </p>
+        <button
+          onClick={onConnect}
+          className="mt-8 flex min-h-[48px] w-full items-center justify-center rounded-xl bg-brass px-4 font-semibold text-on-brass md:w-auto md:px-8"
+        >
+          Connect wallet
+        </button>
+        <p className="mt-3 flex items-center justify-center gap-2 text-xs text-ink-3 md:justify-start">
+          Solana devnet · test assets <MockBadge />
+        </p>
+      </div>
+      <div className="mt-6 md:mt-0 md:justify-self-end">
         <CreditCard holderName="YOUR NAME" last4="4021" expMonth={9} expYear={29} network="VISA" availableLabel="$18,420.00" />
       </div>
-      <p className="mt-6 text-[15px] leading-relaxed text-ink-2">
-        Lock stocks, art or graded cards. Get a USDC credit line. Pay anywhere cards work.
-      </p>
-      <button
-        onClick={onConnect}
-        className="mt-8 flex min-h-[48px] w-full items-center justify-center rounded-xl bg-brass px-4 font-semibold text-on-brass"
-      >
-        Connect wallet
-      </button>
-      <p className="mt-3 flex items-center justify-center gap-2 text-xs text-ink-3">
-        Solana devnet · test assets <MockBadge />
-      </p>
     </div>
   );
 }
@@ -55,7 +57,7 @@ function Home() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-md space-y-4 md:max-w-none">
+      <div className="space-y-4">
         <div className="h-44 animate-pulse rounded-2xl bg-surface" />
         <div className="h-24 animate-pulse rounded-2xl bg-surface" />
         <div className="h-16 animate-pulse rounded-2xl bg-surface" />
@@ -66,8 +68,8 @@ function Home() {
   const withCollateral = (assets ?? []).filter((a) => a.deposited > 0n);
 
   return (
-    <div className="mx-auto max-w-md md:max-w-none md:columns-2 md:gap-8">
-      <div className="break-inside-avoid">
+    <div className="lg:grid lg:grid-cols-12 lg:gap-8">
+      <div className="lg:col-span-7">
         <Link href="/card" className="block">
           <CreditCard
             holderName="CARDHOLDER"
@@ -123,13 +125,10 @@ function Home() {
             Repay
           </Link>
         </div>
-
-        <div className="mt-6">
-          <BalanceSummary />
-        </div>
       </div>
 
-      <div className="mt-6 break-inside-avoid space-y-3 md:mt-0">
+      <div className="mt-6 space-y-3 lg:col-span-5 lg:mt-0">
+        <BalanceSummary />
         {withCollateral.length === 0 ? (
           <div className="rounded-xl bg-surface p-5 text-center">
             <p className="text-ink-2">Add an asset to open your credit line</p>

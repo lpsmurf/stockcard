@@ -89,13 +89,13 @@ export default function AdminPage() {
     .filter((x) => x.marketInfo);
 
   return (
-    <div className="mx-auto max-w-md">
+    <div className="w-full">
       <div className="flex items-center gap-2">
-        <h1 className="font-display text-3xl">Demo controls</h1>
+        <h1 className="font-display text-3xl md:hidden">Demo controls</h1>
         <MockBadge label="Devnet only" />
       </div>
 
-      <label className="mt-4 block text-sm text-ink-2">
+      <label className="mt-4 block max-w-xs text-sm text-ink-2">
         Admin token
         <input
           type="password"
@@ -105,8 +105,12 @@ export default function AdminPage() {
         />
       </label>
 
-      <h2 className="mt-6 text-sm font-semibold text-ink-2">Markets</h2>
-      <ul className="mt-2 divide-y divide-rule rounded-xl bg-surface">
+      <div className="mt-6 lg:grid lg:grid-cols-2 lg:gap-8">
+      <section>
+      <h2 className="text-sm font-semibold text-ink-2">Markets</h2>
+
+      {/* Mobile: list */}
+      <ul className="mt-2 divide-y divide-rule rounded-xl bg-surface md:hidden">
         {(assets ?? []).map((a) => (
           <li key={a.info.symbol} className="px-4 py-3">
             <div className="flex items-baseline justify-between">
@@ -136,8 +140,53 @@ export default function AdminPage() {
         ))}
       </ul>
 
-      <h2 className="mt-6 text-sm font-semibold text-ink-2">Positions at risk</h2>
-      <ul className="mt-2 divide-y divide-rule rounded-xl bg-surface">
+      {/* Desktop: table */}
+      <div className="mt-2 hidden overflow-hidden rounded-xl bg-surface md:block">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-rule text-left font-mono text-[11px] uppercase tracking-[0.12em] text-ink-3">
+              <th className="px-4 py-3 font-medium">Market</th>
+              <th className="px-4 py-3 text-right font-medium">Price</th>
+              <th className="px-4 py-3 font-medium">Source</th>
+              <th className="px-4 py-3 text-right font-medium"><span className="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-rule">
+            {(assets ?? []).map((a) => (
+              <tr key={a.info.symbol} className="hover:bg-plaster/60">
+                <td className="px-4 py-3 font-semibold">{a.info.symbol}</td>
+                <td className="px-4 py-3 text-right font-mono tabular">{formatUsd(a.priceUsd6)}</td>
+                <td className="px-4 py-3 text-xs capitalize text-ink-3">{a.source}</td>
+                <td className="px-4 py-3 text-right">
+                  <span className="flex justify-end gap-2">
+                    <button
+                      onClick={() => priceAction(a.info.symbol, "crash")}
+                      disabled={busy !== null}
+                      className="rounded-lg border border-warn/50 px-3 py-1.5 text-sm text-warn disabled:opacity-40"
+                    >
+                      {busy === `${a.info.symbol}-crash` ? "…" : "Crash −30%"}
+                    </button>
+                    <button
+                      onClick={() => priceAction(a.info.symbol, "restore")}
+                      disabled={busy !== null}
+                      className="rounded-lg border border-rule px-3 py-1.5 text-sm text-ink disabled:opacity-40"
+                    >
+                      {busy === `${a.info.symbol}-restore` ? "…" : "Restore"}
+                    </button>
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      </section>
+
+      <section className="mt-6 lg:mt-0">
+      <h2 className="text-sm font-semibold text-ink-2">Positions at risk</h2>
+
+      {/* Mobile: list */}
+      <ul className="mt-2 divide-y divide-rule rounded-xl bg-surface md:hidden">
         {atRisk.length === 0 ? (
           <li className="px-4 py-6 text-center text-sm text-ink-3">No positions yet</li>
         ) : (
@@ -174,6 +223,59 @@ export default function AdminPage() {
           })
         )}
       </ul>
+
+      {/* Desktop: table */}
+      <div className="mt-2 hidden overflow-hidden rounded-xl bg-surface md:block">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-rule text-left font-mono text-[11px] uppercase tracking-[0.12em] text-ink-3">
+              <th className="px-4 py-3 font-medium">Owner</th>
+              <th className="px-4 py-3 font-medium">Market</th>
+              <th className="px-4 py-3 text-right font-medium">LTV</th>
+              <th className="px-4 py-3 text-right font-medium">Debt</th>
+              <th className="px-4 py-3 text-right font-medium"><span className="sr-only">Liquidate</span></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-rule">
+            {atRisk.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-6 text-center text-sm text-ink-3">No positions yet</td>
+              </tr>
+            ) : (
+              atRisk.map(({ p, marketInfo }) => {
+                const info = marketInfo!;
+                const asset = (assets ?? []).find((a) => a.info.symbol === info.symbol);
+                if (!asset) return null;
+                const debt = BigInt(p.account.debtPrincipal.toString());
+                if (debt === 0n) return null;
+                const collateral = BigInt(p.account.collateralAmount.toString());
+                const value = collateralValue(collateral, info.decimals, asset.priceUsd6, BigInt(info.haircutBps), info.multiplierMicro);
+                const ltv = ltvBps(debt, value);
+                const liquidatable = ltv > BigInt(info.liqThresholdBps);
+                return (
+                  <tr key={`${p.account.owner.toBase58()}-${info.symbol}`} className="hover:bg-plaster/60">
+                    <td className="px-4 py-3 font-mono text-sm">{p.account.owner.toBase58().slice(0, 4)}…{p.account.owner.toBase58().slice(-4)}</td>
+                    <td className="px-4 py-3">{info.symbol}</td>
+                    <td className={`px-4 py-3 text-right font-mono tabular ${liquidatable ? "text-bad" : "text-ink-2"}`}>{formatPct(ltv)}</td>
+                    <td className="px-4 py-3 text-right font-mono tabular">{formatUsd(debt)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => liquidate(p.account.owner.toBase58(), info.symbol, debt)}
+                        disabled={busy !== null || !liquidatable}
+                        className="rounded-lg border border-bad/50 px-3 py-1.5 text-sm text-bad disabled:opacity-40"
+                      >
+                        {busy?.startsWith("liq-") ? "…" : "Liquidate 50%"}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+      </section>
+      </div>
     </div>
   );
 }

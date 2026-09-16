@@ -83,7 +83,7 @@ export default function CashbackPage() {
   if (!connected) return null;
 
   return (
-    <div className="mx-auto max-w-md">
+    <div className="mx-auto w-full max-w-md md:max-w-xl">
       <h1 className="font-display text-3xl">Cashback</h1>
       <p className="mt-1 text-[15px] text-ink-2">Every purchase buys you more of what you own.</p>
 

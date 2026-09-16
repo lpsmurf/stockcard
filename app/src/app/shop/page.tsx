@@ -97,7 +97,7 @@ export default function ShopPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md md:max-w-2xl">
+    <div className="w-full">
       <div className="flex items-center gap-2">
         <h1 className="font-display text-3xl">Demo shop</h1>
         <MockBadge label="Test money" />
@@ -126,7 +126,7 @@ export default function ShopPage() {
         ))}
       </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
+      <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {list.map((item) => {
           const price = priceOf(item);
           const info = MARKETS.find((m) => m.symbol === item.symbol);
