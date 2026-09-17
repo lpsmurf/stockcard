@@ -12,6 +12,8 @@ description: "Task list for StockCard MVP"
 
 ## Status (Wed Sept 16, end of day — handoff to a fresh Claude session)
 
+> **September 17 handoff:** read [HANDOFF_DEVIN.md](../../HANDOFF_DEVIN.md) before continuing. It supersedes the historical status notes below with commit/task reconciliation, uncommitted T080 bank UI, concrete remaining issues, transfer instructions and fresh checks (TypeScript/lint pass; 46 unit tests pass). UI acceptance checkboxes remain open until device verification.
+
 Deadline: submit Fri Sept 18, 4:00 PM ET (aim for noon ET). Program `HsXyxfSvp7mha6bxgh3Qr9NoVmMVe6HmynVguRfBLWrY` on devnet. Split: Kimi (VS Code plugin) = UI blocks; Claude = API, libs, scripts, program, infra.
 
 **Done today (all committed):** Pyth as third price source + free NYSE market-hours calendar (`54d33d5`); pre-IPO collateral T-OPENAI / T-KALSHI / PRE-ANTHROPIC / PRE-SPACEX, seeded and verified on devnet (`aa0a5c6`, `c9380a6`); `useBalances()` data layer (`e680aec`); Kimi Blocks 1b alerts card (`b9a72ec`), 2 Home balances + APR line (`1393a92`), 3 desktop pass (`a519346`); 20-wallet devnet run — **18 pass, 0 fail, 2 skip** (`7285558`, report `docs/testing/devnet-20-wallets.md`, rerun with `npx tsx scripts/devnet-wallets.ts --concurrency 2 --crash-market PRE-SPACEX`).

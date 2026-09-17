@@ -7,7 +7,7 @@ A credit card backed by your stocks, on Solana. You lock tokenized US stocks (xS
 - **Stack:** Anchor program (devnet) + Next.js app + stock prices from a price signer (xStocks + Jupiter), Switchboard spike, Chainlink as production path + Bridge/Stripe card sandbox
 
 ## Status
-Planning done, no code yet. See:
+The Anchor program and core demo app are implemented. For the September 17 continuation snapshot, remaining work, verification results, and local changes that may not yet be on GitHub, read [HANDOFF_DEVIN.md](HANDOFF_DEVIN.md). See also:
 - [PLAN.md](PLAN.md): scope, architecture, 4-day schedule, verification
 - [RESEARCH.md](RESEARCH.md): competitors, card issuers, Backpack findings, sources
 
@@ -25,6 +25,6 @@ gh repo clone lpsmurf/stockcard
 cd stockcard
 cp .env.example .env
 ```
-First task: request Bridge sandbox access (apidocs.bridge.xyz). Then scaffold the Anchor program and the Next.js app.
+Before building, follow the handoff's restore and environment instructions: the local branch may contain commits and uncommitted work missing from a GitHub clone. The existing app is in `app/`; do not scaffold it again. The demo uses mock card and payout providers on devnet.
 
 Commit as `littleplu@gmail.com`. Vercel deploys break with other author emails.
