@@ -1,0 +1,24 @@
+name: StockCard cron
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Price sync
+        env:
+          APP_URL: ${{ secrets.STOCKCARD_APP_URL }}
+          CRON_SECRET: ${{ secrets.STOCKCARD_CRON_SECRET }}
+        run: |
+          curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/prices/sync"
+
+      - name: Alerts check
+        env:
+          APP_URL: ${{ secrets.STOCKCARD_APP_URL }}
+          CRON_SECRET: ${{ secrets.STOCKCARD_CRON_SECRET }}
+        run: |
+          curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/alerts/check"
