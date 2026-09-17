@@ -7,7 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MockBadge } from "@/components/mock-badge";
 import { PerksTable } from "@/components/perks-table";
 import { useToast } from "@/components/toast";
-import { MARKETS, CASHBACK_ASSETS } from "@/lib/config";
+import { MARKETS, CASHBACK_ASSETS, marketMint } from "@/lib/config";
 import { usePortfolio } from "@/lib/portfolio";
 import { formatTokens, formatUsd } from "@/lib/risk";
 
@@ -57,7 +57,7 @@ export default function CashbackPage() {
   const lifetimeAsset = (txsQuery.data ?? []).reduce((s, t) => s + (t.cashback && t.cashback.status === "sent" ? BigInt(t.cashback.amount) : 0n), 0n);
 
   function symbolOfMint(mint: string): string {
-    return MARKETS.find((m) => process.env[m.mintEnvKey] === mint)?.symbol ?? "NVDAx";
+    return MARKETS.find((m) => marketMint(m) === mint)?.symbol ?? "NVDAx";
   }
 
   async function save(patch: { tier?: string; cashbackMint?: string }) {
@@ -127,7 +127,7 @@ export default function CashbackPage() {
           <div className="mt-2 space-y-1 rounded-xl bg-surface p-2">
             {CASHBACK_ASSETS.map((symbol) => {
               const info = MARKETS.find((m) => m.symbol === symbol)!;
-              const mint = process.env[info.mintEnvKey] ?? "";
+              const mint = marketMint(info);
               const selected = card.cashbackMint === mint || (!card.cashbackMint && symbol === "NVDAx");
               const price = (assets ?? []).find((a) => a.info.symbol === symbol)?.priceUsd6 ?? 0n;
               return (

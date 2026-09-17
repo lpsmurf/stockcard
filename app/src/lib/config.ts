@@ -78,8 +78,26 @@ export const MARKETS: MarketInfo[] = [
   { symbol: "CC-SEAMASTER", name: "Omega Seamaster Diver 300M 007 Edition", assetClass: "Collectible", priceSource: "PartnerFmv", maxLtvBps: 4000, liqThresholdBps: 5500, liqBonusBps: 800, haircutBps: 2500, decimals: 0, multiplierMicro: 1_000_000n, mintEnvKey: "NEXT_PUBLIC_MINT_CC_SEAMASTER", aprBands: COLLECTIBLE_BANDS, token2022: false, shopKind: "watch", grade: "Watch", insuredValueUsd6: 10_600_000_000n },
 ];
 
+const MINT_BY_SYMBOL: Record<string, string> = {
+  NVDAx: process.env.NEXT_PUBLIC_MINT_NVDAX ?? "",
+  SPYx: process.env.NEXT_PUBLIC_MINT_SPYX ?? "",
+  TSLAx: process.env.NEXT_PUBLIC_MINT_TSLAX ?? "",
+  SPCX: process.env.NEXT_PUBLIC_MINT_SPCX ?? "",
+  "T-OPENAI": process.env.NEXT_PUBLIC_MINT_T_OPENAI ?? "",
+  "T-KALSHI": process.env.NEXT_PUBLIC_MINT_T_KALSHI ?? "",
+  "PRE-ANTHROPIC": process.env.NEXT_PUBLIC_MINT_PRE_ANTHROPIC ?? "",
+  "PRE-SPACEX": process.env.NEXT_PUBLIC_MINT_PRE_SPACEX ?? "",
+  TIDE: process.env.NEXT_PUBLIC_MINT_TIDE ?? "",
+  "CC-LUGIA": process.env.NEXT_PUBLIC_MINT_CC_LUGIA ?? "",
+  "CC-RAYQUAZA": process.env.NEXT_PUBLIC_MINT_CC_RAYQUAZA ?? "",
+  "CC-MEW": process.env.NEXT_PUBLIC_MINT_CC_MEW ?? "",
+  "CC-DAYTONA": process.env.NEXT_PUBLIC_MINT_CC_DAYTONA ?? "",
+  "CC-ROYALOAK": process.env.NEXT_PUBLIC_MINT_CC_ROYALOAK ?? "",
+  "CC-SEAMASTER": process.env.NEXT_PUBLIC_MINT_CC_SEAMASTER ?? "",
+};
+
 export function marketMint(info: MarketInfo): string {
-  return process.env[info.mintEnvKey] ?? "";
+  return MINT_BY_SYMBOL[info.symbol] ?? "";
 }
 
 export const CASHBACK_ASSETS = ["NVDAx", "SPYx", "TIDE"];

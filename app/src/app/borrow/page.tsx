@@ -171,6 +171,9 @@ function BorrowSheet() {
       </div>
 
       <AprLine className="mt-2 text-xs text-ink-3" bands={asset.info.aprBands} ltvBps={preview?.ltv ?? asset.ltv} />
+      <p className="mt-1 text-xs text-ink-3">
+        Founding member preview: −2 pt APR for 12 months on your first €5,000 (floor 8.9%) — applied off-chain at launch, not on devnet.
+      </p>
 
       <div className="mt-4 rounded-xl bg-raised p-4">
         {mode === "borrow" && preview ? (

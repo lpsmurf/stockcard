@@ -206,6 +206,9 @@ function CardScreen() {
           >
             Test purchase
           </Link>
+          <Link href="/bank?source=balance" className="mt-2 flex min-h-[44px] items-center justify-center text-sm font-semibold text-brass">
+            Send card balance to bank ›
+          </Link>
           </div>
 
           <div className="mt-6 lg:col-span-7 lg:mt-0">

@@ -12,6 +12,7 @@ import { Banner } from "@/components/banner";
 import { AlertsCard } from "@/components/alerts-card";
 import { BalanceSummary } from "@/components/balance-summary";
 import { AprLine } from "@/components/apr-line";
+import { PayoutRows } from "@/components/payout-rows";
 
 export default function HomePage() {
   const { publicKey, connected } = useWallet();
@@ -110,6 +111,9 @@ function Home() {
         </div>
 
         {worst ? <AprLine className="mt-2 text-xs text-ink-3" bands={worst.info.aprBands} ltvBps={worst.ltv} /> : null}
+        {worst ? (
+          <p className="mt-1 text-xs text-ink-3">Founding member preview: −2 pt APR for 12 months on your first €5,000 — applied off-chain at launch.</p>
+        ) : null}
 
         <div className="mt-4 grid grid-cols-2 gap-3">
           <Link
@@ -125,6 +129,13 @@ function Home() {
             Repay
           </Link>
         </div>
+
+        <Link
+          href="/bank"
+          className="mt-3 flex min-h-[48px] items-center justify-center rounded-xl border border-rule px-4 font-semibold text-ink"
+        >
+          Send to bank
+        </Link>
       </div>
 
       <div className="mt-6 space-y-3 lg:col-span-5 lg:mt-0">
@@ -200,6 +211,7 @@ function Home() {
           })}
 
         <AlertsCard />
+        <PayoutRows />
       </div>
 
       {/* D2 positions strip (desktop/tablet): one row per market with collateral */}

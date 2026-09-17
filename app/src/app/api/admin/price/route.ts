@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import * as anchor from "@anchor-lang/core";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import bs58 from "bs58";
+import { MARKETS, marketMint } from "@/lib/config";
+import { kvGet, kvSet } from "@/lib/kv";
 
 /** Minimal signing wallet for AnchorProvider (anchor 1.2 ESM build does not export Wallet). */
 function walletOf(kp: Keypair) {
@@ -78,6 +80,11 @@ export async function POST(req: NextRequest) {
   const idl = (await import("@/lib/idl/stockcard.json")).default;
   const program = new anchor.Program(idl as anchor.Idl, provider);
 
+  const marketInfo = MARKETS.find((info) => marketMint(info) === mintStr);
+  if (!marketInfo) {
+    return NextResponse.json({ ok: false, error: { code: "BadRequest", message: "Unknown market mint" } }, { status: 400 });
+  }
+
   const mint = new PublicKey(mintStr);
   const market = marketPda(program.programId, mint);
   const priceUsd6 = Math.round(priceUsd * 1e6);
@@ -92,15 +99,26 @@ export async function POST(req: NextRequest) {
     })
     .rpc();
 
-  // alert check runs inline after every admin price change (T060 handles delivery)
+  const demoKey = `pricedemo:${marketInfo.symbol}`;
+  const demoPoints = (await kvGet<[number, number][]>(demoKey)) ?? [];
+  demoPoints.push([Date.now(), priceUsd]);
+  await kvSet(demoKey, demoPoints);
+
+  // Alert delivery is best-effort, but wait for the check before returning.
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  let alertCheck: "dispatched" | "skipped" | "failed" = appUrl ? "failed" : "skipped";
   if (appUrl) {
-    fetch(`${appUrl}/api/alerts/check`, {
-      method: "POST",
-      headers: { authorization: `Bearer ${process.env.CRON_SECRET}`, "content-type": "application/json" },
-      body: "{}",
-    }).catch(() => {});
+    try {
+      await fetch(`${appUrl}/api/alerts/check`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${process.env.CRON_SECRET}`, "content-type": "application/json" },
+        body: "{}",
+      });
+      alertCheck = "dispatched";
+    } catch {
+      // The signed price update and demo point remain successful if alert delivery fails.
+    }
   }
 
-  return NextResponse.json({ ok: true, data: { signature, priceUsd6 } });
+  return NextResponse.json({ ok: true, data: { signature, priceUsd6, alertCheck } });
 }
