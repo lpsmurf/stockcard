@@ -19,3 +19,10 @@ docs/architecture/*.visual-check.*
 
 # devnet test-wallet keys written by scripts/devnet-wallets.ts
 scripts/.test-wallets/
+
+# Agent-installed skills / MCP config (not project source)
+.agents/
+.windsurf/
+agent/
+skills-lock.json
+.claude/skills/upstash*
