@@ -20,6 +20,8 @@ Scheduled jobs: `.github/workflows/cron.yml` calls `POST /api/prices/sync` and `
 
 End-to-end check: `cd app && node scripts/e2e-api.mjs` funds a fresh devnet wallet, claims the faucet, approves the card delegate, runs a simulated SEPA payout, buys NVDAx in the shop, creates a mock card and settles a test purchase against the deployed API.
 
+Before recording the demo, run `./scripts/demo-price-loop.sh` to keep signed prices fresh (equities go stale after 3 minutes while the market is open).
+
 ## Status
 The Anchor program and core demo app are implemented. For the September 17 continuation snapshot, remaining work, verification results, and local changes that may not yet be on GitHub, read [HANDOFF_DEVIN.md](HANDOFF_DEVIN.md). See also:
 - [PLAN.md](PLAN.md): scope, architecture, 4-day schedule, verification
