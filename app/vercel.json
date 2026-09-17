@@ -1,6 +1,0 @@
-{
-  "crons": [
-    { "path": "/api/prices/sync", "schedule": "*/1 * * * *" },
-    { "path": "/api/alerts/check", "schedule": "*/5 * * * *" }
-  ]
-}
