@@ -1,0 +1,281 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "What happens when a collectible loan goes bad",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "margin",
+        "label": "Margin call",
+        "focus": [
+          "active",
+          "breach",
+          "cure",
+          "continues"
+        ],
+        "note": "A breach must persist 24h, then the borrower gets 72h and an exact repay amount."
+      },
+      {
+        "id": "term",
+        "label": "Term path",
+        "focus": [
+          "active",
+          "due",
+          "repaid",
+          "defaulted"
+        ],
+        "note": "The due date plus a 48h grace window is the simpler and primary way into default."
+      },
+      {
+        "id": "waterfall",
+        "label": "Foreclosure waterfall",
+        "focus": [
+          "defaulted",
+          "bids",
+          "lender_first",
+          "backstop",
+          "settled"
+        ],
+        "note": "Open bids first, lender floor second, partner backstop last so a default always resolves."
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "loan",
+      "label": "Loan state"
+    },
+    {
+      "id": "margin",
+      "label": "Value pressure"
+    },
+    {
+      "id": "floor",
+      "label": "Price floor"
+    },
+    {
+      "id": "out",
+      "label": "Good ending"
+    }
+  ],
+  "mainPath": [
+    "active",
+    "due",
+    "defaulted",
+    "bids",
+    "settled"
+  ],
+  "nodes": [
+    {
+      "id": "active",
+      "lane": "loan",
+      "col": 0,
+      "type": "backend",
+      "label": "Loan active",
+      "sublabel": "frozen · interest accrues",
+      "width": 144
+    },
+    {
+      "id": "due",
+      "lane": "loan",
+      "col": 1,
+      "type": "security",
+      "label": "Term due",
+      "sublabel": "48h grace to repay",
+      "width": 144
+    },
+    {
+      "id": "defaulted",
+      "lane": "loan",
+      "col": 2,
+      "type": "backend",
+      "label": "Default declared",
+      "sublabel": "foreclosure opens",
+      "width": 144
+    },
+    {
+      "id": "bids",
+      "lane": "loan",
+      "col": 3,
+      "type": "backend",
+      "label": "Bidding window",
+      "sublabel": "72h · open to anyone",
+      "width": 144
+    },
+    {
+      "id": "settled",
+      "lane": "loan",
+      "col": 4,
+      "type": "frontend",
+      "label": "Settled",
+      "sublabel": "lender paid · surplus back",
+      "width": 144
+    },
+    {
+      "id": "breach",
+      "lane": "margin",
+      "col": 1,
+      "type": "security",
+      "label": "Margin breach",
+      "sublabel": "cover thin for 24h",
+      "tag": "7-day median",
+      "width": 144
+    },
+    {
+      "id": "cure",
+      "lane": "margin",
+      "col": 2,
+      "type": "security",
+      "label": "Cure window",
+      "sublabel": "repay or add an item",
+      "tag": "72h",
+      "width": 144
+    },
+    {
+      "id": "lender_first",
+      "lane": "floor",
+      "col": 3,
+      "type": "backend",
+      "label": "Lender first refusal",
+      "sublabel": "may take it at the floor",
+      "width": 144
+    },
+    {
+      "id": "backstop",
+      "lane": "floor",
+      "col": 4,
+      "type": "external",
+      "label": "Partner backstop",
+      "sublabel": "buys at the floor",
+      "tag": "target, not signed",
+      "width": 144
+    },
+    {
+      "id": "repaid",
+      "lane": "out",
+      "col": 0,
+      "type": "frontend",
+      "label": "Repaid",
+      "sublabel": "item unfrozen",
+      "width": 144
+    },
+    {
+      "id": "continues",
+      "lane": "out",
+      "col": 2,
+      "type": "backend",
+      "label": "Back to Loan active",
+      "sublabel": "nothing is sold",
+      "width": 144
+    }
+  ],
+  "edges": [
+    {
+      "from": "active",
+      "to": "due",
+      "label": "term ends",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "from": "due",
+      "to": "defaulted",
+      "label": "grace lapses",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "from": "active",
+      "to": "breach",
+      "label": "value falls",
+      "variant": "dashed",
+      "role": "async"
+    },
+    {
+      "from": "breach",
+      "to": "cure",
+      "label": "alert + amount",
+      "role": "branch"
+    },
+    {
+      "from": "cure",
+      "to": "defaulted",
+      "label": "no cure",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "from": "defaulted",
+      "to": "bids",
+      "label": "floor published",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "from": "bids",
+      "to": "settled",
+      "label": "top bid wins",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "from": "bids",
+      "to": "lender_first",
+      "label": "no higher bid",
+      "role": "branch"
+    },
+    {
+      "from": "lender_first",
+      "to": "backstop",
+      "label": "lender declines",
+      "role": "branch"
+    },
+    {
+      "from": "backstop",
+      "to": "settled",
+      "label": "buys at floor",
+      "role": "branch"
+    },
+    {
+      "from": "active",
+      "to": "repaid",
+      "label": "repaid, incl. during grace",
+      "role": "branch"
+    },
+    {
+      "from": "cure",
+      "to": "continues",
+      "label": "cured in time",
+      "variant": "emphasis",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Only two things can take the item",
+      "items": [
+        "The due date, after a 48h grace window",
+        "A value breach that holds for 24h and is not cured within 72h"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Foreclosure always resolves",
+      "items": [
+        "Open bids first, then the lender floor, then the partner backstop",
+        "Debt and fees first; every remaining dollar goes to the borrower"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Not true yet",
+      "items": [
+        "No backstop partner is signed; the floor is an assumption",
+        "Needs a 7-day median from two sources, and rescoping constitution III"
+      ]
+    }
+  ]
+}

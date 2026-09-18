@@ -1,0 +1,323 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "StockCard landing site",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "waitlist",
+        "label": "Waitlist",
+        "focus": [
+          "visitor",
+          "page",
+          "api",
+          "redis",
+          "resend"
+        ],
+        "note": "Signup stores the answers, assigns a queue position and a referral code."
+      },
+      {
+        "id": "content",
+        "label": "Content",
+        "focus": [
+          "page",
+          "sections",
+          "assets",
+          "sources",
+          "fetcher"
+        ],
+        "note": "Sections are data-driven; card and watch images are vendored at build time."
+      },
+      {
+        "id": "demo-link",
+        "label": "Demo link",
+        "focus": [
+          "sections",
+          "demo"
+        ],
+        "note": "The 'Try the demo' section links out to the devnet app."
+      }
+    ],
+    "viewBox": [
+      1020,
+      500
+    ]
+  },
+  "components": [
+    {
+      "id": "visitor",
+      "type": "external",
+      "label": "Visitor",
+      "sublabel": "desktop · Android Chrome",
+      "pos": [
+        40,
+        70
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "page",
+      "type": "frontend",
+      "label": "Landing page",
+      "sublabel": "Next.js 16 · landing/",
+      "pos": [
+        290,
+        70
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "tag": "waitlist first"
+    },
+    {
+      "id": "sections",
+      "type": "frontend",
+      "label": "Sections",
+      "sublabel": "hero · calculator · tiers · FAQ",
+      "pos": [
+        560,
+        70
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "demo",
+      "type": "external",
+      "label": "StockCard app",
+      "sublabel": "devnet demo",
+      "pos": [
+        830,
+        70
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "Waitlist API",
+      "sublabel": "/api/waitlist · rate limit",
+      "pos": [
+        290,
+        240
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "Upstash Redis",
+      "sublabel": "queue · refs · signups",
+      "pos": [
+        40,
+        240
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "analytics",
+      "type": "backend",
+      "label": "Vercel Analytics",
+      "sublabel": "step events",
+      "pos": [
+        560,
+        240
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "sources",
+      "type": "external",
+      "label": "Image sources",
+      "sublabel": "Wikimedia · Collector Crypt",
+      "pos": [
+        830,
+        240
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "resend",
+      "type": "external",
+      "label": "Resend",
+      "sublabel": "double opt-in · optional",
+      "pos": [
+        40,
+        405
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "assets",
+      "type": "database",
+      "label": "Static images",
+      "sublabel": "public/assets/rwa · AVIF",
+      "pos": [
+        560,
+        405
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "fetcher",
+      "type": "backend",
+      "label": "fetch-rwa-images.ts",
+      "sublabel": "build-time script",
+      "pos": [
+        830,
+        405
+      ],
+      "size": [
+        150,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Vercel project",
+      "wraps": [
+        "page",
+        "sections",
+        "api",
+        "analytics",
+        "assets"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Build time",
+      "wraps": [
+        "fetcher"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "visitor-page",
+      "from": "visitor",
+      "to": "page",
+      "label": "open",
+      "variant": "emphasis"
+    },
+    {
+      "id": "page-sections",
+      "from": "page",
+      "to": "sections",
+      "label": "renders"
+    },
+    {
+      "id": "sections-demo",
+      "from": "sections",
+      "to": "demo",
+      "label": "try the demo",
+      "variant": "dashed"
+    },
+    {
+      "id": "page-api",
+      "from": "page",
+      "to": "api",
+      "label": "POST /api/waitlist",
+      "variant": "emphasis",
+      "labelDy": 24
+    },
+    {
+      "id": "api-redis",
+      "from": "api",
+      "to": "redis",
+      "label": "position · ref"
+    },
+    {
+      "id": "api-resend",
+      "from": "api",
+      "to": "resend",
+      "label": "opt-in email",
+      "variant": "dashed",
+      "labelDy": 24
+    },
+    {
+      "id": "page-analytics",
+      "from": "page",
+      "to": "analytics",
+      "label": "events",
+      "labelDx": -40
+    },
+    {
+      "id": "page-assets",
+      "from": "page",
+      "to": "assets",
+      "label": "next/image",
+      "labelDy": 24
+    },
+    {
+      "id": "sources-fetcher",
+      "from": "sources",
+      "to": "fetcher",
+      "label": "images",
+      "variant": "dashed",
+      "labelDy": 24
+    },
+    {
+      "id": "fetcher-assets",
+      "from": "fetcher",
+      "to": "assets",
+      "label": "AVIF/WebP"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "One job",
+      "items": [
+        "Waitlist signup: email, what you'd lock, cashback asset",
+        "Queue position and referral link; +10 spots per friend"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Static-first",
+      "items": [
+        "Sections read data files; no wallet connection on the page",
+        "Images vendored at build time, never hotlinked in production"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Honest marketing",
+      "items": [
+        "\"In development · Devnet beta\" status line everywhere",
+        "No partner logos; planned perks footnoted; captions required"
+      ]
+    }
+  ]
+}

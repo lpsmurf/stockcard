@@ -1,0 +1,234 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "StockCard waitlist flow",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "signup",
+        "label": "Signup",
+        "focus": [
+          "open",
+          "join",
+          "api",
+          "record",
+          "done"
+        ],
+        "note": "Email plus two answers create a queue position and a referral code."
+      },
+      {
+        "id": "referral",
+        "label": "Referral loop",
+        "focus": [
+          "done",
+          "share",
+          "friend"
+        ],
+        "note": "Each friend who joins through your link moves you up 10 spots."
+      },
+      {
+        "id": "guardrails",
+        "label": "Guardrails",
+        "focus": [
+          "api",
+          "reject",
+          "events"
+        ],
+        "note": "Disposable domains and floods are rejected before anything is stored."
+      }
+    ]
+  },
+  "lanes": [
+    {
+      "id": "landing",
+      "label": "Landing page"
+    },
+    {
+      "id": "api",
+      "label": "Route handlers"
+    },
+    {
+      "id": "store",
+      "label": "Upstash Redis"
+    },
+    {
+      "id": "loop",
+      "label": "Referral loop"
+    }
+  ],
+  "mainPath": [
+    "open",
+    "join",
+    "api",
+    "record",
+    "done",
+    "share"
+  ],
+  "nodes": [
+    {
+      "id": "open",
+      "lane": "landing",
+      "col": 0,
+      "type": "frontend",
+      "label": "Open page",
+      "sublabel": "hero · calculator CTA",
+      "width": 150
+    },
+    {
+      "id": "join",
+      "lane": "landing",
+      "col": 1,
+      "type": "frontend",
+      "label": "Join the waitlist",
+      "sublabel": "email · lock · cashback",
+      "width": 150
+    },
+    {
+      "id": "events",
+      "lane": "api",
+      "col": 0,
+      "type": "backend",
+      "label": "Vercel Analytics",
+      "sublabel": "step events",
+      "width": 150
+    },
+    {
+      "id": "api",
+      "lane": "api",
+      "col": 1,
+      "type": "security",
+      "label": "POST /api/waitlist",
+      "sublabel": "validate · rate-limit",
+      "tag": "no wallet",
+      "width": 150
+    },
+    {
+      "id": "reject",
+      "lane": "api",
+      "col": 2,
+      "type": "backend",
+      "label": "Reject",
+      "sublabel": "disposable · flood",
+      "width": 150
+    },
+    {
+      "id": "record",
+      "lane": "store",
+      "col": 2,
+      "type": "database",
+      "label": "Queue",
+      "sublabel": "waitlist · ref · sorted set",
+      "width": 150
+    },
+    {
+      "id": "done",
+      "lane": "landing",
+      "col": 3,
+      "type": "frontend",
+      "label": "You're in",
+      "sublabel": "position #N + link",
+      "width": 150
+    },
+    {
+      "id": "share",
+      "lane": "loop",
+      "col": 4,
+      "type": "frontend",
+      "label": "Share link",
+      "sublabel": "X · WhatsApp · copy",
+      "width": 150
+    },
+    {
+      "id": "friend",
+      "lane": "loop",
+      "col": 5,
+      "type": "backend",
+      "label": "Friend joins",
+      "sublabel": "+10 spots",
+      "width": 150
+    }
+  ],
+  "edges": [
+    {
+      "from": "open",
+      "to": "join",
+      "label": "join",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "from": "open",
+      "to": "events",
+      "label": "tracks",
+      "variant": "dashed",
+      "role": "async"
+    },
+    {
+      "from": "join",
+      "to": "api",
+      "label": "submit",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "from": "api",
+      "to": "reject",
+      "label": "invalid",
+      "variant": "dashed",
+      "role": "async"
+    },
+    {
+      "from": "api",
+      "to": "record",
+      "label": "store",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "from": "record",
+      "to": "done",
+      "label": "position",
+      "role": "main"
+    },
+    {
+      "from": "done",
+      "to": "share",
+      "label": "share",
+      "role": "main"
+    },
+    {
+      "from": "share",
+      "to": "friend",
+      "label": "joins via link",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "One job",
+      "items": [
+        "Email, what you'd lock, cashback asset → queue position",
+        "Referral link: +10 spots per friend who joins"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "No wallet",
+      "items": [
+        "The page never connects a wallet; the demo app is a separate link",
+        "Credit calculator is the secondary CTA; optional Resend opt-in"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Guardrails",
+      "items": [
+        "Disposable domains rejected; IP rate limit",
+        "\"In development · Devnet beta\" status line everywhere"
+      ]
+    }
+  ]
+}

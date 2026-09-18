@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Collectible order-book lending: what is shared, what is new",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "lender-path",
+        "label": "Lender path",
+        "focus": [
+          "lender",
+          "app",
+          "book",
+          "loans"
+        ],
+        "note": "A dealer posts collection, LTV, APR and duration; the protocol never holds their capital."
+      },
+      {
+        "id": "borrow-path",
+        "label": "Borrow path",
+        "focus": [
+          "borrower",
+          "app",
+          "book",
+          "freeze"
+        ],
+        "note": "The collector takes an offer and the item is frozen in place, not moved to a vault."
+      },
+      {
+        "id": "default-path",
+        "label": "Default path",
+        "focus": [
+          "freeze",
+          "loans",
+          "cc"
+        ],
+        "note": "Term expiry, not a price feed, triggers foreclosure; the lender sells on the venue."
+      }
+    ],
+    "viewBox": [
+      1020,
+      510
+    ]
+  },
+  "components": [
+    {
+      "id": "borrower",
+      "type": "external",
+      "label": "Collector wallet",
+      "sublabel": "owns a graded item",
+      "pos": [
+        40,
+        70
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "app",
+      "type": "frontend",
+      "label": "StockCard app",
+      "sublabel": "Next.js PWA · wallet shell",
+      "pos": [
+        290,
+        70
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "tag": "shared"
+    },
+    {
+      "id": "book",
+      "type": "backend",
+      "label": "Loan order book",
+      "sublabel": "offers · matching · terms",
+      "pos": [
+        560,
+        70
+      ],
+      "size": [
+        150,
+        64
+      ],
+      "tag": "new program"
+    },
+    {
+      "id": "loans",
+      "type": "database",
+      "label": "Offer & Loan PDAs",
+      "sublabel": "one per item, per lender",
+      "pos": [
+        830,
+        70
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "lender",
+      "type": "external",
+      "label": "Dealer lender",
+      "sublabel": "breakers · vaults · funds",
+      "pos": [
+        40,
+        230
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "verify",
+      "type": "backend",
+      "label": "Item verification",
+      "sublabel": "eligibility · valuation inputs",
+      "pos": [
+        290,
+        230
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "freeze",
+      "type": "security",
+      "label": "Freeze delegate",
+      "sublabel": "item never leaves the wallet",
+      "pos": [
+        560,
+        230
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "psa",
+      "type": "external",
+      "label": "PSA cert API",
+      "sublabel": "grade confirmation",
+      "pos": [
+        290,
+        390
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "cc",
+      "type": "external",
+      "label": "Collector Crypt",
+      "sublabel": "insured value · bids · venue",
+      "pos": [
+        560,
+        390
+      ],
+      "size": [
+        150,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Solana devnet · new program",
+      "wraps": [
+        "book",
+        "loans",
+        "freeze"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Vercel server",
+      "wraps": [
+        "verify"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "borrower-app",
+      "from": "borrower",
+      "to": "app",
+      "label": "pledge item",
+      "variant": "emphasis"
+    },
+    {
+      "id": "lender-app",
+      "from": "lender",
+      "to": "app",
+      "label": "post offer",
+      "variant": "emphasis"
+    },
+    {
+      "id": "app-book",
+      "from": "app",
+      "to": "book",
+      "label": "wallet-signed tx",
+      "variant": "emphasis"
+    },
+    {
+      "id": "book-loans",
+      "from": "book",
+      "to": "loans",
+      "label": "writes",
+      "variant": "emphasis"
+    },
+    {
+      "id": "book-freeze",
+      "from": "book",
+      "to": "freeze",
+      "label": "locks collateral",
+      "labelDy": 24
+    },
+    {
+      "id": "app-verify",
+      "from": "app",
+      "to": "verify",
+      "label": "HTTPS",
+      "labelDy": 24
+    },
+    {
+      "id": "verify-psa",
+      "from": "verify",
+      "to": "psa",
+      "label": "cert check",
+      "variant": "dashed",
+      "labelDy": 24
+    },
+    {
+      "id": "verify-cc",
+      "from": "verify",
+      "to": "cc",
+      "label": "value · live bids",
+      "variant": "dashed"
+    },
+    {
+      "id": "freeze-cc",
+      "from": "freeze",
+      "to": "cc",
+      "label": "on default: lender sells",
+      "variant": "security",
+      "labelDy": 24
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Reused as-is",
+      "items": [
+        "Wallet shell, alerts and push, brand tokens, the deployed app",
+        "The stockcard program is untouched: this flow never calls it"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Genuinely new",
+      "items": [
+        "Offer and Loan accounts, matching, term expiry, foreclosure",
+        "Term-based default replaces oracle LTV liquidation, so no price feed is needed"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Unresolved",
+      "items": [
+        "Cold start is lender recruitment, not capital or TVL",
+        "Freeze works for standard NFTs; pNFT, cNFT and Core each need their own path",
+        "Pledged-property lending is licensed in most jurisdictions"
+      ]
+    }
+  ]
+}
