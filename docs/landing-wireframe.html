@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StockCard landing — rough wireframe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@400;600;800&family=Funnel+Sans:wght@400;500;600&family=Martian+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ground:#07090C; --surface:#0F1318; --surface-2:#161B22;
+  --line:rgba(255,255,255,.08); --text:#F3F5F7; --text-2:#9AA4B2;
+  --accent:#3D7BFF; --accent-2:#7FE3C4; --warn:#F5B544; --danger:#FF5C5C;
+  --metal-black:linear-gradient(135deg,#2A2D31,#0C0D0F 55%,#1F2124);
+  --metal-silver:linear-gradient(135deg,#E8EBEF,#A9B0B8 50%,#F4F6F8);
+  --display:"Funnel Display",system-ui,sans-serif;
+  --sans:"Funnel Sans",system-ui,sans-serif;
+  --mono:"Martian Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--text);font-family:var(--sans);
+  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:-.02em;line-height:1.1}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+
+/* ---- page chrome ---- */
+.masthead{border-bottom:1px solid var(--line);padding:34px 0 26px;background:
+  radial-gradient(1000px 300px at 20% -50%, rgba(61,123,255,.16), transparent)}
+.masthead h1{font-size:30px;font-weight:800}
+.masthead p{color:var(--text-2);max-width:66ch;margin:10px 0 0}
+.badge{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;padding:4px 9px;border:1px solid var(--line);border-radius:999px;
+  color:var(--text-2);background:var(--surface-2)}
+.badge.warn{color:var(--warn);border-color:rgba(245,181,68,.35)}
+.badge.acc{color:var(--accent-2);border-color:rgba(127,227,196,.3)}
+
+/* ---- section scaffold ---- */
+.sec{border-bottom:1px solid var(--line);padding:30px 0}
+.sechead{display:flex;align-items:baseline;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.sechead .n{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.12em}
+.sechead h2{font-size:19px;font-weight:600}
+.sechead .k{margin-left:auto}
+.cols{display:grid;grid-template-columns:1fr 290px;gap:22px;align-items:start}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+
+/* the mock frame = "how it looks" */
+.frame{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px;
+  position:relative;overflow:hidden}
+.frame.light{background:#F4F6F8;color:#0C1015;border-color:rgba(0,0,0,.1)}
+.frame.light .muted{color:#5A6672}
+.muted{color:var(--text-2)}
+.kicker{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-2)}
+
+/* annotation rail */
+.ann{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:16px}
+.ann h4{margin:0 0 10px;font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--text-2);font-weight:600}
+.ann ul{margin:0;padding-left:0;list-style:none}
+.ann li{padding:5px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
+.ann li:last-child{border-bottom:0}
+.ann code{font-family:var(--mono);font-size:11px;color:var(--accent-2);background:rgba(127,227,196,.07);
+  padding:1px 5px;border-radius:4px}
+
+/* generic bits */
+.ph{background:repeating-linear-gradient(45deg,rgba(255,255,255,.035) 0 10px,transparent 10px 20px);
+  border:1px dashed var(--line);border-radius:10px;display:flex;align-items:center;
+  justify-content:center;color:var(--text-2);font-family:var(--mono);font-size:10px;
+  letter-spacing:.1em;text-transform:uppercase;text-align:center;padding:8px}
+.btn{display:inline-block;background:var(--accent);color:#fff;border-radius:9px;padding:11px 18px;
+  font-weight:600;font-size:14px}
+.input{flex:1;min-width:150px;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:9px;padding:11px 14px;color:var(--text-2);font-size:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:700px){.grid3,.grid4{grid-template-columns:1fr}}
+.tile{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:14px}
+.status{font-family:var(--mono);font-size:10px;color:var(--warn);letter-spacing:.06em}
+
+/* metal card */
+.card3d{width:290px;aspect-ratio:1.585;border-radius:15px;background:var(--metal-black);
+  border:1px solid rgba(255,255,255,.14);padding:16px;display:flex;flex-direction:column;
+  justify-content:space-between;box-shadow:0 26px 50px -18px rgba(0,0,0,.85);
+  transform:rotate(-2.5deg)}
+.card3d.silver{background:var(--metal-silver);color:#14181D;border-color:rgba(0,0,0,.14)}
+.card3d .wm{font-family:var(--display);font-weight:800;letter-spacing:-.02em;font-size:17px}
+.chip{width:31px;height:23px;border-radius:5px;background:linear-gradient(135deg,#D9C27E,#9A7F3C);
+  opacity:.92}
+.visa{font-family:var(--display);font-weight:800;letter-spacing:.06em;font-size:15px}
+
+/* calculator */
+.slider{height:5px;border-radius:99px;background:linear-gradient(90deg,var(--accent) 0 38%,var(--surface-2) 38%);
+  position:relative;margin:16px 0 8px}
+.slider::after{content:"";position:absolute;left:38%;top:50%;width:16px;height:16px;border-radius:50%;
+  background:#fff;transform:translate(-50%,-50%);box-shadow:0 2px 8px rgba(0,0,0,.6)}
+.health{height:9px;border-radius:99px;overflow:hidden;display:flex;margin-top:6px}
+.health i{display:block;height:100%}
+
+/* tiers */
+.tier{background:var(--surface-2);border:1px solid var(--line);border-radius:13px;padding:16px}
+.tier.hl{border-color:rgba(61,123,255,.5);box-shadow:0 0 0 1px rgba(61,123,255,.18) inset}
+.tier .price{font-family:var(--mono);font-size:19px;margin:6px 0 2px}
+.tier ul{margin:10px 0 0;padding-left:16px;font-size:12.5px;color:var(--text-2)}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line)}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);font-weight:600}
+.faq{border-top:1px solid var(--line);padding:11px 2px;display:flex;justify-content:space-between;gap:12px}
+.footnote{font-size:11.5px;color:var(--text-2);margin-top:12px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:12px;color:var(--text-2)}
+</style>
+</head>
+<body>
+
+<div class="masthead"><div class="wrap">
+  <span class="badge warn">Rough wireframe · not final design</span>
+  <h1 style="margin-top:12px">StockCard landing site — structure &amp; components</h1>
+  <p>Every block required by <code style="font-family:var(--mono);font-size:12px">specs/002-landing-site/brief.md</code> §3, rendered at low fidelity in the brief's dark fintech palette and its recommended type pairing (Funnel Display / Funnel Sans / Martian Mono). Grey hatching marks an image or render that does not exist yet. The right rail lists the React components each section needs.</p>
+  <div class="legend">
+    <span><span class="badge acc">Kimi's call</span> &nbsp;composition left open by the brief</span>
+    <span><span class="badge warn">guardrail</span> &nbsp;non-negotiable honesty rule from §9</span>
+  </div>
+</div></div>
+
+<div class="wrap">
+
+<!-- 01 HERO -->
+<section class="sec"><div class="sechead"><span class="n">01</span><h2>Hero</h2><span class="k badge acc">Kimi's call: composition + signature interaction</span></div>
+<div class="cols">
+  <div class="frame">
+    <div style="display:grid;grid-template-columns:1.15fr .85fr;gap:26px;align-items:center">
+      <div>
+        <div class="kicker">Built on Solana · Devnet beta</div>
+        <h2 style="font-size:40px;font-weight:800;margin:12px 0 10px">Spend what you own.<br>Never sell it.</h2>
+        <p class="muted" style="margin:0 0 18px;max-width:42ch">Lock tokenized stocks, graded cards, watches or art notes. Borrow against them. Spend it on a card that pays you back in more of what you own.</p>
+        <div class="row">
+          <div class="input">you@email.com</div>
+          <span class="btn">Join the waitlist</span>
+        </div>
+        <div class="status" style="margin-top:12px">In development · Devnet beta · Not available yet</div>
+      </div>
+      <div style="display:flex;justify-content:center">
+        <div class="card3d">
+          <div class="row" style="justify-content:space-between"><span class="wm">StockCard</span><span style="font-size:13px">))) </span></div>
+          <div class="chip"></div>
+          <div class="row" style="justify-content:space-between;align-items:flex-end">
+            <span class="num" style="font-size:12px;color:#B9C1CA">•••• •••• •••• 4417</span>
+            <span class="visa">VISA</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ann"><h4>Components</h4><ul>
+    <li><code>&lt;MetalCard tier /&gt;</code> — pointer-tilt + light sweep, CSS 3D</li>
+    <li><code>&lt;WaitlistForm variant="hero" /&gt;</code> — email only here, rest on step 2</li>
+    <li><code>&lt;StatusLine /&gt;</code> <span class="badge warn">guardrail</span></li>
+    <li><code>&lt;HeroEntrance /&gt;</code> — one orchestrated Motion sequence, reduced-motion safe</li>
+    <li>Network is the text <b>VISA</b>, never a logo <span class="badge warn">guardrail</span></li>
+  </ul></div>
+</div></section>
+
+<!-- 02 ASSET STRIP -->
+<section class="sec"><div class="sechead"><span class="n">02</span><h2>Asset strip</h2><span class="k badge acc">Kimi's call: marquee or carousel</span></div>
+<div class="cols">
+  <div class="frame">
+    <div class="kicker" style="margin-bottom:12px">What you can lock</div>
+    <div class="grid4">
+      <div class="tile"><div class="ph" style="height:74px">Card image</div><div style="margin-top:8px;font-size:13px">PSA 10 Lugia</div><div class="num muted" style="font-size:11px">$54,000 insured</div></div>
+      <div class="tile"><div class="ph" style="height:74px">Watch image</div><div style="margin-top:8px;font-size:13px">Rolex Daytona</div><div class="num muted" style="font-size:11px">$74,200 insured</div></div>
+      <div class="tile"><div class="ph" style="height:74px">Ticker tile</div><div style="margin-top:8px;font-size:13px">NVDAx · SPYx</div><div class="num muted" style="font-size:11px">Tokenized stock</div></div>
+      <div class="tile"><div class="ph" style="height:74px">Artwork image</div><div style="margin-top:8px;font-size:13px">Tidewater Lot 01</div><div class="num muted" style="font-size:11px">Art note</div></div>
+    </div>
+    <div class="footnote">Example of a tokenized item on Solana (Collector Crypt marketplace). Not affiliated. Brand names are trademarks of their owners.</div>
+  </div>
+  <div class="ann"><h4>Components</h4><ul>
+    <li><code>&lt;AssetMarquee items /&gt;</code> — infinite scroll, pauses on hover</li>
+    <li><code>&lt;AssetChip image grade value /&gt;</code></li>
+    <li>Images fetched at <b>build time</b> by <code>scripts/fetch-rwa-images.ts</code>, never hotlinked</li>
+    <li>Caption is mandatory on every image <span class="badge warn">guardrail</span></li>
+  </ul></div>
+</div></section>
+
+<!-- 03 HOW IT WORKS -->
+<section class="sec"><div class="sechead"><span class="n">03</span><h2>How it works</h2></div>
+<div class="cols">
+  <div class="frame">
+    <div class="grid3">
+      <div class="tile"><div class="num" style="color:var(--accent)">01</div><h3 style="font-size:16px;margin:6px 0">Lock</h3><p class="muted" style="font-size:13px;margin:0">Send an asset into an on-chain vault. It stays yours.</p></div>
+      <div class="tile"><div class="num" style="color:var(--accent)">02</div><h3 style="font-size:16px;margin:6px 0">Borrow</h3><p class="muted" style="font-size:13px;margin:0">Draw USDC up to your limit. Interest only on what you use.</p></div>
+      <div class="tile"><div class="num" style="color:var(--accent)">03</div><h3 style="font-size:16px;margin:6px 0">Spend</h3><p class="muted" style="font-size:13px;margin:0">Pay with the card. Cashback buys more of your asset.</p></div>
+    </div>
+    <div class="tile" style="margin-top:12px;text-align:center">Repay anytime, take it back.</div>
+  </div>
+  <div class="ann"><h4>Components</h4><ul>
+    <li><code>&lt;StepBento steps /&gt;</code> — 3-up desktop, stacked at 360px</li>
+    <li><code>&lt;ScrollReveal /&gt;</code> — shared wrapper for all sections below the fold</li>
+  </ul></div>
+</div></section>
+
+<!-- 04 CALCULATOR -->
+<section class="sec"><div class="sechead"><span class="n">04</span><h2>Credit calculator</h2><span class="k badge acc">Kimi's call: hero or lower</span></div>
+<div class="cols">
+  <div class="frame">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:26px">
+      <div>
+        <div class="kicker">Asset type</div>
+        <div class="row" style="margin:8px 0 16px">
+          <span class="badge" style="border-color:var(--accent);color:var(--text)">Stocks</span>
+          <span class="badge">Graded cards</span><span class="badge">Watches</span><span class="badge">Art</span>
+        </div>
+        <div class="kicker">Value locked</div>
+        <div class="num" style="font-size:26px;margin-top:4px">$10,000</div>
+        <div class="slider"></div>
+        <div class="row" style="justify-content:space-between"><span class="kicker">Borrowed</span><span class="num" style="font-size:13px">$3,500 · 35% LTV</span></div>
+        <div class="health"><i style="width:54%;background:var(--accent-2)"></i><i style="width:15%;background:var(--warn)"></i><i style="width:31%;background:rgba(255,255,255,.1)"></i></div>
+      </div>
+      <div style="display:grid;gap:10px;align-content:start">
+        <div class="tile row" style="justify-content:space-between"><span class="muted">Credit line</span><span class="num">$5,000</span></div>
+        <div class="tile row" style="justify-content:space-between"><span class="muted">APR band</span><span class="num" style="color:var(--accent-2)">12.9%</span></div>
+        <div class="tile row" style="justify-content:space-between"><span class="muted">Daily interest</span><span class="num">$1.24</span></div>
+        <div class="tile row" style="justify-content:space-between"><span class="muted">Can fall before liquidation</span><span class="num" style="color:var(--warn)">46%</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="ann"><h4>Components</h4><ul>
+    <li><code>&lt;CreditCalculator /&gt;</code> — client component, owns all state</li>
+    <li><code>&lt;AssetTypeToggle /&gt;</code> — drives LTV + APR bands</li>
+    <li><code>&lt;ValueSlider /&gt;</code> + <code>&lt;HealthBar /&gt;</code> — colour flips at 50% / 65%</li>
+    <li><code>&lt;NumberTicker /&gt;</code> — animates every output</li>
+    <li>Maths must mirror <code>app/src/lib/risk.ts</code>, not re-derive it</li>
+  </ul></div>
+</div></section>
+
+<!-- 05 CASHBACK -->
+<section class="sec"><div class="sechead"><span class="n">05</span><h2>Cashback that buys assets</h2></div>
+<div class="cols">
+  <div class="frame">
+    <h2 style="font-size:26px;font-weight:800">Every purchase buys you more of what you own.</h2>
+    <div class="row" style="margin-top:18px;gap:14px;align-items:stretch">
+      <div class="tile" style="flex:1"><div class="kicker">Groceries</div><div class="num" style="font-size:20px">€62.15</div></div>
+      <div class="tile muted" style="display:flex;align-items:center">→</div>
+      <div class="tile" style="flex:1"><div class="kicker">Plus 1.5%</div><div class="num" style="font-size:20px">€0.93</div></div>
+      <div class="tile" style="display:flex;align-items:center">→</div>
+      <div class="tile" style="flex:1;border-color:rgba(127,227,196,.4)"><div class="kicker">Added to collateral</div><div class="num" style="font-size:20px;color:var(--accent-2)">+0.0044 NVDAx</div></div>
+    </div>
+    <p class="muted" style="font-size:13px;margin-top:14px">Highest cashback on spend up to a quarter of the credit you use.</p>
+  </div>
+  <div class="ann"><h4>Components</h4><ul>
+    <li><code>&lt;CashbackFlow /&gt;</code> — 3-step, animates on scroll into view</li>
+    <li><code>&lt;NumberTicker /&gt;</code> reused</li>
+    <li>Only the §6 example numbers. No invented rates <span class="badge warn">guardrail</span></li>
+  </ul></div>
+</div></section>
+
+<!-- 06 TIERS -->
+<section class="sec"><div class="sechead"><span class="n">06</span><h2>Membership tiers</h2><span class="k badge acc">Kimi's call: light section for rhythm</span></div>
+<div class="cols">
+  <div class="frame light">
+    <div class="grid3">
+      <div class="tier" style="background:#fff;border-color:rgba(0,0,0,.1)"><div style="font-weight:600">Standard</div><div class="price">Free</div><div class="muted" style="font-size:12px">0.5% cashback</div><ul><li>Virtual card</li><li>from 9.9% APR</li><li>~6% savings APY</li></ul></div>
+      <div class="tier hl" style="background:#fff"><div style="font-weight:600">Plus</div><div class="price">€9.99<span style="font-size:12px">/mo</span></div><div class="muted" style="font-size:12px">1.5% cashback</div><ul><li>Virtual + physical</li><li>from 8.9% APR</li><li>+0.5 pt APY</li></ul></div>
+      <div class="tier" style="background:#12161B;color:#F3F5F7;border-color:rgba(255,255,255,.14)"><div style="font-weight:600">Black</div><div class="price">€39.99<span style="font-size:12px">/mo</span></div><div style="font-size:12px;color:#9AA4B2">2.5% cashback</div><ul style="color:#9AA4B2"><li>Metal card</li><li>+1 pt APY</li><li>Lounges, insurance <i>(planned)</i></li></ul></div>
+    </div>
+    <div class="tile" style="margin-top:14px;background:#fff;border-color:rgba(0,0,0,.1);color:#0C1015">
+      <b>Founding member offer</b> — −2 pt APR for 12 months on your first €5,000, first 1,000 members who activate within 90 days.
+    </div>
+    <div class="footnote" style="color:#5A6672">Max LTV and liquidation terms never depend on tier. Planned benefits depend on partner and issuer agreements and may change.</div>
+  </div>
+  <div class="ann"><h4>Components</h4><ul>
+    <li><code>&lt;TierCards /&gt;</code> — spotlight / gradient border on hover</li>
+    <li><code>&lt;TierSwitcher /&gt;</code> — flips the hero card finish (black ↔ silver)</li>
+    <li><code>&lt;PlannedBadge /&gt;</code> on every planned perk <span class="badge warn">guardrail</span></li>
+    <li>Founding counter only if it reads the <b>real</b> waitlist count</li>
+  </ul></div>
+</div></section>
+
+<!-- 6b SAVINGS / 6c COMPARE / 6d DEMO -->
+<section class="sec"><div class="sechead"><span class="n">06b–d</span><h2>Savings · Compare · Try the demo</h2></div>
+<div class="cols">
+  <div class="frame">
+    <div class="grid3" style="gap:14px">
+      <div class="tile"><div class="kicker">Savings</div><div class="num" style="font-size:24px;color:var(--accent-2)">~6%</div><p class="muted" style="font-size:12.5px">on USDC. Your savings fund the credit lines.</p><div class="status">In development · not available in the EU until regulatory approval</div></div>
+      <div class="tile"><div class="kicker">Try the demo</div><div class="ph" style="height:66px;margin:8px 0">App screenshot / loop</div><p class="muted" style="font-size:12.5px">Claim test money, buy an asset, lock it, spend.</p><span class="btn" style="padding:7px 12px;font-size:12px">Open devnet app</span></div>
+      <div class="tile"><div class="kicker">Protection</div><ul style="margin:8px 0 0;padding-left:15px;font-size:12.5px;color:var(--text-2)"><li>Suggested max 35% LTV</li><li>Push alerts before liquidation</li><li>Collateral sits in an on-chain program</li></ul></div>
+    </div>
+    <div style="margin-top:16px">
+      <div class="kicker" style="margin-bottom:8px">How we compare</div>
+      <table>
+        <tr><th></th><th>StockCard</th><th>KAST</th><th>Nexo</th><th>ether.fi Cash</th></tr>
+        <tr><td class="muted">Top cashback</td><td class="num">2.5% in your asset</td><td class="num">3%</td><td class="num">2% in NEXO</td><td class="num">3%</td></tr>
+        <tr><td class="muted">Borrow against</td><td>Stocks, cards, watches, art</td><td>—</td><td>Crypto</td><td>Crypto</td></tr>
+        <tr><td class="muted">Collateral custody</td><td>On-chain program</td><td class="muted">Not checked</td><td>Custodial</td><td>Self-custodial</td></tr>
+      </table>
+      <div class="footnote">Competitor details from their public sites and reviews, September 2026. Check the provider for current terms.</div>
+    </div>
+  </div>
+  <div class="ann"><h4>Components</h4><ul>
+    <li><code>&lt;SavingsBlock /&gt;</code> — APY formula lives in the FAQ, not here</li>
+    <li><code>&lt;CompareTable /&gt;</code> <span class="badge acc">Kimi's call: table, cards or toggle</span></li>
+    <li><code>&lt;DemoCta /&gt;</code> — the only outbound link to the devnet app</li>
+    <li><code>&lt;ProtectionBento /&gt;</code></li>
+    <li>"Not checked" cells stay honest; no invented competitor data <span class="badge warn">guardrail</span></li>
+  </ul></div>
+</div></section>
+
+<!-- 08 MANIFESTO -->
+<section class="sec"><div class="sechead"><span class="n">08</span><h2>Real assets only</h2><span class="k badge acc">Kimi's call: editorial moment</span></div>
+<div class="cols">
+  <div class="frame" style="text-align:center;padding:44px 26px">
+    <h2 style="font-size:32px;font-weight:800;max-width:24ch;margin:0 auto">Real assets only.<br>No memecoins. Ever.</h2>
+    <p class="muted" style="max-width:52ch;margin:14px auto 0">Tokenized equities, graded collectibles, luxury watches and art notes. Things that exist, are graded or audited, and have a market when you need one.</p>
+  </div>
+  <div class="ann"><h4>Components</h4><ul>
+    <li><code>&lt;Manifesto /&gt;</code> — largest display type on the page, no imagery</li>
+    <li>Deliberate pacing break between dense sections</li>
+  </ul></div>
+</div></section>
+
+<!-- 09-10 FAQ + FOOTER -->
+<section class="sec"><div class="sechead"><span class="n">09–10</span><h2>FAQ · Final CTA · Footer</h2></div>
+<div class="cols">
+  <div class="frame">
+    <div class="faq"><span>What can I use as collateral?</span><span class="muted">+</span></div>
+    <div class="faq"><span>Do I have to sell my assets?</span><span class="muted">+</span></div>
+    <div class="faq"><span>What happens if prices fall?</span><span class="muted">+</span></div>
+    <div class="faq"><span>Who holds my assets?</span><span class="muted">+</span></div>
+    <div class="faq"><span>Can I use cards from Solflare Packs?</span><span class="muted">+</span></div>
+    <div class="faq muted" style="font-size:12px">…11 questions minimum (brief §8)</div>
+    <div style="margin-top:22px;text-align:center;border-top:1px solid var(--line);padding-top:22px">
+      <h3 style="font-size:22px">Get early access</h3>
+      <div class="row" style="justify-content:center;margin-top:12px"><div class="input" style="max-width:280px">you@email.com</div><span class="btn">Join the waitlist</span></div>
+      <div class="footnote" style="max-width:62ch;margin:18px auto 0">StockCard is in development. Nothing on this site is an offer of credit, securities or a payment card. Borrowing against assets carries the risk of liquidation.</div>
+    </div>
+  </div>
+  <div class="ann"><h4>Components</h4><ul>
+    <li><code>&lt;FaqAccordion items /&gt;</code> — one open at a time, keyboard-navigable</li>
+    <li><code>&lt;WaitlistForm variant="footer" /&gt;</code> — same component as hero</li>
+    <li><code>&lt;Footer /&gt;</code> — disclaimer verbatim from §9 <span class="badge warn">guardrail</span></li>
+    <li>No press logos, testimonials or user counts <span class="badge warn">guardrail</span></li>
+  </ul></div>
+</div></section>
+
+<!-- POST-SIGNUP -->
+<section class="sec"><div class="sechead"><span class="n">+</span><h2>Post-signup state</h2><span class="k muted" style="font-size:12px">not in §3, but the waitlist mechanics need it</span></div>
+<div class="cols">
+  <div class="frame" style="text-align:center;padding:36px 26px">
+    <div class="kicker">You're in</div>
+    <div class="num" style="font-size:40px;margin:8px 0">#1,284</div>
+    <p class="muted" style="margin:0 0 16px">Move up 10 spots for every friend who joins.</p>
+    <div class="row" style="justify-content:center"><div class="input" style="max-width:330px">stockcard.xyz/?ref=A7K2QD</div><span class="btn">Copy</span></div>
+  </div>
+  <div class="ann"><h4>Components</h4><ul>
+    <li><code>&lt;QueuePosition /&gt;</code> — reads the real sorted-set rank</li>
+    <li><code>&lt;ReferralLink /&gt;</code> — copy + X / WhatsApp share</li>
+    <li>Step 2 of the form collects: what you'd lock, cashback asset, optional wallet</li>
+    <li>Referral reward: Plus-tier cashback for 3 months</li>
+  </ul></div>
+</div></section>
+
+<section class="sec" style="border-bottom:0">
+  <div class="sechead"><span class="n">∑</span><h2>Shared components and constraints</h2></div>
+  <div class="grid3">
+    <div class="tile"><div class="kicker">Reused everywhere</div><ul style="margin:8px 0 0;padding-left:16px;font-size:13px;color:var(--text-2)">
+      <li><code style="font-family:var(--mono);font-size:11px">&lt;WaitlistForm /&gt;</code> ×2</li>
+      <li><code style="font-family:var(--mono);font-size:11px">&lt;NumberTicker /&gt;</code> ×3</li>
+      <li><code style="font-family:var(--mono);font-size:11px">&lt;ScrollReveal /&gt;</code> all sections</li>
+      <li><code style="font-family:var(--mono);font-size:11px">&lt;StatusLine /&gt;</code> wherever a card or benefit appears</li>
+      <li><code style="font-family:var(--mono);font-size:11px">&lt;MetalCard /&gt;</code> hero + tiers</li>
+    </ul></div>
+    <div class="tile"><div class="kicker">Client vs server</div><ul style="margin:8px 0 0;padding-left:16px;font-size:13px;color:var(--text-2)">
+      <li>Only the calculator, marquee, tier switcher, FAQ and forms are client components</li>
+      <li>Everything else is a server component reading static data files</li>
+      <li>The page never connects a wallet</li>
+    </ul></div>
+    <div class="tile"><div class="kicker">Budget</div><ul style="margin:8px 0 0;padding-left:16px;font-size:13px;color:var(--text-2)">
+      <li>Lighthouse mobile ≥ 90 perf, ≥ 95 a11y</li>
+      <li>LCP &lt; 2.5s on 4G</li>
+      <li>360px minimum, no horizontal scroll</li>
+      <li><code style="font-family:var(--mono);font-size:11px">prefers-reduced-motion</code> honoured</li>
+    </ul></div>
+  </div>
+</section>
+
+</div>
+</body>
+</html>
