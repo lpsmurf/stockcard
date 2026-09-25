@@ -140,7 +140,13 @@ export default function ShopPage() {
               </div>
               <p className="mt-3 font-semibold leading-snug">{item.name}</p>
               {item.grade ? <p className="text-xs text-ink-3">{item.grade}</p> : null}
-              <p className="mt-1 font-mono text-sm tabular">{item.kind === "stock" ? `${formatUsd(price)} · Market price` : `Insured value ${formatUsd(price)}`}</p>
+              {info?.preIpo ? (
+                <span className="mt-1 inline-block rounded-full bg-brass-soft px-2 py-0.5 text-[11px] font-medium text-brass">
+                  {info.preIpo.label} · {info.preIpo.provider === "tessera" ? "Tessera" : "PreStocks"}
+                </span>
+              ) : null}
+              <p className="mt-1 font-mono text-sm tabular">{item.kind === "stock" ? `${formatUsd(price)} · ${info?.preIpo ? "NAV" : "Market price"}` : `Insured value ${formatUsd(price)}`}</p>
+              {info?.preIpo ? <p className="mt-1 text-xs text-ink-3">We lend against NAV, not the token premium.</p> : null}
               {item.kind !== "stock" ? <p className="mt-1 text-xs text-ink-3">{MIRROR_NOTE}</p> : null}
               <p className="mt-1 text-xs text-brass">Unlocks up to {formatUsd(credit)} credit per {item.kind === "stock" || item.kind === "art" ? "token" : "item"}</p>
               <button

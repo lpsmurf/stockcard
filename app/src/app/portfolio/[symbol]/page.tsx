@@ -4,7 +4,9 @@ import Link from "next/link";
 import { Suspense, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { PreIpoReading } from "@/lib/prices/preipo";
+import { type MarketInfo } from "@/lib/config";
 import { AmountInput, parseTokens } from "@/components/amount-input";
 import { MockBadge } from "@/components/mock-badge";
 import { PreviewRow } from "@/components/preview-row";
@@ -14,6 +16,15 @@ import { depositCollateral, withdrawCollateral } from "@/lib/actions";
 import { useProgram } from "@/lib/program";
 import { usePortfolio } from "@/lib/portfolio";
 import { formatPct, formatTokens, formatUsd, liquidationPrice, ltvBps } from "@/lib/risk";
+
+/** Sources the price signer actually consults for this market (lib/prices/signer.ts). */
+function priceSources(info: MarketInfo): string[] {
+  if (info.preIpo) return [info.preIpo.provider === "tessera" ? "Tessera NAV" : "PreStocks NAV", "Jupiter cross-check"];
+  if (info.symbol === "SPCX") return ["Backpack", "Jupiter", "Pyth"];
+  if (info.assetClass === "Equity") return ["xStocks API", "Jupiter", "Pyth"];
+  if (info.assetClass === "ArtNote") return ["Appraisal"];
+  return ["Partner FMV"];
+}
 
 export default function AssetDetailPage() {
   return (
@@ -37,6 +48,17 @@ function AssetDetail() {
   const [tab, setTab] = useState<"deposit" | "withdraw">(params.get("mode") === "withdraw" ? "withdraw" : "deposit");
   const [amountStr, setAmountStr] = useState(params.get("amount") ?? "");
   const [busy, setBusy] = useState(false);
+
+  const { data: preipo } = useQuery({
+    queryKey: ["preipo", symbol],
+    enabled: Boolean(asset?.info.preIpo),
+    staleTime: 60_000,
+    queryFn: async () => {
+      const res = await fetch(`/api/preipo?symbol=${encodeURIComponent(symbol)}`);
+      const json = await res.json();
+      return json.data as PreIpoReading;
+    },
+  });
 
   const amount = useMemo(() => (asset ? (parseTokens(amountStr, asset.info.decimals) ?? 0n) : 0n), [amountStr, asset]);
   const maxWithdraw = useMemo(() => {
@@ -126,14 +148,34 @@ function AssetDetail() {
       </div>
 
       <h1 className="mt-4 font-display text-2xl">{asset.info.name}</h1>
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        <span className="rounded-full bg-plaster px-2 py-0.5 text-[11px] text-ink-2">
+          {asset.info.assetClass === "ArtNote" ? "Art note" : asset.info.assetClass}
+        </span>
+        {asset.info.preIpo ? (
+          <span className="rounded-full bg-brass-soft px-2 py-0.5 text-[11px] font-medium text-brass">
+            {asset.info.preIpo.label} · {asset.info.preIpo.provider === "tessera" ? "Tessera" : "PreStocks"}
+          </span>
+        ) : null}
+      </div>
       <div className="mt-3 rounded-xl bg-surface p-4">
-        <PreviewRow label="Price" value={`${formatUsd(asset.priceUsd6)} · ${asset.info.priceSource === "PartnerFmv" ? "Partner value" : asset.info.priceSource}`} />
+        <PreviewRow label="Price" value={`${formatUsd(asset.priceUsd6)} · ${asset.info.preIpo ? "NAV" : asset.info.priceSource === "PartnerFmv" ? "Partner value" : asset.info.priceSource}`} />
+        <PreviewRow label="Price sources" value={priceSources(asset.info).join(" · ")} />
         <PreviewRow label="Haircut" value={formatPct(BigInt(asset.info.haircutBps))} />
         <PreviewRow label="Max LTV" value={formatPct(BigInt(asset.info.maxLtvBps))} />
         <PreviewRow label="Locked" value={`${formatTokens(asset.deposited, asset.info.decimals)} ${asset.info.symbol}`} />
         <PreviewRow label="In wallet" value={`${formatTokens(asset.walletBalance, asset.info.decimals)} ${asset.info.symbol}`} />
         <div className="pt-1"><MockBadge /></div>
       </div>
+      {asset.info.preIpo ? (
+        <p className="mt-2 text-xs text-ink-3">
+          {preipo?.premiumBps == null
+            ? `We lend against the ${asset.info.preIpo.provider === "tessera" ? "Tessera" : "PreStocks"} NAV (mark price) — the token premium is excluded.`
+            : preipo.premiumBps < 0
+              ? `Trading ${(-preipo.premiumBps / 100).toFixed(0)}% below NAV — we lend against the lower figure.`
+              : `Trading ${(preipo.premiumBps / 100).toFixed(0)}% above NAV — we lend against NAV only.`}
+        </p>
+      ) : null}
 
       <div className="mt-4 grid grid-cols-2 gap-1 rounded-xl bg-surface p-1" role="tablist">
         {(["deposit", "withdraw"] as const).map((t2) => (

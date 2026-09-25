@@ -92,6 +92,11 @@ export default function PortfolioPage() {
                       <span className="rounded-full bg-plaster px-2 py-0.5 text-[11px] text-ink-2">
                         {a.info.assetClass === "ArtNote" ? "Art note" : a.info.assetClass}
                       </span>
+                      {a.info.preIpo ? (
+                        <span className="rounded-full bg-brass-soft px-2 py-0.5 text-[11px] font-medium text-brass">
+                          {a.info.preIpo.label} · {a.info.preIpo.provider === "tessera" ? "Tessera" : "PreStocks"}
+                        </span>
+                      ) : null}
                       <MockBadge />
                     </div>
                     <p className="mt-0.5 truncate text-sm text-ink-3">
@@ -154,6 +159,11 @@ export default function PortfolioPage() {
                             <span className="rounded-full bg-plaster px-2 py-0.5 text-[11px] text-ink-2">
                               {a.info.assetClass === "ArtNote" ? "Art note" : a.info.assetClass}
                             </span>
+                            {a.info.preIpo ? (
+                              <span className="rounded-full bg-brass-soft px-2 py-0.5 text-[11px] font-medium text-brass">
+                                {a.info.preIpo.label}
+                              </span>
+                            ) : null}
                             <MockBadge />
                           </span>
                         </td>
