@@ -105,6 +105,18 @@ export default function SavingsPage() {
       <h1 className="font-display text-3xl">Savings</h1>
       <p className="mt-1 text-[15px] text-ink-2">Earn on USDC. It funds the credit lines.</p>
 
+      {configQuery.isError ? (
+        <div className="mt-4 rounded-xl bg-surface p-5 text-center">
+          <p className="text-ink-2">Couldn&apos;t load the pool. Check your connection.</p>
+          <button
+            onClick={() => configQuery.refetch()}
+            className="mt-4 flex min-h-[48px] w-full items-center justify-center rounded-xl bg-brass px-4 font-semibold text-on-brass"
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
+
       <div className="mt-6">
         <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-3">Your savings</p>
         <p className="font-display text-[44px] leading-tight tabular">{formatUsd(stats?.balance ?? 0n)}</p>

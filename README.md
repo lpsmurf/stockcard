@@ -22,6 +22,49 @@ End-to-end check: `cd app && node scripts/e2e-api.mjs` funds a fresh devnet wall
 
 Before recording the demo, run `./scripts/demo-price-loop.sh` to keep signed prices fresh (equities go stale after 3 minutes while the market is open).
 
+## Architecture
+
+```
+Wallet (PWA / Android APK) ──► Next.js app (UI + API routes) ──► Anchor program on devnet
+                                     │                                │
+                                     ├─ price signer (xStocks+Jupiter)├─ Config / Market / Position PDAs
+                                     ├─ card + payout mock providers  ├─ USDC pool (borrow/repay/liquidate)
+                                     └─ KV store (txs, payouts, push) └─ Token-2022 collateral vaults
+```
+
+Collateral safety lives in the program: every borrow/withdraw/liquidate re-checks LTV against a staleness-passing signed price in the same instruction. The client only previews.
+
+## Risk parameters (devnet)
+
+- Listed equities: max LTV 50%, liquidation threshold 65%, liquidation bonus 5%, haircut 0%
+- Pre-IPO (SPCX etc.): max LTV 30%, threshold 45%, bonus 8%, haircut 25%; SPCX deposit cap $250k
+- Collectibles / art notes: max LTV 40%, threshold 55%, bonus 8%, haircut 25%
+- APR bands by LTV (stocks): ≤20% → 9.9%, 20–35% → 12.9%, 35–50% → 14.9%; pre-IPO/collectibles ≤20% → 11.9%, ≤30% → 15.9%; founding-member −2 pt is an off-chain preview
+- Liquidation close factor: 50% of debt per call; interest accrues per-second, rounded in the protocol's favor
+
+Full table: [`specs/001-stockcard-mvp/parameters.md`](specs/001-stockcard-mvp/parameters.md).
+
+## What's mocked
+
+- Card issuer and spend (`mock` provider behind the `CardProvider` interface; Bridge only when `BRIDGE_API_KEY` is set)
+- SEPA bank payouts (simulated status rows, no real rail), ECB rate for the EUR quote
+- Prices: signed on-chain by the app's price signer (xStocks + Jupiter public APIs); no production oracle
+- Shop assets: mock Token-2022 mints on devnet bought with faucet dUSDC; collectible listings mirrored from Collector Crypt, not affiliated
+- No KYC, no mainnet assets, no real partnerships
+
+## Run it
+
+```bash
+anchor build --arch v2 && anchor deploy --provider.cluster devnet
+./scripts/sync-idl.sh
+npx tsx scripts/seed-devnet.ts          # mock mints, markets, prices, pool
+cd app && npm install && npm run dev    # http://localhost:3000
+```
+
+Program tests: `scripts/validator.sh &` then `anchor test --skip-build --skip-local-validator --provider.cluster localnet`.
+
+Android APK: wrap the deployed PWA with `npx solana-mobile webshell init && npx solana-mobile webshell build` (JDK 17 + Android SDK); wallets connect via Mobile Wallet Adapter.
+
 ## Status
 The Anchor program and core demo app are implemented. For the September 17 continuation snapshot, remaining work, verification results, and local changes that may not yet be on GitHub, read [HANDOFF_DEVIN.md](HANDOFF_DEVIN.md). See also:
 - [PLAN.md](PLAN.md): scope, architecture, 4-day schedule, verification

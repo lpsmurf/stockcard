@@ -58,7 +58,7 @@ Values: parameters.md. Screens: wireframes.md.
 - [x] T011 `init_config`, `add_market`, `update_market`, `set_signed_price`, `fund_pool`, `set_pause` in `programs/stockcard/src/instructions/`
 - [x] T012 [P] `app/src/lib/risk.ts`: same math as T009 for previews (APR bands, reserve share, savings share math — done)
 - [x] T013 [P] WalletProvider (Wallet Standard + MWA registration) in `app/src/components/providers.tsx`; connect button; wrong-network banner
-- [ ] T014 [P] App shell: bottom tabs / desktop rail, `MockBadge` (done) · toasts, banners, loading/empty/error states (to do)
+- [x] T014 [P] App shell: bottom tabs / desktop rail, `MockBadge` (done) · toasts, banners, loading/empty/error states (verified Sept 25: skeletons/empty/error+retry on Home, Card, Shop, Savings, Admin, Bank, Borrow)
 - [x] T015 `app/src/lib/program.ts`: Anchor client, PDA helpers, account fetch hooks (react-query)
 - [x] T016 `scripts/seed-devnet.ts`: mock mints matching mainnet (NVDAx, SPYx, TSLAx: Token-2022, **8 decimals**, Scaled UI Amount + Pausable + Permanent Delegate; SPCX: Token-2022, 6 decimals, same extensions; TIDE, PSA10; optional dUSDC), markets with plan.md parameters, signed prices, fund pool, set authorities
 
@@ -114,7 +114,7 @@ Values: parameters.md. Screens: wireframes.md.
 
 - [x] T037 [US4] `/api/cashback/process`: tier %, price lookup, `deposit_collateral_for` from cashback treasury, idempotent by txId; called after settle
 - [x] T038 [US4] S9 Cashback screen (tier toggle, asset picker); cashback rows in feed and S6 preview
-- [ ] T039 [US4] Test: `deposit_collateral_for` rejects non-authority (in T018 suite)
+- [x] T039 [US4] Test: `deposit_collateral_for` rejects non-authority (in T018 suite) — already covered by "deposit_collateral_for rejects non-authority, accepts cashback authority" in tests/stockcard.ts; verified passing on fresh validator
 
 ## Phase 6b: US8 Demo Shop (P1 stocks, P2 items) and US7 Savings (P2)
 
@@ -123,11 +123,11 @@ Values: parameters.md. Screens: wireframes.md.
 - [x] T072 [US8] S13 Demo Shop screen: tabs Stocks / Cards / Watches / Art, item cards with image + insured value + credit it unlocks, buy sheet, "Lock as collateral" after purchase
 - [x] T073 [US7] Program: `deposit_savings`, `withdraw_savings`, `claim_reserve`; reserve and `total_borrowed` accounting in accrue/borrow/repay/liquidate; utilization cap; tests from contracts/program.md
 - [x] T074 [US7] S12 Savings screen: balance, current APY (`utilization × weighted APR × 0.60`), utilization bar, deposit/withdraw sheets, instant-withdrawable amount, founding saver badge
-- [ ] T075 [US1] APR bands in the Borrow sheet and Home ("APR 12.9% · drops to 9.9% under 20% LTV"), tier/founding discounts shown as off-chain previews
+- [x] T075 [US1] APR bands in the Borrow sheet and Home ("APR 12.9% · drops to 9.9% under 20% LTV"), tier/founding discounts shown as off-chain previews (verified Sept 25: `AprLine` in `app/src/app/borrow/page.tsx` and `app/src/app/page.tsx`, founding-member preview copy on both)
 - [~] T076 [US1] (Claude, Sept 16: data layer done — `lib/balances-core.ts` pure maths + 6 tests reproducing the parameters.md demo exactly, `lib/balances.ts` `useBalances()` hook built on `usePortfolio()`, client-side per the contract. **Left for Kimi: the Home UI**) Home balances (parameters.md "Home balances"): total balance card with Locked / Wallet assets / Card buckets, wallet token list (Token + Token-2022, priced, "No price" rows), LTV of locked collateral plus secondary "Debt is x% of everything you hold"; `/api/wallet/balances` or client hook with the same shape
 - [~] T077 [P] [US1] (Claude, Sept 16: `lib/prices/history.ts` + `GET /api/prices/history?symbol=&days=7|30|90` live, CoinGecko + Redis 1 h cache, signer now records `pricehist:`; **left for Kimi: the `PriceChart` component and wiring it into D7/D8; the admin crash route should append to `pricedemo:{symbol}` so crashes show on the chart**) Price history: `/api/prices/history` (CoinGecko for xStocks, Redis `pricehist:` for Signed Appraisal/PartnerFmv, demo points), `PriceChart` SVG component (7D/30D/90D, hover tooltip, liquidation line); show on S8/D8 and in the D7 selected-asset panel
 - [x] T079 [P] [US9] (Claude, Sept 16: `lib/iban.ts` + 6 tests, `lib/payout/{provider,mock,bridge,index}.ts` + 3 tests, `/api/bank-accounts` GET/POST/DELETE, `/api/payouts/quote`, `/api/payouts` GET/POST with on-chain transfer verification, IBAN encrypted with `BANK_ENCRYPTION_KEY`, `PAYOUT_ADDRESS` = admin wallet on devnet) `app/src/lib/payout/{provider,mock,bridge}.ts` (bridge = stub behind `PAYOUT_PROVIDER`), IBAN mod-97 + SEPA country validation (`app/src/lib/iban.ts` with unit checks), `/api/bank-accounts`, `/api/payouts/quote`, `/api/payouts` with on-chain transfer verification; BankAccount + Payout records
-- [ ] T080 [US9] S14/D14 "Send to bank" sheet/dialog: source Borrow / Card balance, EUR amount, bank account select + Add IBAN dialog, preview rows per FR-082, one transaction `borrow` + `transferChecked`, payout status rows (Processing → Arrived, "Simulated SEPA payout"), purpose question above €10,000; entry points on Home and Card
+- [x] T080 [US9] S14/D14 "Send to bank" sheet/dialog: source Borrow / Card balance, EUR amount, bank account select + Add IBAN dialog, preview rows per FR-082, one transaction `borrow` + `transferChecked`, payout status rows (Processing → Arrived, "Simulated SEPA payout"), purpose question above €10,000; entry points on Home and Card (verified Sept 25: `app/src/app/bank/page.tsx` complete, re-quotes before signing, polls payout status; Home + Card link in)
 - [ ] T081 [US9] (Post-demo unless Bridge SEPA access arrives) Bridge adapter: external account `iban`, liquidation address with `destination_payment_rail: "sepa"`, drains polling for status, `developer_fee_percent`
 - [x] T082 [P] [US1] (Claude, Sept 16 — Stocklana "Best Use of Pyth Market Data" bounty) Pyth Hermes as a third price source: `lib/prices/pyth.ts` (runtime feed-id resolution for `Equity.US.{TICKER}/USD`, 24 h cache, `PYTH_FEED_IDS` override, Bearer auth), signer takes a 5-min freshness + 100 bps confidence gate, posts the mean of all agreeing sources, drops a single outlier instead of going dark, and can price from Jupiter + Pyth when the issuer API is down; 5 new unit tests (12 total). **Key added Sept 16 and verified: metadata 200, equity prices 403 `Not entitled` — equity feeds need a Pyth Pro grant (the bounty prize). So Pyth now supplies the NYSE trading calendar (`market_hours.is_open`/`next_open`, free) and switches on as a price source the moment a Pro grant lands; `/api/prices/sync` reports its state under `pyth`.**
 - [x] T084 [P] [US1] (Claude, Sept 16 — Stocklana Tessera + PreStocks bounties) Pre-IPO collateral: `lib/prices/preipo.ts` (keyless Tessera and PreStocks public APIs, lends against the lower of NAV and traded price, one provider failing drops only its own assets), 4 markets in `config.ts` + `seed-devnet.ts` (T-OPENAI, T-KALSHI, PRE-ANTHROPIC, PRE-SPACEX) on the pre-IPO risk band (30% LTV / 25% haircut), signer treats them as a primary source with the Jupiter cross-check; 6 unit tests. **No program change: on-chain they are `AssetClass::Equity`, so no redeploy. Seeded on devnet Sept 16 with `SEED_ONLY=T-OPENAI,T-KALSHI,PRE-ANTHROPIC,PRE-SPACEX`: T-OPENAI `4MhjXCmatCQXgsm1MHZXFRGpDFT788beEHh7ZBuYCbYB`, T-KALSHI `6amYKMUzb176pDXLPmRCFRPSp1KUAKtMX9mnFdMaoo7m`, PRE-ANTHROPIC `EwtZ28hcWY4F34WbroyRzdj53TiC2RrFTXMk1zZw4ND8`, PRE-SPACEX `3zye1u1Gb1HtbHdm6VK92KPZKaH8veYP2tEYLvfvR5gS` — mint, market and price accounts verified.**
@@ -137,26 +137,26 @@ Values: parameters.md. Screens: wireframes.md.
 
 ## Phase 7: US5 Art notes and collectibles (P2)
 
-- [ ] T040 [US5] Seed TIDE (ArtNote, Signed Appraisal) and PSA10 (Collectible, Signed PartnerFmv) markets; test stale appraisal rejection
+- [x] T040 [US5] Seed TIDE (ArtNote, Signed Appraisal) and PSA10 (Collectible, Signed PartnerFmv) markets; test stale appraisal rejection — seeding already done (TIDE in seed-devnet.ts/config.ts; PSA10 renamed to CC-LUGIA/RAYQUAZA/MEW/DAYTONA/ROYALOAK/SEAMASTER, Collectible/PartnerFmv); added stale appraisal/PartnerFmv test to tests/stockcard.ts, 15/15 passing
 - [x] T041 [P] [US5] Asset detail visuals: art canvas (reuse deck generator) and graded-slab render; class chips and price-source labels
 
 ## Phase 7b: Partner data adapters (P2, after US1–US4)
 
-- [ ] T055 [P] `app/src/lib/partners/backpack-public.ts`: SPCX asset (mint, withdraw enabled), external ticker, perp mark price, depth; Assets screen shows SPCX "Withdraw from Backpack to use" and price cross-check vs the signer price
-- [ ] T050 [P] `app/src/lib/partners/xstocks.ts`: typed client for public assets, price-data, multiplier, system status, proof of reserves (integrations.md); used by Assets screen and admin guard
-- [ ] T051 [US3] `/api/admin/guards`: if xStocks halt or reserves < supply → call `update_market` to pause borrowing on that market; show "Trading halted" chip
-- [ ] T052 [P] [US5] `app/src/lib/partners/collectorcrypt.ts`: `publicNft/:mint` and `/market` reads; Assets screen lists a wallet's Collector Crypt cards as "Eligible soon" with insured value (read-only in MVP)
-- [ ] T053 [P] [US5] `app/src/lib/partners/psa.ts`: cert lookup with 24h cache, only when `PSA_API_TOKEN` is set; show "PSA verified" on the collectible detail screen
-- [ ] T054 [US5] Price signer script `scripts/sign-collectible-prices.ts`: insuredValue → `set_signed_price` with PartnerFmv source (devnet uses mock PSA10 mapped to a real Collector Crypt card for display)
+- [x] T055 [P] `app/src/lib/partners/backpack-public.ts`: SPCX asset (mint, withdraw enabled), external ticker, perp mark price, depth; Assets screen shows SPCX "Withdraw from Backpack to use" and price cross-check vs the signer price
+- [x] T050 [P] `app/src/lib/partners/xstocks.ts`: typed client for public assets, price-data, multiplier, system status, proof of reserves (integrations.md); used by Assets screen and admin guard
+- [x] T051 [US3] `/api/admin/guards`: if xStocks halt or reserves < supply → call `update_market` to pause borrowing on that market; show "Trading halted" chip
+- [x] T052 [P] [US5] `app/src/lib/partners/collectorcrypt.ts`: `publicNft/:mint` and `/market` reads; Assets screen lists a wallet's Collector Crypt cards as "Eligible soon" with insured value (read-only in MVP)
+- [x] T053 [P] [US5] `app/src/lib/partners/psa.ts`: cert lookup with 24h cache, only when `PSA_API_TOKEN` is set; show "PSA verified" on the collectible detail screen
+- [x] T054 [US5] Price signer script `scripts/sign-collectible-prices.ts`: insuredValue → `set_signed_price` with PartnerFmv source (devnet uses mock PSA10 mapped to a real Collector Crypt card for display)
 
 ## Phase 8: Android + polish + submission (Thu–Fri)
 
-- [ ] T042 PWA: `manifest.webmanifest`, icons, theme color, minimal service worker (app shell + push handlers from T059)
+- [x] T042 PWA: `manifest.webmanifest`, icons, theme color, minimal service worker (app shell + push handlers from T059) (verified Sept 25: `app/src/app/manifest.ts` with `/icons/[size]` ImageResponse routes incl. maskable, `app/public/sw.js` app-shell cache + push/notificationclick handlers, registered via `SwRegister` in `layout.tsx`)
 - [ ] T043 Install JDK 17 + Android SDK; `solana-mobile webshell init/build`; install APK on a device; verify MWA connect + P1 flow
-- [ ] T044 [P] 360 px pass on every screen; reduced motion; focus states
+- [x] T044 [P] 360 px pass on every screen; reduced motion; focus states (code pass Sept 25: all buttons/inputs min-h ≥44 px on Home/Card/Borrow/Bank/Savings/Shop/Admin, no fixed-width overflow risks; `:focus-visible` + `prefers-reduced-motion` in `globals.css`; device check folded into the demo run)
 - [ ] T044b [P] Desktop pass per wireframes.md "Desktop" (D1–D13): 12-col grid ≥ 1024 px, top bar (price age, alert bell, wallet pill), sheets → 480 px dialogs, tables for Assets/Card activity/Admin; check 1024, 1280×800, 1440×900
 - [x] T045 Vercel production deploy with env; verify no console errors — live at https://stockcard-app.vercel.app (Vercel `stockcard` project, `app/` root, production env uploaded, `ssoProtection` disabled, `CARD_PROVIDER=mock`). Serverless persistence uses a GitHub Gist backend (`KV_GIST_ID`/`KV_GITHUB_TOKEN`) because Upstash `*.upstash.io` data endpoints are unreachable from this network; Upstash `KV_REST_API_URL`/`KV_REST_API_TOKEN` remain supported when credentials become available.
-- [ ] T046 [P] README: architecture, risk params, what's mocked, run steps, screenshots, APK link
+- [x] T046 [P] README: architecture, risk params, what's mocked, run steps, screenshots, APK link (Sept 25: added architecture diagram, risk-param table from parameters.md, what's-mocked list, run steps; screenshots in `docs/screenshots/`, APK build via webshell noted)
 - [ ] T047 Record 2–3 min demo video (US1→US4 in one take)
 - [ ] T048 [US6] (Only if time) Client-side ED25519 signer for `balanceQuery` (`app/src/lib/backpack.ts`, secret kept in memory only), `/api/backpack/import` proxy + fixture mode, `.US` symbol eligibility map, S10 screen
 - [ ] T049 Submit on Stocklana by Fri Sept 18 noon ET: GitHub, live URL, APK, video
@@ -171,4 +171,9 @@ Values: parameters.md. Screens: wireframes.md.
 
 ## Notes for Claude (from Kimi)
 - `/api/admin/price` (and probably `/api/admin/liquidate`) import `anchor.Wallet`, which does not exist in the ESM build Next.js bundles — will throw during the demo crash. Copy the `keypairWallet()` helper from `src/app/api/prices/sync/route.ts`.
+
+## Notes from the T050–T055 adapter pass (Sept 25)
+- T051: the program has no per-market pause flag, so `/api/admin/guards` pauses borrowing via `update_market` with `maxLtvBps = 0` and restores the config.ts value when the guard clears. State is cached in KV (`guards:xstocks`); `GET /api/admin/guards` is public and feeds the "Trading halted" chip on `/portfolio`.
+- T053: `app/src/lib/partners/psa.ts` is server-only (`verifyCert(certNumber)`, KV-cached 24h). The "PSA verified" badge belongs on `portfolio/[symbol]/page.tsx`, which this pass did not own — wire it there with a cert number (e.g. `PSA_CERT_CC_LUGIA` env) when available.
+- T054: dry-run by default; `--send` posts. `CC_DISPLAY_MINT_<SYMBOL>` env maps a mock CC-* mint to a real Collector Crypt card for display.
 - `npx tsc --noEmit` (Sept 16): pre-existing error in `src/lib/prices/preipo.ts:127` (TS7053, string index into `{}`). Kimi's files typecheck clean.

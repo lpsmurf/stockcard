@@ -406,6 +406,77 @@ describe("stockcard", () => {
     expect(staleMarket).to.not.equal(nvdaMarket);
   });
 
+  it("stale appraisal / partner-FMV price blocks borrow and withdraw (T040)", async () => {
+    const addAssetMarket = async (mint: PublicKey, assetClass: object, maxAgeSecs = 0) => {
+      await program.methods
+        .addMarket(
+          assetClass,
+          { signed: {} },
+          PublicKey.default,
+          3000,
+          4500,
+          1000,
+          2000,
+          equityBands(),
+          maxAgeSecs, // 0 -> goes stale immediately
+          0,
+          0,
+        )
+        .accounts({
+          admin: payer.publicKey,
+          config: configPda,
+          collateralMint: mint,
+          market: marketPda(mint),
+          collateralVault: collateralVaultPda(marketPda(mint)),
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .rpc();
+      return marketPda(mint);
+    };
+
+    // TIDE-like ArtNote: appraisal source, 6 decimals, $10.00 per note
+    const tideMint = await createMint(connection, payer, payer.publicKey, null, 6);
+    const tideMarket = await addAssetMarket(tideMint, { artNote: {} });
+    await setPrice(tideMint, new BN(10_000_000), { appraisal: {} });
+    const tideUser = await newUser();
+    const tideAta = await createAssociatedTokenAccount(connection, payer, tideMint, tideUser.publicKey);
+    await mintTo(connection, payer, tideMint, tideAta, payer, 100_000_000); // 100 notes
+    await deposit(tideUser, tideMint, new BN(100_000_000));
+    await createAssociatedTokenAccount(connection, payer, usdcMint, tideUser.publicKey);
+    await new Promise((r) => setTimeout(r, 1500));
+    await expectError(borrow(tideUser, tideMint, new BN(100_000_000)), "StalePrice");
+
+    // CC-*-like Collectible: PartnerFmv source, 0 decimals, $54,000 per item
+    const ccMint = await createMint(connection, payer, payer.publicKey, null, 0);
+    const ccMarket = await addAssetMarket(ccMint, { collectible: {} }, 4);
+    const ccUser = await newUser();
+    const ccAta = await createAssociatedTokenAccount(connection, payer, ccMint, ccUser.publicKey);
+    await mintTo(connection, payer, ccMint, ccAta, payer, 1);
+    await setPrice(ccMint, new BN(54_000_000_000), { partnerFmv: {} });
+    await deposit(ccUser, ccMint, new BN(1));
+    await createAssociatedTokenAccount(connection, payer, usdcMint, ccUser.publicKey);
+    await borrow(ccUser, ccMint, new BN(1_000_000_000)); // $1,000 while fresh: 1 * 54000 * 0.75 = $40,500 value
+
+    await new Promise((r) => setTimeout(r, 5000)); // FMV ages past the 4s max age
+    const withdrawIx = program.methods
+      .withdrawCollateral(new BN(1))
+      .accounts({
+        owner: ccUser.publicKey,
+        config: configPda,
+        market: ccMarket,
+        position: positionPda(ccMarket, ccUser.publicKey),
+        collateralMint: ccMint,
+        ownerToken: ccAta,
+        collateralVault: collateralVaultPda(ccMarket),
+        signedPrice: pricePda(ccMarket),
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .signers([ccUser])
+      .rpc();
+    await expectError(withdrawIx, "StalePrice");
+    expect(tideMarket).to.not.equal(ccMarket);
+  });
+
   it("interest after elapsed time matches risk math exactly", async () => {
     const user = await newUser();
     const ata = await createAssociatedTokenAccount(connection, payer, nvdaMint, user.publicKey);

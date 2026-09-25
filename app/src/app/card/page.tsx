@@ -155,6 +155,29 @@ function CardScreen() {
 
   if (!connected) return null;
 
+  if (cardQuery.isLoading) {
+    return (
+      <div className="mt-4 space-y-4">
+        <div className="h-44 animate-pulse rounded-2xl bg-surface" />
+        <div className="h-24 animate-pulse rounded-2xl bg-surface" />
+      </div>
+    );
+  }
+
+  if (cardQuery.isError) {
+    return (
+      <div className="mt-6 max-w-md rounded-2xl bg-surface p-5 text-center">
+        <p className="text-ink-2">Couldn&apos;t load your card. Check your connection.</p>
+        <button
+          onClick={() => cardQuery.refetch()}
+          className="mt-4 flex min-h-[48px] w-full items-center justify-center rounded-xl bg-brass px-4 font-semibold text-on-brass"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full">
       <h1 className="font-display text-3xl md:hidden">Card</h1>
@@ -213,6 +236,12 @@ function CardScreen() {
 
           <div className="mt-6 lg:col-span-7 lg:mt-0">
           <h2 className="text-sm font-semibold text-ink-2">Activity</h2>
+
+          {txsQuery.isError ? (
+            <p className="mt-2 rounded-xl bg-surface px-4 py-6 text-center text-sm text-ink-3">
+              Couldn&apos;t load activity. <button onClick={() => txsQuery.refetch()} className="font-semibold text-brass">Retry</button>
+            </p>
+          ) : null}
 
           {/* Mobile: list */}
           <ul className="mt-2 divide-y divide-rule rounded-xl bg-surface md:hidden">

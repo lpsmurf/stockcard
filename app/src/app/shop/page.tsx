@@ -127,7 +127,11 @@ export default function ShopPage() {
       </div>
 
       <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {list.map((item) => {
+        {itemsQuery.isLoading
+          ? [0, 1, 2, 3].map((i) => <div key={i} className="h-64 animate-pulse rounded-2xl bg-surface" />)
+          : itemsQuery.isError
+            ? null
+            : list.map((item) => {
           const price = priceOf(item);
           const info = MARKETS.find((m) => m.symbol === item.symbol);
           const credit = info
@@ -160,6 +164,22 @@ export default function ShopPage() {
           );
         })}
       </div>
+
+      {itemsQuery.isError ? (
+        <div className="mt-4 rounded-xl bg-surface p-5 text-center">
+          <p className="text-ink-2">Couldn&apos;t load the shop. Check your connection.</p>
+          <button
+            onClick={() => itemsQuery.refetch()}
+            className="mt-4 flex min-h-[48px] w-full items-center justify-center rounded-xl bg-brass px-4 font-semibold text-on-brass"
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
+
+      {!itemsQuery.isLoading && !itemsQuery.isError && list.length === 0 ? (
+        <p className="mt-4 rounded-xl bg-surface px-4 py-6 text-center text-sm text-ink-3">Nothing in this tab yet.</p>
+      ) : null}
 
       {buying ? (
         <BuySheet
