@@ -4,19 +4,97 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { MockBadge } from "@/components/mock-badge";
 import { PriceChart } from "@/components/price-chart";
 import { usePortfolio, totals } from "@/lib/portfolio";
 import { formatPct, formatTokens, formatUsd } from "@/lib/risk";
+import { getSpcxSnapshot } from "@/lib/partners/backpack-public";
+import { getCardsByOwner, insuredValueUsd } from "@/lib/partners/collectorcrypt";
 
 const FILTERS = ["All", "Stocks", "Art", "Collect."] as const;
 
+/** Markets borrowing is currently paused on, per the xStocks issuer guard (T051). */
+function useHaltedMarkets(): string[] {
+  const { data } = useQuery({
+    queryKey: ["issuer-guards"],
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/admin/guards", { cache: "no-store" });
+        if (!res.ok) return [] as string[];
+        const body = (await res.json()) as { ok: boolean; data?: { halted?: string[] } };
+        return body.ok ? (body.data?.halted ?? []) : [];
+      } catch {
+        return [] as string[];
+      }
+    },
+  });
+  return data ?? [];
+}
+
+/** SPCX reference prices from Backpack's public API (T055). Null when unreachable. */
+function useSpcxSnapshot() {
+  return useQuery({
+    queryKey: ["spcx-snapshot"],
+    refetchInterval: 60_000,
+    queryFn: getSpcxSnapshot,
+    retry: false,
+  });
+}
+
+/** The connected wallet's Collector Crypt cards (T052). Empty when no wallet/API. */
+function useCollectorCryptCards(owner?: string) {
+  return useQuery({
+    queryKey: ["collector-crypt", owner],
+    enabled: !!owner,
+    queryFn: () => getCardsByOwner(owner!),
+    retry: false,
+    staleTime: 5 * 60_000,
+  });
+}
+
+const usd = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+/** T055: SPCX Backpack references + cross-check against the on-chain signer price. */
+function SpcxCrossCheck({ signerPriceUsd6, snapshot }: { signerPriceUsd6: bigint; snapshot: ReturnType<typeof useSpcxSnapshot>["data"] }) {
+  if (!snapshot || (!snapshot.externalPriceUsd && !snapshot.perpMarkUsd)) return null;
+  const signer = Number(signerPriceUsd6) / 1e6;
+  const ref = snapshot.externalPriceUsd ?? snapshot.perpMarkUsd;
+  const diffPct = signer > 0 && ref ? ((ref - signer) / signer) * 100 : null;
+  return (
+    <div className="mt-3 rounded-lg border border-rule p-3 text-xs text-ink-2">
+      <p className="font-semibold text-ink">Backpack reference prices</p>
+      <p className="mt-1 font-mono tabular">
+        {snapshot.externalPriceUsd ? `External ${usd(snapshot.externalPriceUsd)}` : null}
+        {snapshot.spotLastUsd ? ` · Spot ${usd(snapshot.spotLastUsd)}` : null}
+        {snapshot.perpMarkUsd ? ` · Perp mark ${usd(snapshot.perpMarkUsd)}` : null}
+      </p>
+      {diffPct !== null && ref ? (
+        <p className="mt-1">
+          Signer price {usd(signer)} — Backpack {usd(ref)} ({diffPct >= 0 ? "+" : ""}
+          {diffPct.toFixed(2)}%)
+        </p>
+      ) : null}
+      {snapshot.withdrawEnabled ? (
+        <p className="mt-1">
+          Withdraw SPCX from Backpack to your wallet to use it as collateral
+          {snapshot.withdrawalFee ? ` (fee ${snapshot.withdrawalFee} SPCX)` : ""}. Not affiliated.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export default function PortfolioPage() {
-  const { connected } = useWallet();
+  const { connected, publicKey } = useWallet();
   const { data: assets, isLoading } = usePortfolio();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("All");
   const [selSymbol, setSelSymbol] = useState<string | null>(null);
   const router = useRouter();
+  const halted = useHaltedMarkets();
+  const spcx = useSpcxSnapshot();
+  const ccCards = useCollectorCryptCards(publicKey?.toBase58());
 
   const list = (assets ?? []).filter((a) => {
     if (filter === "Stocks") return a.info.assetClass === "Equity";
@@ -98,6 +176,11 @@ export default function PortfolioPage() {
                         </span>
                       ) : null}
                       <MockBadge />
+                      {halted.includes(a.info.symbol) ? (
+                        <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[11px] font-medium text-red-600">
+                          Trading halted
+                        </span>
+                      ) : null}
                     </div>
                     <p className="mt-0.5 truncate text-sm text-ink-3">
                       {a.info.name} · {formatUsd(a.priceUsd6)} · {a.info.priceSource === "PartnerFmv" ? "Partner value" : a.info.priceSource === "Market" ? "Market price" : a.info.priceSource}
@@ -114,6 +197,17 @@ export default function PortfolioPage() {
               </li>
             ))}
           </ul>
+
+          {/* Mobile: SPCX Backpack cross-check (desktop shows it in the detail panel) */}
+          {list.some((a) => a.info.symbol === "SPCX") ? (
+            <div className="mt-3 rounded-xl bg-surface p-4 md:hidden">
+              <p className="font-semibold">SPCX</p>
+              <SpcxCrossCheck
+                signerPriceUsd6={list.find((a) => a.info.symbol === "SPCX")!.priceUsd6}
+                snapshot={spcx.data}
+              />
+            </div>
+          ) : null}
 
           {/* Desktop: table + selected-asset panel */}
           <div className="mt-4 hidden md:grid md:grid-cols-12 md:gap-6">
@@ -165,6 +259,11 @@ export default function PortfolioPage() {
                               </span>
                             ) : null}
                             <MockBadge />
+                            {halted.includes(a.info.symbol) ? (
+                              <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[11px] font-medium text-red-600">
+                                Trading halted
+                              </span>
+                            ) : null}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right font-mono tabular">
@@ -200,6 +299,9 @@ export default function PortfolioPage() {
                 <p className="mt-2 font-mono text-xs tabular text-ink-2">
                   Wallet {formatTokens(selected.walletBalance, selected.info.decimals)} · Locked {formatTokens(selected.deposited, selected.info.decimals)}
                 </p>
+                {selected.info.symbol === "SPCX" ? (
+                  <SpcxCrossCheck signerPriceUsd6={selected.priceUsd6} snapshot={spcx.data} />
+                ) : null}
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <Link
                     href={`/portfolio/${selected.info.symbol}?mode=deposit`}
@@ -221,6 +323,35 @@ export default function PortfolioPage() {
       )}
 
       <div className="mt-4 space-y-2">
+        {/* T052: Collector Crypt cards owned by this wallet — read-only "Eligible soon" list.
+            Renders nothing without a wallet or when the API is unreachable. */}
+        {(ccCards.data?.length ?? 0) > 0 ? (
+          <section className="rounded-xl bg-surface p-4" aria-label="Collector Crypt cards">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-semibold">Your Collector Crypt cards</p>
+              <span className="rounded-full bg-plaster px-2 py-0.5 text-[11px] text-ink-2">Eligible soon</span>
+            </div>
+            <ul className="mt-2 divide-y divide-rule">
+              {ccCards.data!.map((card, i) => {
+                const value = insuredValueUsd(card);
+                return (
+                  <li key={card.mint ?? i} className="flex items-center justify-between gap-3 py-2 text-sm">
+                    <span className="min-w-0 flex-1 truncate">
+                      {card.name ?? card.mint ?? "Card"}
+                      {card.gradingCompany && card.grade ? (
+                        <span className="text-ink-3"> · {card.gradingCompany} {card.grade}</span>
+                      ) : null}
+                    </span>
+                    {value !== null ? <span className="font-mono tabular text-ink-2">{usd(value)} insured</span> : null}
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="mt-2 text-xs text-ink-3">
+              Collector Crypt is an integration target, not a partner. Not affiliated. Cards are read-only in this demo.
+            </p>
+          </section>
+        ) : null}
         <Link
           href="/shop"
           className="flex min-h-[48px] items-center justify-center rounded-xl border border-rule px-4 font-semibold text-ink"
