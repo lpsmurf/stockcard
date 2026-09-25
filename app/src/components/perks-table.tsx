@@ -23,7 +23,7 @@ const GROUPS: { group: string; perks: { name: string; plus: string | null; black
   },
   {
     group: "Subscriptions",
-    perks: [{ name: "Pick-your subscriptions", plus: null, black: "Pick 2 of 5" }],
+    perks: [{ name: "Pick-your subscriptions", plus: null, black: "Pick 2 of: FT, Perplexity Pro, NordVPN, Headspace, MasterClass" }],
   },
   {
     group: "Collector",
@@ -49,7 +49,7 @@ export function PerksTable({ tier }: { tier: Tier }) {
   return (
     <section className="mt-8" aria-label="Membership perks">
       <div className="flex items-center gap-2">
-        <h2 className="text-sm font-semibold text-ink-2">Membership perks</h2>
+        <h2 className="text-sm font-semibold text-ink-2">Planned benefits</h2>
         <MockBadge label="Planned" />
       </div>
 
@@ -100,7 +100,7 @@ export function PerksTable({ tier }: { tier: Tier }) {
       </div>
 
       <p className="mt-2 text-xs text-ink-3">
-        Planned benefits. Benefits depend on partner and issuer agreements and may change.
+        Benefits depend on partner and issuer agreements and may change.
       </p>
     </section>
   );

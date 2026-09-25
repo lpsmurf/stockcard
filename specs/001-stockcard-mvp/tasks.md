@@ -133,12 +133,12 @@ Values: parameters.md. Screens: wireframes.md.
 - [x] T084 [P] [US1] (Claude, Sept 16 — Stocklana Tessera + PreStocks bounties) Pre-IPO collateral: `lib/prices/preipo.ts` (keyless Tessera and PreStocks public APIs, lends against the lower of NAV and traded price, one provider failing drops only its own assets), 4 markets in `config.ts` + `seed-devnet.ts` (T-OPENAI, T-KALSHI, PRE-ANTHROPIC, PRE-SPACEX) on the pre-IPO risk band (30% LTV / 25% haircut), signer treats them as a primary source with the Jupiter cross-check; 6 unit tests. **No program change: on-chain they are `AssetClass::Equity`, so no redeploy. Seeded on devnet Sept 16 with `SEED_ONLY=T-OPENAI,T-KALSHI,PRE-ANTHROPIC,PRE-SPACEX`: T-OPENAI `4MhjXCmatCQXgsm1MHZXFRGpDFT788beEHh7ZBuYCbYB`, T-KALSHI `6amYKMUzb176pDXLPmRCFRPSp1KUAKtMX9mnFdMaoo7m`, PRE-ANTHROPIC `EwtZ28hcWY4F34WbroyRzdj53TiC2RrFTXMk1zZw4ND8`, PRE-SPACEX `3zye1u1Gb1HtbHdm6VK92KPZKaH8veYP2tEYLvfvR5gS` — mint, market and price accounts verified.**
 - [x] T085 [US1] (Tessera + PreStocks bounties, needs T084) UI: "Pre-IPO" chip on these assets in S7/D7 and Asset detail, the tighter 30% max LTV and 11.9/15.9% APR bands shown in the Borrow sheet, and a "trading 21% below NAV — we lend against the lower figure" line on Asset detail; Demo Shop sells them for dUSDC like the other stocks
 - [x] T083 [US1] (Pyth bounty, needs T082 + a key) Show the price sources on the UI: source chips on Asset detail / D7 panel ("xStocks · Jupiter · Pyth"), and the "Price age" label in the top bar reads the newest of them
-- [ ] T078 [US4] Cashback screen perks block: planned Revolut Ultra-style perks per tier from parameters.md "Membership perks", all under "Planned benefits" with the footnote; no perk shown as active
+- [x] T078 [US4] Cashback screen perks block: planned Revolut Ultra-style perks per tier from parameters.md "Membership perks", all under "Planned benefits" with the footnote; no perk shown as active
 
 ## Phase 7: US5 Art notes and collectibles (P2)
 
 - [ ] T040 [US5] Seed TIDE (ArtNote, Signed Appraisal) and PSA10 (Collectible, Signed PartnerFmv) markets; test stale appraisal rejection
-- [ ] T041 [P] [US5] Asset detail visuals: art canvas (reuse deck generator) and graded-slab render; class chips and price-source labels
+- [x] T041 [P] [US5] Asset detail visuals: art canvas (reuse deck generator) and graded-slab render; class chips and price-source labels
 
 ## Phase 7b: Partner data adapters (P2, after US1–US4)
 

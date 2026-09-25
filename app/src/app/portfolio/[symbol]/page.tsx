@@ -8,6 +8,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { PreIpoReading } from "@/lib/prices/preipo";
 import { type MarketInfo } from "@/lib/config";
 import { AmountInput, parseTokens } from "@/components/amount-input";
+import { AssetVisual } from "@/components/asset-visual";
 import { MockBadge } from "@/components/mock-badge";
 import { PreviewRow } from "@/components/preview-row";
 import { useToast } from "@/components/toast";
@@ -127,6 +128,12 @@ function AssetDetail() {
     <div className="mx-auto w-full max-w-md md:max-w-xl">
       <Link href="/portfolio" className="inline-flex min-h-[44px] items-center text-sm text-brass">‹ Assets</Link>
 
+      {asset.info.assetClass === "ArtNote" || asset.info.assetClass === "Collectible" ? (
+        <div className="mt-2">
+          <AssetVisual info={asset.info} />
+        </div>
+      ) : null}
+
       <div className="mt-2 rounded-2xl bg-surface p-4">
         <PriceChart
           symbol={asset.info.symbol}
@@ -148,10 +155,16 @@ function AssetDetail() {
       </div>
 
       <h1 className="mt-4 font-display text-2xl">{asset.info.name}</h1>
+      {asset.info.assetClass === "ArtNote" ? (
+        <p className="mt-0.5 text-sm text-ink-3">Luxembourg compartment 01</p>
+      ) : null}
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
         <span className="rounded-full bg-plaster px-2 py-0.5 text-[11px] text-ink-2">
           {asset.info.assetClass === "ArtNote" ? "Art note" : asset.info.assetClass}
         </span>
+        {asset.info.grade ? (
+          <span className="rounded-full bg-plaster px-2 py-0.5 text-[11px] text-ink-2">{asset.info.grade}</span>
+        ) : null}
         {asset.info.preIpo ? (
           <span className="rounded-full bg-brass-soft px-2 py-0.5 text-[11px] font-medium text-brass">
             {asset.info.preIpo.label} · {asset.info.preIpo.provider === "tessera" ? "Tessera" : "PreStocks"}
