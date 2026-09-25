@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ground: #07090c;
+  --color-surface: #0f1318;
+  --color-surface-2: #161b22;
+  --color-line: rgba(255, 255, 255, 0.08);
+  --color-text: #f3f5f7;
+  --color-text-2: #9aa4b2;
+  --color-accent: #3d7bff;
+  --color-accent-2: #7fe3c4;
+  --color-warn: #f5b544;
+  --color-danger: #ff5c5c;
+
+  --font-display: var(--font-funnel-display), sans-serif;
+  --font-sans: var(--font-funnel-sans), sans-serif;
+  --font-mono: var(--font-martian-mono), monospace;
+}
+
+:root {
+  --ground: #07090c;
+  --surface: #0f1318;
+  --surface-2: #161b22;
+  --line: rgba(255, 255, 255, 0.08);
+  --text: #f3f5f7;
+  --text-2: #9aa4b2;
+  --accent: #3d7bff;
+  --accent-2: #7fe3c4;
+  --metal-black: linear-gradient(135deg, #2a2d31, #0c0d0f 55%, #1f2124);
+  --metal-silver: linear-gradient(135deg, #e8ebef, #a9b0b8 50%, #f4f6f8);
+  --warn: #f5b544;
+  --danger: #ff5c5c;
+}
+
+html {
+  background: var(--ground);
+  color: var(--text);
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-numbers,
+.tnum {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
