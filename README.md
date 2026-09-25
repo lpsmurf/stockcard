@@ -8,7 +8,7 @@ A credit card backed by your stocks, on Solana. You lock tokenized US stocks (xS
 
 ## Live demo
 
-- **App:** https://demo.stockcard.hfsp.cloud (Solana devnet only) — mirror: https://stockcard-app.vercel.app
+- **App:** https://demo.stockcard.clawdrop.live (Solana devnet only) — mirror: https://stockcard-app.vercel.app
 - **Program ID:** `HsXyxfSvp7mha6bxgh3Qr9NoVmMVe6HmynVguRfBLWrY`
 - **Status:** Deployed Sept 17. Card and bank payout are mock providers; prices are signed on-chain by the app's price signer; cashback and shop flows use mock devnet USDC. No real KYC, card issuer, SEPA rail, or partner integrations.
 

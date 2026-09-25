@@ -57,7 +57,7 @@ WHAT'S REAL VS MOCK (honest demo)
 - Real: every collateral deposit, borrow, repay, liquidate, savings and cashback transaction; the devnet USDC transfers behind card settlement and payouts; the signed-price oracle reading three real data sources.
 - Mocked and labelled in the UI: the card issuer (mock provider; Bridge sandbox integration built but gated), the SEPA rail (mock payout address), and the devnet stock/USDC mints (real xStocks have no devnet mints). No real KYC.
 
-Try it: https://stockcard-app.vercel.app — connect a devnet wallet, claim test dUSDC in the Shop, buy NVDAx, deposit, borrow, spend on the card. Program: HsXyxfSvp7mha6bxgh3Qr9NoVmMVe6HmynVguRfBLWrY</div>
+Try it: https://demo.stockcard.clawdrop.live — connect a devnet wallet, claim test dUSDC in the Shop, buy NVDAx, deposit, borrow, spend on the card. Program: HsXyxfSvp7mha6bxgh3Qr9NoVmMVe6HmynVguRfBLWrY</div>
 
 <h2>Pyth bounty paragraph (Best use of Pyth market data)</h2>
 <div class="field">Pyth is wired into StockCard's collateral price signer (app/src/lib/prices/pyth.ts, Hermes client). Today Pyth supplies the NYSE market-hours calendar that gates every equity price post — prices deliberately go stale when the market closes, which drives the LTV checks on the Anchor program. With a Pro grant, Pyth equity feeds become a third price source: it breaks ties between the issuer API and Jupiter, lets the signer drop a single outlier instead of going dark, and covers an issuer API outage — so a lending protocol can keep pricing collateral safely when one feed fails. Pyth never prices collateral alone by design.</div>
@@ -66,14 +66,14 @@ Try it: https://stockcard-app.vercel.app — connect a devnet wallet, claim test
 <div class="field">Four live pre-IPO collateral markets on devnet: T-OPENAI and T-KALSHI read Tessera's public token-details API (markPrice), PRE-ANTHROPIC and PRE-SPACEX read the PreStocks public API (markPrice + tokenPrice). The signer posts min(NAV, traded price) so a premium never inflates collateral value. Demo: buy pre-IPO tokens in the Demo Shop → deposit → borrow dUSDC against 30% LTV. Code: app/src/lib/prices/preipo.ts, market params in app/src/lib/config.ts (preIpo band: 30% LTV / 25% haircut / 11.9–15.9% APR).</div>
 
 <h2>Links</h2>
-<div class="field">Live demo (Solana devnet): https://demo.stockcard.hfsp.cloud
-GitHub: https://github.com/lpsmurf/stockcard   (MUST BE MADE PUBLIC first — currently private, returns 404)
+<div class="field">Live demo (Solana devnet): https://demo.stockcard.clawdrop.live
+GitHub: https://github.com/lpsmurf/stockcard   (public)
 Program ID (devnet): HsXyxfSvp7mha6bxgh3Qr9NoVmMVe6HmynVguRfBLWrY
 Explorer: https://explorer.solana.com/address/HsXyxfSvp7mha6bxgh3Qr9NoVmMVe6HmynVguRfBLWrY?cluster=devnet
 Demo video: &lt;record per docs/demo-script.md — run ./scripts/demo-price-loop.sh first, keep under 3 min&gt;</div>
 
 <h2>How to try it (paste into setup-instructions field)</h2>
-<div class="field">1. Open https://stockcard-app.vercel.app in Chrome (desktop or Android) with Phantom or Solflare set to Devnet.
+<div class="field">1. Open https://demo.stockcard.clawdrop.live in Chrome (desktop or Android) with Phantom or Solflare set to Devnet.
 2. Connect wallet, then in the Shop hit "Claim test money" for devnet dUSDC.
 3. Buy NVDAx in the Shop → deposit it on Borrow → borrow dUSDC → spend on Card → try Send to bank (simulated SEPA) → check Portfolio, Cashback, Savings.
 4. Everything executes on devnet — click any transaction toast for the explorer link. Screenshots and a full demo script are in docs/ in the repo.</div>

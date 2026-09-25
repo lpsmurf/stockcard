@@ -98,9 +98,16 @@ function signTxBytes(buf) {
 const signTxB64 = (b64) => signTxBytes(Buffer.from(b64, "base64")).toString("base64");
 async function sendTxB64(b64) {
   const raw = signTxBytes(Buffer.from(b64, "base64"));
-  const sig = await connection.sendRawTransaction(raw, { skipPreflight: false, maxRetries: 5 });
-  await connection.confirmTransaction(sig, "confirmed");
-  return Buffer.from(bs58.decode(sig)).toString("base64");
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const sig = await connection.sendRawTransaction(raw, { skipPreflight: false, maxRetries: 5 });
+      await connection.confirmTransaction(sig, "confirmed");
+      return Buffer.from(bs58.decode(sig)).toString("base64");
+    } catch (e) {
+      if (attempt >= 8 || !/429|rate|Too many/i.test(String(e?.message ?? e))) throw e;
+      await sleep(Math.min(1500 * 2 ** attempt, 15000));
+    }
+  }
 }
 function signMsgB64(b64) {
   const seed = demo.secretKey.slice(0, 32);
@@ -126,6 +133,12 @@ const WALLET_JS = `(() => {
   const listeners = {};
   const on = (event, listener) => { (listeners[event] = listeners[event] || new Set()).add(listener); return () => listeners[event].delete(listener); };
   const emit = (event, data) => { for (const l of listeners[event] || []) l(data); };
+  // surface toasts to the playwright console for debugging
+  new MutationObserver((muts) => {
+    for (const m of muts) for (const n of m.addedNodes) {
+      if (n.nodeType === 1) console.log("[toast]", n.textContent);
+    }
+  }).observe(document.documentElement, { childList: true, subtree: true });
   const FEATURES = ["solana:signAndSendTransaction", "solana:signTransaction", "solana:signMessage"];
   const account = () => ({ address: ADDRESS, publicKey: b64ToBytes(PUB_B64), chains: [CHAIN], icon: ICON, label: "Demo account", features: FEATURES });
   const wallet = {
@@ -156,15 +169,36 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function shot(p, ms = 2500) {
   await p.waitForTimeout(ms); // give narration room
 }
-async function connect(p) {
-  await p.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
-  const btn = p.getByRole("button", { name: /Connect wallet/i }).first();
-  if (await btn.isVisible().catch(() => false)) {
-    await btn.click();
-    await p.getByRole("button", { name: /Demo Wallet/i }).click({ timeout: 30000 });
-  }
-  await p.locator("button", { hasText: /…/ }).first().waitFor({ timeout: 45000 });
+async function waitConnected(p, timeout = 90000) {
+  await p.waitForFunction(
+    () => [...document.querySelectorAll("button")].some((b) => /…/.test(b.textContent)),
+    null,
+    { timeout },
+  );
   await p.waitForTimeout(1200);
+}
+async function connect(p, route = "/") {
+  await p.goto(`${BASE}${route}`, { waitUntil: "domcontentloaded" });
+  await p.waitForTimeout(4000); // hydration + first RPC round
+  for (let i = 0; i < 3; i++) {
+    const connected = await p
+      .waitForFunction(() => [...document.querySelectorAll("button")].some((b) => /…/.test(b.textContent)), null, { timeout: 10000 })
+      .then(() => true)
+      .catch(() => false);
+    if (connected) return;
+    await p.getByRole("button", { name: /Connect wallet/i }).first().click();
+    const picked = await p
+      .getByRole("button", { name: /Demo Wallet/i })
+      .click({ timeout: 20000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!picked) {
+      // modal may not have opened (pre-hydration click) — dismiss and retry
+      await p.keyboard.press("Escape");
+      await p.waitForTimeout(1500);
+    }
+  }
+  await waitConnected(p);
 }
 async function toastWith(p, re, timeout = 90000) {
   await p.getByText(re).first().waitFor({ timeout });
@@ -199,8 +233,7 @@ const scenes = [
   }],
 
   ["02-shop", "Shop — claim test money, buy $50 NVDAx", async (p) => {
-    await connect(p);
-    await p.goto(`${BASE}/shop`, { waitUntil: "domcontentloaded" });
+    await connect(p, "/shop");
     await p.getByRole("button", { name: "Claim test money" }).click();
     await toastWith(p, /Claimed .* test money/);
     await shot(p, 2000);
@@ -214,8 +247,7 @@ const scenes = [
   }],
 
   ["03-borrow", "Borrow — deposit NVDAx, borrow dUSDC", async (p) => {
-    await connect(p);
-    await p.goto(`${BASE}/portfolio/NVDAx?mode=deposit`, { waitUntil: "domcontentloaded" });
+    await connect(p, "/portfolio/NVDAx?mode=deposit");
     await p.getByRole("button", { name: "Max" }).click();
     await shot(p, 1500);
     await p.getByRole("button", { name: "Confirm and sign" }).click();
@@ -231,8 +263,7 @@ const scenes = [
   }],
 
   ["04-preipo", "Pre-IPO — buy T-OPENAI, asset detail, deposit, tighter bands", async (p) => {
-    await connect(p);
-    await p.goto(`${BASE}/shop`, { waitUntil: "domcontentloaded" });
+    await connect(p, "/shop");
     await shot(p, 1000);
     const card = p.locator("div.rounded-2xl", { hasText: "OpenAI" }).first();
     await card.getByRole("button", { name: "Buy with test money" }).click();
@@ -253,8 +284,7 @@ const scenes = [
   }],
 
   ["05-card", "Card — create, approve limit, coffee purchase", async (p) => {
-    await connect(p);
-    await p.goto(`${BASE}/card`, { waitUntil: "domcontentloaded" });
+    await connect(p, "/card");
     const create = p.getByRole("button", { name: "Create card" });
     if (await create.isVisible().catch(() => false)) {
       await create.click();
@@ -276,8 +306,7 @@ const scenes = [
   }],
 
   ["06-cashback", "Cashback — queued → deposited as collateral", async (p) => {
-    await connect(p);
-    await p.goto(`${BASE}/card`, { waitUntil: "domcontentloaded" });
+    await connect(p, "/card");
     await shot(p, 2500); // queued cashback row visible
     // trigger processing for the latest settled tx with queued cashback
     const done = await p.evaluate(async () => {
@@ -297,8 +326,7 @@ const scenes = [
   }],
 
   ["07-bank", "Bank — add IBAN, quote, simulated SEPA payout", async (p) => {
-    await connect(p);
-    await p.goto(`${BASE}/bank`, { waitUntil: "domcontentloaded" });
+    await connect(p, "/bank");
     await shot(p, 1500);
     const addBtn = p.getByRole("button", { name: "+ Add" });
     await addBtn.click();
@@ -318,8 +346,7 @@ const scenes = [
   }],
 
   ["08-portfolio-admin", "Portfolio + admin crash −30% → alert banner", async (p) => {
-    await connect(p);
-    await p.goto(`${BASE}/portfolio`, { waitUntil: "domcontentloaded" });
+    await connect(p, "/portfolio");
     await shot(p, 4000);
     await p.goto(`${BASE}/admin`, { waitUntil: "domcontentloaded" });
     await shot(p, 2000);
@@ -338,18 +365,27 @@ async function main() {
   const browser = await chromium.launch({ headless: !HEADED, channel: "chrome" });
   const picked = scenes.filter(([id]) => !ONLY.size || [...ONLY].some((o) => id.startsWith(o)));
   console.log(`recording ${picked.length} scene(s) against ${BASE} → ${CLIPS}`);
+  // One context for the whole run: wallet stays connected across scene pages via
+  // wallet-adapter autoConnect (localStorage), and each page gets its own .webm clip.
+  const ctx = await browser.newContext({
+    viewport: { width: 1280, height: 800 },
+    deviceScaleFactor: 2,
+    recordVideo: { dir: CLIPS, size: { width: 1280, height: 800 } },
+  });
+  await ctx.exposeFunction("__dwSignTx", signTxB64);
+  await ctx.exposeFunction("__dwSendTx", sendTxB64);
+  await ctx.exposeFunction("__dwSignMsg", signMsgB64);
+  await ctx.addInitScript(WALLET_JS);
   for (const [id, name, fn] of picked) {
     console.log(`\n▶ ${id} ${name}`);
-    const ctx = await browser.newContext({
-      viewport: { width: 1280, height: 800 },
-      deviceScaleFactor: 2,
-      recordVideo: { dir: CLIPS, size: { width: 1280, height: 800 } },
-    });
-    await ctx.exposeFunction("__dwSignTx", signTxB64);
-    await ctx.exposeFunction("__dwSendTx", sendTxB64);
-    await ctx.exposeFunction("__dwSignMsg", signMsgB64);
-    await ctx.addInitScript(WALLET_JS);
     const page = await ctx.newPage();
+    page.on("console", (m) => {
+      const t = m.text();
+      if (t.startsWith("[toast]") || /error|failed|429|401/i.test(t)) console.log("  [pg]", t.slice(0, 180));
+    });
+    page.on("response", (r) => {
+      if (r.url().includes("/api/") && r.status() >= 400) console.log(`  [api ${r.status()}] ${r.url().replace(BASE, "")}`);
+    });
     const t0 = Date.now();
     try {
       await fn(page);
@@ -359,12 +395,13 @@ async function main() {
       await page.screenshot({ path: path.join(CLIPS, `${id}-error.png`) }).catch(() => {});
     }
     const video = page.video();
-    await ctx.close();
+    await page.close();
     if (video) {
       const vp = await video.path();
       fs.renameSync(vp, path.join(CLIPS, `${id}.webm`));
     }
   }
+  await ctx.close();
   await browser.close();
   console.log("\nclips:");
   for (const f of fs.readdirSync(CLIPS).filter((f) => f.endsWith(".webm"))) console.log(`  ${CLIPS}/${f}`);

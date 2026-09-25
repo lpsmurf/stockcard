@@ -28,7 +28,15 @@ await p.getByRole("button", { name: /Connect wallet/i }).first().click();
 await p.waitForTimeout(3000);
 console.log("MODAL BUTTONS:", JSON.stringify(await p.locator("button").allTextContents()));
 await p.getByRole("button", { name: /Demo Wallet/i }).click();
-await p.waitForTimeout(5000);
+const t0 = Date.now();
+try {
+  await p.locator("button", { hasText: /…/ }).first().waitFor({ timeout: 45000 });
+  console.log("address button found in", Date.now() - t0, "ms");
+} catch (e) {
+  console.log("address wait failed:", e.message.split("\n")[0]);
+  console.log("buttons now:", JSON.stringify(await p.locator("button").allTextContents()));
+}
+await p.waitForTimeout(2000);
 console.log("AFTER:", JSON.stringify(await p.locator("button").allTextContents()));
 await p.screenshot({ path: "/tmp/modal.png" });
 await b.close();
