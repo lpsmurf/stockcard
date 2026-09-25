@@ -22,6 +22,7 @@ const martianMono = Martian_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: "StockCard — Spend what you own. Never sell it.",
   description:
     "StockCard is a credit card backed by what you own: tokenized stocks, graded cards, watches and art notes on Solana. Lock assets, borrow USDC, spend — without selling. In development · Devnet beta.",

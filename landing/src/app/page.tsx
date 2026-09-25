@@ -1,21 +1,33 @@
+import { Hero } from "@/components/sections/Hero";
+import { AssetStrip } from "@/components/sections/AssetStrip";
+import { HowItWorks } from "@/components/sections/HowItWorks";
+import { Calculator } from "@/components/sections/Calculator";
+import { Cashback } from "@/components/sections/Cashback";
+import { Tiers } from "@/components/sections/Tiers";
+import { Savings } from "@/components/sections/Savings";
+import { Compare } from "@/components/sections/Compare";
+import { Demo } from "@/components/sections/Demo";
+import { Protection } from "@/components/sections/Protection";
+import { Manifesto } from "@/components/sections/Manifesto";
+import { Faq } from "@/components/sections/Faq";
+import { Footer } from "@/components/sections/Footer";
+
 export default function Home() {
   return (
-    <main className="min-h-screen bg-ground text-text">
-      <div className="mx-auto max-w-3xl px-6 py-32 text-center">
-        <p className="font-numbers text-xs tracking-widest text-accent-2 uppercase">
-          Built on Solana · Devnet beta
-        </p>
-        <h1 className="font-display mt-6 text-5xl font-semibold md:text-7xl">
-          Spend what you own. Never sell it.
-        </h1>
-        <p className="mt-6 text-lg text-text-2">
-          A credit card backed by tokenized stocks, graded cards, watches and
-          art notes. Lock, borrow, spend — without selling.
-        </p>
-        <p className="mt-10 text-xs text-text-2">
-          In development · Devnet beta · Not available yet
-        </p>
-      </div>
+    <main className="min-h-screen overflow-x-clip bg-ground text-text antialiased">
+      <Hero />
+      <AssetStrip />
+      <HowItWorks />
+      <Calculator />
+      <Cashback />
+      <Tiers />
+      <Savings />
+      <Compare />
+      <Demo />
+      <Protection />
+      <Manifesto />
+      <Faq />
+      <Footer />
     </main>
   );
 }

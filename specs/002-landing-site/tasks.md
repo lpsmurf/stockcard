@@ -16,28 +16,28 @@ Commit as `littleplu@gmail.com` (Vercel requirement). Don't touch `app/`.
 - [x] L012 `src/data/faq.ts` from brief §8; `src/lib/credit.ts` calculator math (LTV, liquidation price, daily interest) matching brief §6.
 
 ## Phase 3: Sections (brief §3)
-- [ ] L020 Hero with waitlist form and signature card visual (**Kimi's call** on the interaction)
-- [ ] L021 Asset strip with captions and "Not affiliated" line
-- [ ] L022 How it works (Lock → Borrow → Spend → Repay)
-- [ ] L023 Credit calculator with health bar colors at 50% / 65% and the "can fall X%" line
-- [ ] L024 Cashback section
-- [ ] L025 Membership tiers comparison + tier switcher that changes the card finish; "Planned benefits" footnote
-- [ ] L026 Protection section (buffer, alerts, on-chain custody)
-- [ ] L027 "Real assets only" manifesto
-- [ ] L028 FAQ accordion
-- [ ] L029 Final CTA, footer, disclaimer (brief §9)
+- [x] L020 Hero with waitlist form and signature card visual (**Kimi's call** on the interaction)
+- [x] L021 Asset strip with captions and "Not affiliated" line
+- [x] L022 How it works (Lock → Borrow → Spend → Repay)
+- [x] L023 Credit calculator with health bar colors at 50% / 65% and the "can fall X%" line
+- [x] L024 Cashback section
+- [x] L025 Membership tiers comparison + tier switcher that changes the card finish; "Planned benefits" footnote
+- [x] L026 Protection section (buffer, alerts, on-chain custody)
+- [x] L027 "Real assets only" manifesto
+- [x] L028 FAQ accordion
+- [x] L029 Final CTA, footer, disclaimer (brief §9)
 
 ## Phase 4: Waitlist
-- [ ] L030 `POST /api/waitlist`: validate email, reject disposable domains, IP rate limit, store answers, assign queue position and referral code
-- [ ] L031 `GET /api/waitlist/[code]`: position + referrals count; success screen with share link (X, WhatsApp, copy)
-- [ ] L032 Referral bump: +10 places per confirmed referral; record reward "Plus cashback 3 months"
-- [ ] L033 Analytics events: calculator_view, signup_start, signup_complete, referral_share
+- [x] L030 `POST /api/waitlist`: validate email, reject disposable domains, IP rate limit, store answers, assign queue position and referral code
+- [x] L031 `GET /api/waitlist/[code]`: position + referrals count; success screen with share link (X, WhatsApp, copy)
+- [x] L032 Referral bump: +10 places per confirmed referral; record reward "Plus cashback 3 months"
+- [x] L033 Analytics events: calculator_view, signup_start, signup_complete, referral_share
 
 ## Phase 5: Quality and launch
-- [ ] L040 SEO: title, description, Open Graph image (card render), `sitemap.xml`, `robots.txt`
-- [ ] L041 Accessibility: keyboard, focus states, contrast, reduced motion, alt text on every asset image
-- [ ] L042 Performance: Lighthouse mobile ≥ 90 perf / ≥ 95 a11y, LCP < 2.5s; 360 px no horizontal scroll
-- [ ] L043 Guardrail check against brief §9 (status line, no partner logos, captions, disclaimer, planned-perk footnote)
+- [x] L040 SEO: title, description, Open Graph image (card render), `sitemap.xml`, `robots.txt`
+- [x] L041 Accessibility: keyboard, focus states, contrast, reduced motion, alt text on every asset image
+- [x] L042 Performance: Lighthouse mobile ≥ 90 perf / ≥ 95 a11y, LCP < 2.5s; 360 px no horizontal scroll
+- [x] L043 Guardrail check against brief §9 (status line, no partner logos, captions, disclaimer, planned-perk footnote)
 - [ ] L044 Deploy to Vercel production; `landing/README.md` with run/env/deploy steps; send URL to Luis
 
 ## Blocked on Luis / Bart
