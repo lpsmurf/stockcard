@@ -58,6 +58,11 @@ export function Footer() {
                 Rolex Submariner 16613 and T206 Ty Cobb images are public domain (Wikimedia Commons).
               </li>
               <li>
+                Background plates: Pieter Claesz, <i>Still Life with a Skull and a Writing Quill</i>{" "}
+                (1628) and Willem Claesz Heda, <i>Still Life with Oysters, a Silver Tazza, and
+                Glassware</i> (1635) — The Met, Open Access CC0.
+              </li>
+              <li>
                 Tokenized-item photos: Collector Crypt marketplace API. Card artwork © The Pokémon
                 Company / Nintendo / Toei. Watch and trading-card brand names are trademarks of
                 their owners. Not affiliated with StockCard.

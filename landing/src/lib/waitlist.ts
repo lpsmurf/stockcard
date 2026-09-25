@@ -74,8 +74,8 @@ function newCode(): string {
   return randomBytes(5).toString("hex"); // 10 hex chars
 }
 
-function siteUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+function siteUrl(origin?: string): string {
+  return process.env.NEXT_PUBLIC_SITE_URL ?? origin ?? "http://localhost:3000";
 }
 
 export function validateInput(input: WaitlistInput): string | null {
@@ -113,7 +113,7 @@ function effectivePosition(base: number, referrals: number): number {
   return Math.max(1, base - REFERRAL_SPOTS_PER_FRIEND * referrals);
 }
 
-export async function addToWaitlist(raw: WaitlistInput, ip: string): Promise<SignupResult> {
+export async function addToWaitlist(raw: WaitlistInput, ip: string, origin?: string): Promise<SignupResult> {
   const error = validateInput(raw);
   if (error) return { ok: false, error };
   if (await rateLimited(ip || "unknown"))
@@ -131,7 +131,7 @@ export async function addToWaitlist(raw: WaitlistInput, ip: string): Promise<Sig
         ok: true,
         position: effectivePosition((rank ?? 0) + 1, referrals),
         referralCode: existing.code,
-        referralUrl: `${siteUrl()}?ref=${existing.code}`,
+        referralUrl: `${siteUrl(origin)}?ref=${existing.code}`,
         alreadyJoined: true,
       };
     }
@@ -165,7 +165,7 @@ export async function addToWaitlist(raw: WaitlistInput, ip: string): Promise<Sig
       ok: true,
       position: rank + 1,
       referralCode: code,
-      referralUrl: `${siteUrl()}?ref=${code}`,
+      referralUrl: `${siteUrl(origin)}?ref=${code}`,
       alreadyJoined: false,
     };
   }
@@ -178,7 +178,7 @@ export async function addToWaitlist(raw: WaitlistInput, ip: string): Promise<Sig
       ok: true,
       position: effectivePosition(base, Number(existingMem.referralCount ?? 0)),
       referralCode: existingMem.code,
-      referralUrl: `${siteUrl()}?ref=${existingMem.code}`,
+      referralUrl: `${siteUrl(origin)}?ref=${existingMem.code}`,
       alreadyJoined: true,
     };
   }
@@ -207,7 +207,7 @@ export async function addToWaitlist(raw: WaitlistInput, ip: string): Promise<Sig
     ok: true,
     position: mem.queue.length,
     referralCode: code,
-    referralUrl: `${siteUrl()}?ref=${code}`,
+    referralUrl: `${siteUrl(origin)}?ref=${code}`,
     alreadyJoined: false,
   };
 }

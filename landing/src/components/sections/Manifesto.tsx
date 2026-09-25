@@ -1,9 +1,11 @@
+import { DitherArt } from "@/components/DitherArt";
 import { Reveal } from "@/components/Reveal";
 
 export function Manifesto() {
   return (
-    <section aria-labelledby="manifesto-heading" className="py-28">
-      <div className="mx-auto max-w-3xl px-6 text-center">
+    <section aria-labelledby="manifesto-heading" className="relative overflow-hidden py-28">
+      <DitherArt src="/art/vanitas-claesz.jpg" hue={150} opacity={0.25} fade="center" />
+      <div className="relative mx-auto max-w-3xl px-6 text-center">
         <Reveal>
           <h2 id="manifesto-heading" className="font-display text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
             Real assets, not memecoins.

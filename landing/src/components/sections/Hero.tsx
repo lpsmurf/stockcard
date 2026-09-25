@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
+import { DitherArt } from "@/components/DitherArt";
 import { StockCardVisual } from "@/components/StockCardVisual";
 import { WaitlistForm } from "@/components/WaitlistForm";
 
@@ -17,7 +18,8 @@ export function Hero() {
 
   return (
     <section className="relative overflow-hidden">
-      <div className="mx-auto grid max-w-6xl gap-14 px-6 pt-24 pb-20 md:grid-cols-2 md:items-center md:pt-32">
+      <DitherArt src="/art/stilllife-heda.jpg" hue={205} opacity={0.4} fade="right" />
+      <div className="relative mx-auto grid max-w-6xl gap-14 px-6 pt-24 pb-20 md:grid-cols-2 md:items-center md:pt-32">
         <div>
           <motion.p {...enter(0)} className="font-numbers text-xs tracking-[0.3em] text-accent-2 uppercase">
             Built on Solana · Devnet beta

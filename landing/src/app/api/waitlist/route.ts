@@ -22,7 +22,8 @@ export async function POST(request: Request) {
       wallet: body.wallet ? String(body.wallet) : undefined,
       ref: body.ref ? String(body.ref) : undefined,
     },
-    ip
+    ip,
+    new URL(request.url).origin
   );
 
   return NextResponse.json(result, { status: result.ok ? 200 : 400 });
