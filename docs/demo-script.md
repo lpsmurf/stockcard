@@ -1,6 +1,6 @@
 # StockCard demo video script (2–3 minutes)
 
-Live URL: https://stockcard-app.vercel.app — Solana **devnet** only. Everything you show is a real on-chain transaction; the card, payout and shop are labelled mocks.
+Live URL: https://demo.stockcard.hfsp.cloud — Solana **devnet** only. Everything you show is a real on-chain transaction; the card, payout and shop are labelled mocks.
 
 Before recording, run `./scripts/demo-price-loop.sh` in a terminal so signed prices stay fresh (equities go stale after 3 minutes while the market is open). Keep it running for the whole demo.
 
