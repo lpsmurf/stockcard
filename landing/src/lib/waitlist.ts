@@ -1,5 +1,6 @@
 // Waitlist storage: Upstash Redis when KV_REST_API_URL/KV_REST_API_TOKEN are
-// set, in-memory fallback for local dev. Keys per brief §4:
+// set; otherwise in-memory, persisted to WAITLIST_FILE when that env is set
+// (used on the VPS deploy where Upstash is unreachable). Keys per brief §4:
 //   waitlist:{email}  hash { email, code, assetToLock, cashbackAsset, wallet, ref, referralCount, joinedAt }
 //   ref:{code}        email (referral-code lookup)
 //   queue             sorted set, member = email, score = join order (ms timestamp)
@@ -10,6 +11,7 @@
 
 import { Redis } from "@upstash/redis";
 import { randomBytes } from "node:crypto";
+import { readFileSync, writeFileSync, renameSync } from "node:fs";
 
 export const REFERRAL_SPOTS_PER_FRIEND = 10;
 export const REFERRAL_REWARD = "Plus cashback 3 months";
@@ -62,13 +64,55 @@ const redis =
     ? new Redis({ url: process.env.KV_REST_API_URL, token: process.env.KV_REST_API_TOKEN })
     : null;
 
-// --- in-memory fallback (dev only) -------------------------------------------
+// --- in-memory fallback, optionally persisted to WAITLIST_FILE (VPS deploys
+// where Upstash is unreachable; dev leaves it unset) --------------------------
 const mem = {
   records: new Map<string, Record<string, string>>(), // email -> hash fields
   codes: new Map<string, string>(), // code -> email
   queue: [] as string[], // join order
   rl: new Map<string, { count: number; resetAt: number }>(),
 };
+
+const STORE_FILE = process.env.WAITLIST_FILE;
+
+function loadMem() {
+  if (!STORE_FILE) return;
+  try {
+    const raw = JSON.parse(readFileSync(STORE_FILE, "utf8")) as {
+      records?: Record<string, Record<string, string>>;
+      codes?: Record<string, string>;
+      queue?: string[];
+    };
+    for (const [k, v] of Object.entries(raw.records ?? {})) mem.records.set(k, v);
+    for (const [k, v] of Object.entries(raw.codes ?? {})) mem.codes.set(k, v);
+    mem.queue.push(...(raw.queue ?? []));
+  } catch {
+    /* fresh start */
+  }
+}
+loadMem();
+
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+function persistMem() {
+  if (!STORE_FILE || persistTimer) return;
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    try {
+      writeFileSync(
+        `${STORE_FILE}.tmp`,
+        JSON.stringify({
+          records: Object.fromEntries(mem.records),
+          codes: Object.fromEntries(mem.codes),
+          queue: mem.queue,
+        }),
+        { mode: 0o600 },
+      );
+      renameSync(`${STORE_FILE}.tmp`, STORE_FILE);
+    } catch {
+      /* keep serving in-memory */
+    }
+  }, 100);
+}
 
 function newCode(): string {
   return randomBytes(5).toString("hex"); // 10 hex chars
@@ -203,6 +247,7 @@ export async function addToWaitlist(raw: WaitlistInput, ip: string, origin?: str
       r.referralReward = REFERRAL_REWARD;
     }
   }
+  persistMem();
   return {
     ok: true,
     position: mem.queue.length,
