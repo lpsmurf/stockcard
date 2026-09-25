@@ -29,17 +29,13 @@ Next.js app (app/)  ──►  Anchor program "stockcard" (devnet)
 - **Card flow** (Bridge sandbox): create customer → sandbox KYC auto-approve → card account with `crypto_wallet{chain:"solana", currency:"usdc", address}` → user approves delegate on their USDC ATA → Stripe sandbox simulates authorization/capture. Keep the card layer behind an issuer-agnostic interface; the fallback, if sandbox access is gated, is a mock card service with the same interface that does a real devnet USDC transfer to a merchant settlement address.
 - **Backpack import**: Backpack Securities stocks are broker entitlements, not SPL tokens, so they can never be collateral; only SPCX can. The browser signs a `balanceQuery` request with the user's ED25519 secret (the secret never reaches our server); `/api/backpack/import` only proxies `GET /api/v1/capital` with those headers. Backpack stock symbols carry a `.US` suffix. Fallback is a demo JSON fixture.
 
-- **Art collateral**: fractionalized art (sample lots in `BUSINESS_MODEL.md`) is a second collateral type. It uses a `SignedPrice` with source `Appraisal` and staleness checks, 30% max LTV, and a 20% haircut. The artworks are placeholders; never present them as real acquisitions. Legally, art tokens are asset-backed notes from a per-artwork compartment of one Luxembourg securitisation vehicle (not US/Delaware SPVs).
+- **Art collateral**: fractionalized art is a second collateral type. It uses a `SignedPrice` with source `Appraisal` and staleness checks, 30% max LTV, and a 20% haircut. The artworks are placeholders; never present them as real acquisitions. Legally, art tokens are asset-backed notes from a per-artwork compartment of one Luxembourg securitisation vehicle (not US/Delaware SPVs).
 - **Collectibles collateral**: whole-item NFTs (graded cards, watches) from whitelisted partner collections. They're non-fungible, so they need a per-item collateral account with an FMV price posted by a signer (not a per-mint `Market` alone), 40% LTV and a 25% haircut. Don't describe Collector Crypt, Phygitals or Beezie as partners; they are integration targets.
 - **Position protection**: suggested max 35% LTV with the liquidation price shown; alert bands (Warning 55%, Urgent 60%, Liquidatable 65%) with in-app banners and web push that give exact add-collateral / repay amounts; demo crash is −30% and one 50% liquidation leaves the position no longer liquidatable (~52%).
 - **Send to bank (SEPA)**: one wallet-signed transaction borrows USDC and transfers it to the PayoutProvider's address (mock `PAYOUT_ADDRESS` on devnet; a Bridge liquidation address routed to SEPA in production), which pays EUR to the user's saved IBAN. Label mock payouts "Simulated SEPA payout". Never claim borrowing is tax-free or cheaper than selling; see `docs/borrow-vs-sell.md`.
 - **Asset cashback**: after each card settlement, a cashback amount (tier-based %) buys the user's chosen asset and deposits it as collateral in their position. It is not paid out as USDC or points.
 
-`GTM_PARTNERSHIPS.md` has the team (co-founder Bart Bloemers), partner and advisor targets, and the 30-day plan. No partnerships or advisors are signed; don't present targets as confirmed.
-
-`FUNDRAISING.md` compares raising via a MetaDAO ICO / Colosseum STAMP vs a SAFE; the instrument isn't decided yet.
-
-`BUSINESS_MODEL.md` has the revenue model, projections (assumptions) and raise; `pitch-deck-*.html` is the investor deck.
+No partnerships or advisors are signed; don't present targets as confirmed.
 
 Out of scope: real KYC, mainnet, real xStocks, utilization-based rate curves, SOL/crypto staking (post-MVP).
 

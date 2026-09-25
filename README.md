@@ -66,7 +66,7 @@ Program tests: `scripts/validator.sh &` then `anchor test --skip-build --skip-lo
 Android APK: wrap the deployed PWA with `npx solana-mobile webshell init && npx solana-mobile webshell build` (JDK 17 + Android SDK); wallets connect via Mobile Wallet Adapter.
 
 ## Status
-The Anchor program and core demo app are implemented. For the September 17 continuation snapshot, remaining work, verification results, and local changes that may not yet be on GitHub, read [HANDOFF_DEVIN.md](HANDOFF_DEVIN.md). See also:
+The Anchor program and core demo app are implemented. See also:
 - [PLAN.md](PLAN.md): scope, architecture, 4-day schedule, verification
 - [RESEARCH.md](RESEARCH.md): competitors, card issuers, Backpack findings, sources
 

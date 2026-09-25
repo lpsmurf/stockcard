@@ -93,7 +93,7 @@ Simplified, 2026, for residents holding directly. Tokenized stocks (xStocks are 
 **Recommendations (decisions for Luis and Bart, nothing changed in the spec yet)**
 1. **Pitch copy:** lead with "Get cash from what you own in minutes, without selling it." Use the tax point only with the caveat "Selling can trigger tax. Borrowing postpones it but costs interest." Never "tax-free" or "cheaper than tax".
 2. **Add an in-app "Borrow or sell?" calculator** (same math as the script) on the Send-to-bank sheet for amounts above €10,000, showing interest vs estimated tax for the member's country. It builds trust and protects us under consumer-credit rules.
-3. **Consider a "Prime" stock band** (e.g. 6.9–7.9% at ≤ 20% LTV) to make stock loans competitive and let the tax story work. The cost: savers are paid ~6%, so margin at 7.9% is thin (see `docs/unit-economics.md`); it would need a lower savings APY on that tranche, institutional liquidity (GTM_PARTNERSHIPS.md "Liquidity") or subscription revenue.
+3. **Consider a "Prime" stock band** (e.g. 6.9–7.9% at ≤ 20% LTV) to make stock loans competitive and let the tax story work. The cost: savers are paid ~6%, so margin at 7.9% is thin; it would need a lower savings APY on that tranche, institutional liquidity or subscription revenue.
 4. **Keep the margin in collectibles and art**, where 11.9–15.9% is competitive and the value to the member is highest.
 5. **Get two professional opinions before launch:** tax (disposal on deposit into the vault; per-country treatment of tokenized stocks) and consumer credit (CCD2 scope from 20 Nov 2026).
 

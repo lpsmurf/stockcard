@@ -261,7 +261,7 @@ Examples: $500 on 10 NVDAx (23.6% LTV) → 12.9% → $0.18/day. $1,000 (47.2%) �
 | Planned perks (not contracted) | — | Priority support, early access to art drops, 1 eSIM data pack/year | Airport lounges via card-network program, travel & purchase insurance, 0% FX markup, grading/vault credits, SMS liquidation alerts |
 
 ### Membership perks (planned, Revolut Ultra-style; decided Sept 15)
-Shown on the Cashback screen (S9/D9) and the landing page under "Planned benefits" with the footnote "Benefits depend on partner and issuer agreements and may change." None is contracted. Sourcing and partner targets: `GTM_PARTNERSHIPS.md` → "Membership perks".
+Shown on the Cashback screen (S9/D9) and the landing page under "Planned benefits" with the footnote "Benefits depend on partner and issuer agreements and may change." None is contracted.
 
 | Perk | Plus | Black | Sourced through (target) |
 |---|---|---|---|

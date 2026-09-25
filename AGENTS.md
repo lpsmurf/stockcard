@@ -58,8 +58,6 @@ app/                       Next.js 16 PWA (the only frontend + API codebase)
 tests/                     anchor tests (tests/stockcard.ts — to be created)
 scripts/                   seed-devnet.ts, smoke-devnet.ts, sync-idl.sh — to be created
 PLAN.md, RESEARCH.md       original planning + research notes
-BUSINESS_MODEL.md, GTM_PARTNERSHIPS.md, FUNDRAISING.md, pitch-deck-*.html
-                           business/investor docs — read for context, never edit as build tasks
 ```
 
 ## Technology stack (pinned in parameters.md §1)
@@ -159,7 +157,6 @@ If a task needs both, Claude lands the lib/route with a typed export and Kimi wi
 - **Copy:** UI copy comes from `wireframes.md`, error copy from `parameters.md` §2, money format `$1,234.56`, explorer links to `explorer.solana.com/tx/{sig}?cluster=devnet`.
 - **Vertical slices** (constitution I): every user story ships end to end (instruction → screen → devnet tx). P1 (deposit → borrow → card spend, then repay/withdraw) works before any P2 work. If late, cut whole stories in this order: Backpack import (T048) → SPCX partner adapter (T055) → Collector Crypt/PSA adapters (T052–T054) → asset visuals (T041) → Pyth path (T029, fall back to Signed "Demo price") → art/collectible markets (T040). Never cut US1–US4. Pyth-vs-Signed decision deadline: Wed Sept 16, 12:00 ET.
 - **Commit as `littleplu@gmail.com`** (repo-local git config; Vercel deploys break with other author emails). Never commit `.env*` (except `.env.example`), keypairs, or secrets — all gitignored already.
-- Don't edit the business docs (`BUSINESS_MODEL.md`, `GTM_PARTNERSHIPS.md`, `FUNDRAISING.md`, `pitch-deck-*.html`) as part of build tasks, and never present partner/advisor targets in them as confirmed.
 
 ## Testing strategy
 

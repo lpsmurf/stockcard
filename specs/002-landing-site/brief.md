@@ -1,7 +1,7 @@
 # Landing site brief: StockCard waitlist
 
 **For**: Kimi Code (builder). **Owner**: Luis. **Status**: ready to build after Stocklana submission (the MVP in `specs/001-stockcard-mvp` comes first).
-**Deploy**: Vercel, its own project. **Goal date**: live in week 2 of the 30-day plan (Sept 21–25, see `GTM_PARTNERSHIPS.md`).
+**Deploy**: Vercel, its own project. **Goal date**: live in week 2 of the 30-day plan (Sept 21–25).
 
 This brief fixes the facts, the structure and the guardrails. The visual execution is deliberately left partly open: sections marked **Kimi's call** are yours to design. Surprise us inside the rules.
 

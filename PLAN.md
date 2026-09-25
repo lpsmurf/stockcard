@@ -35,10 +35,10 @@ User flow (the 2-min video follows this exactly):
 6. **Health bar + liquidation** (admin "crash price" button in demo to show liquidation protection/alerts).
 
 ### Added Sept 14: art collateral
-Fractionalized art (the Genesis Collection, 6 sample lots, $368k total) is a second collateral type, inspired by Jurassic Finance. Art uses 30% max LTV and a signed quarterly appraisal (20% haircut) instead of Pyth. See [BUSINESS_MODEL.md](BUSINESS_MODEL.md) for lots, mechanics, revenue and the raise. For the hackathon demo, art fractions are mock mints like the stock tokens; the appraisal price is posted by the admin.
+Fractionalized art (the Genesis Collection, 6 sample lots, $368k total) is a second collateral type, inspired by Jurassic Finance. Art uses 30% max LTV and a signed quarterly appraisal (20% haircut) instead of Pyth. For the hackathon demo, art fractions are mock mints like the stock tokens; the appraisal price is posted by the admin.
 
 ### Added Sept 14: Luxembourg art vehicle
-The art fund is centralized in Europe: one Luxembourg securitisation vehicle with a ring-fenced compartment per artwork, issuing $10 asset-backed notes as Token-2022 tokens; works stored at the Luxembourg High Security Hub. Unregulated as long as there are at most 3 public issues a year. Details and open counsel questions in BUSINESS_MODEL.md.
+The art fund is centralized in Europe: one Luxembourg securitisation vehicle with a ring-fenced compartment per artwork, issuing $10 asset-backed notes as Token-2022 tokens; works stored at the Luxembourg High Security Hub. Unregulated as long as there are at most 3 public issues a year.
 
 ### Added Sept 14: partner collectibles
 Vaulted 1:1 item NFTs from Collector Crypt and Phygitals (graded Pokémon cards) and, later, Beezie × The Luxury Closet (watches) are a third collateral type: 40% LTV on the partner's FMV (25% haircut), collection-address whitelist, and liquidation by selling into the partner's instant buyback. These are integration targets, not signed partnerships. For the demo, use mock item NFTs.

@@ -26,3 +26,7 @@ scripts/.test-wallets/
 agent/
 skills-lock.json
 .claude/skills/upstash*
+
+# local-only demo artifacts
+.demo-wallet.json
+docs/video/
