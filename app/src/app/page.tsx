@@ -4,13 +4,14 @@ import Link from "next/link";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { usePortfolio, totals } from "@/lib/portfolio";
-import { alertBand, fixAmounts, formatPct, formatTokens, formatUsd, liquidationPrice } from "@/lib/risk";
+import { formatPct, formatTokens, formatUsd, liquidationPrice } from "@/lib/risk";
 import { CreditCard } from "@/components/credit-card";
 import { HealthBar } from "@/components/health-bar";
 import { MockBadge } from "@/components/mock-badge";
-import { Banner } from "@/components/banner";
 import { AlertsCard } from "@/components/alerts-card";
 import { BalanceSummary } from "@/components/balance-summary";
+import { BandBanners } from "@/components/band-banners";
+import { RecentActivity } from "@/components/recent-activity";
 import { AprLine } from "@/components/apr-line";
 import { PayoutRows } from "@/components/payout-rows";
 
@@ -43,6 +44,14 @@ function Welcome({ onConnect }: { onConnect: () => void }) {
         <p className="mt-3 flex items-center justify-center gap-2 text-xs text-ink-3 md:justify-start">
           Solana devnet · test assets <MockBadge />
         </p>
+        <ol className="mt-10 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-3">
+          {["Lock", "Borrow", "Spend", "Repay"].map((step, i) => (
+            <li key={step} className="flex items-center gap-3">
+              {i > 0 ? <span aria-hidden="true" className="text-brass">──▶</span> : null}
+              <span>{step}</span>
+            </li>
+          ))}
+        </ol>
       </div>
       <div className="mt-6 md:mt-0 md:justify-self-end">
         <CreditCard holderName="YOUR NAME" last4="4021" expMonth={9} expYear={29} network="VISA" availableLabel="$18,420.00" />
@@ -84,7 +93,7 @@ function Home() {
 
         <div className="mt-6">
           <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-3">Available credit</p>
-          <p className="font-display text-[44px] leading-tight tabular">{formatUsd(t.availableUsd6)}</p>
+          <p className="font-display text-[44px] leading-tight tabular lg:text-[56px]">{formatUsd(t.availableUsd6)}</p>
           <p className="text-sm text-ink-3">of {formatUsd(t.creditLineUsd6)} credit line</p>
         </div>
 
@@ -136,12 +145,9 @@ function Home() {
         >
           Send to bank
         </Link>
-      </div>
 
-      <div className="mt-6 space-y-3 lg:col-span-5 lg:mt-0">
-        <BalanceSummary />
         {withCollateral.length === 0 ? (
-          <div className="rounded-xl bg-surface p-5 text-center">
+          <div className="mt-4 rounded-xl bg-surface p-5 text-center">
             <p className="text-ink-2">Add an asset to open your credit line</p>
             <Link
               href="/portfolio"
@@ -149,67 +155,24 @@ function Home() {
             >
               Add assets
             </Link>
+            <Link
+              href="/shop"
+              className="mt-2 flex min-h-[48px] items-center justify-center rounded-xl border border-rule px-4 font-semibold text-ink"
+            >
+              Shop with test money
+            </Link>
           </div>
         ) : null}
+      </div>
 
-        {(assets ?? [])
-          .filter((a) => a.debt > 0n)
-          .map((a) => {
-            const band = alertBand(
-              a.ltv,
-              BigInt(a.info.maxLtvBps),
-              BigInt(a.info.liqThresholdBps),
-              a.info.assetClass === "Equity" ? "equity" : a.info.assetClass === "ArtNote" ? "artNote" : "collectible",
-            );
-            if (band === "healthy" || band === "watch") {
-              return band === "watch" ? (
-                <p key={a.info.symbol} className="text-sm text-ink-2">
-                  You can&apos;t borrow more until {a.info.symbol} LTV is under {formatPct(BigInt(a.info.maxLtvBps))}.
-                </p>
-              ) : null;
-            }
-            const fix = fixAmounts(
-              a.debt,
-              a.deposited,
-              a.info.multiplierMicro,
-              a.priceUsd6,
-              BigInt(a.info.haircutBps),
-              BigInt(a.info.maxLtvBps),
-              a.info.decimals,
-            );
-            const title =
-              band === "liquidatable"
-                ? "Your position can be liquidated."
-                : band === "urgent"
-                  ? "You're close to liquidation."
-                  : `${a.info.symbol.replace(/x$/, "")} dropped.`;
-            return (
-              <Banner
-                key={a.info.symbol}
-                variant={band === "warning" ? "warn" : "bad"}
-                title={title}
-                actions={
-                  <>
-                    <Link
-                      href={`/portfolio/${a.info.symbol}?mode=deposit&amount=${formatTokens(fix.addTokens, a.info.decimals)}`}
-                      className="flex min-h-[44px] items-center rounded-lg bg-brass px-4 text-sm font-semibold text-on-brass"
-                    >
-                      Add stock
-                    </Link>
-                    <Link
-                      href={`/borrow?mode=repay&market=${a.info.symbol}&amount=${(Number(fix.repayUsd6) / 1e6).toFixed(2)}`}
-                      className="flex min-h-[44px] items-center rounded-lg border border-current px-4 text-sm font-semibold"
-                    >
-                      Repay {formatUsd(fix.repayUsd6)}
-                    </Link>
-                  </>
-                }
-              >
-                Add {formatTokens(fix.addTokens, a.info.decimals)} {a.info.symbol} or repay {formatUsd(fix.repayUsd6)} to stay safe.
-              </Banner>
-            );
-          })}
+      <div className="mt-6 space-y-3 lg:col-span-5 lg:mt-0">
+        <BalanceSummary />
+        {/* Mobile: banners inline (desktop shows them under the top bar via the shell) */}
+        <div className="space-y-3 md:hidden">
+          <BandBanners />
+        </div>
 
+        <RecentActivity />
         <AlertsCard />
         <PayoutRows />
       </div>

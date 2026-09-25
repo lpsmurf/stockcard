@@ -20,44 +20,44 @@ edits are allowed until 4:00 PM ET.</p>
 <h2>Project name</h2>
 <div class="field">StockCard</div>
 
-<h2>Tagline / one-liner</h2>
-<div class="field">Spend what you own. Never sell it. A credit card backed by your stocks, on Solana.</div>
+<h2>Tagline / one-liner (280 max)</h2>
+<div class="field">Spend what you own — never sell it. A self-custodial credit card backed by tokenized stocks (xStocks, SPCX, pre-IPO). Lock collateral in an Anchor vault, borrow USDC, spend it with a card. Cashback buys more of your stock.</div>
 
 <h2>Short description</h2>
 <div class="field">StockCard is a self-custodial credit line for stock holders. Lock tokenized US stocks (xStocks, Backpack's SPCX) in an on-chain vault, borrow USDC up to a conservative LTV at a fixed APR, and spend it with a virtual card. Card cashback automatically buys more of your stock and adds it to your collateral. Repay anytime, withdraw your stock — you never trigger a sale.</div>
 
-<h2>Long description</h2>
+<h2>Long description (5000 max — 3,824 chars)</h2>
 <div class="field">StockCard is a credit card backed by your stocks — Nexo, but for equities, self-custodial, on Solana.
 
 THE PROBLEM
-People who hold stocks face a bad trade-off when they need cash: sell (lose the position, trigger taxes, miss upside) or wait days for a broker margin loan. DeFi lending exists, but it's built for crypto natives, not stock holders.
+Stock holders who need cash face a bad trade-off: sell (lose the position, trigger taxes, miss upside) or wait days for a broker margin loan. DeFi lending exists, but it's built for crypto natives, not stock holders.
 
 WHAT IT DOES
 - Lock tokenized stocks in an on-chain vault (Anchor program, devnet)
-- Borrow USDC instantly up to a max LTV at a fixed APR — credit-line style, borrow/repay freely
+- Borrow USDC instantly up to a max LTV at a fixed APR — credit-line style, borrow and repay freely
 - Spend through a virtual card (issuer-agnostic CardProvider interface; a real devnet USDC transfer settles each purchase to a merchant address)
-- Card cashback buys more of your chosen stock and deposits it into your collateral position
-- Send-to-bank: borrow USDC and route it to a SEPA payout (simulated rail on devnet)
-- Position protection: warning bands at 55/60/65% LTV, alert banners and web push with exact add-collateral or repay amounts, and a live "crash price" admin demo (−30%)
+- Card cashback buys more of your chosen stock and deposits it into your collateral — cashback is an asset, not points
+- Send to bank: borrow USDC and route it to a SEPA payout (simulated rail on devnet)
+- Position protection: warning bands at 55/60/65% LTV, alert banners and web push with exact add-collateral or repay amounts, plus a "crash price" admin demo (−30%) that shows a live liquidation end-to-end
+- Savers: a USDC pool funds the loans (target ~6% APY to savers, spread to the protocol)
 
 WHY SOLANA
-The collateral, the loan and the card settlement are all real on-chain transactions on one network. Tokenized equities (xStocks are Token-2022 with Scaled UI Amount) already trade on Solana — StockCard is the consumer credit layer that makes holding them better than a brokerage account. Sub-second LTV enforcement at instruction level is only practical on Solana.
+The collateral, the loan and the card settlement are all real transactions on one network. Tokenized equities already trade on Solana (xStocks are Token-2022 with the Scaled UI Amount extension) — StockCard is the consumer credit layer that makes holding them better than a brokerage account. Instruction-level LTV enforcement in under a second is only practical on Solana.
 
 HOW IT'S BUILT
-- Anchor 1.2 program: Config / Market / Position / SignedPrice PDAs. Every borrow, withdraw and liquidate re-checks LTV against a fresh signed price inside the same instruction — collateral safety lives in the program, not the client. All math is checked integer math, u128 intermediates, interest rounded up.
+- Anchor 1.2 program: Config / Market / Position / SignedPrice PDAs. Every borrow, withdraw and liquidate re-checks LTV against a fresh signed price inside the same instruction — collateral safety lives in the program, not the client. Checked integer math only, u128 intermediates, interest rounded in the protocol's favor.
 - Token-2022 collateral: xStocks-style mints with the Scaled UI Amount multiplier; positions value raw amount × multiplier × price × (1 − haircut), matching how real xStocks behave (issuer controls, permanent delegate, freeze authority).
-- Price signer: a server-side oracle posts a signed price only when at least two of {issuer API (xStocks/Backpack), Jupiter, Pyth Hermes} agree within 200 bps. A third source lets it drop a single outlier instead of going dark and keeps pricing alive through an issuer API outage. Equity prices deliberately go stale when the market closes.
-- App: one Next.js 16 PWA is both the website and the Android app (solana-mobile webshell, Mobile Wallet Adapter). Calm consumer-fintech UI, not a DeFi dashboard.
-- Savers: a USDC savings pool funds the loans (target ~6% APY to savers, spread to the protocol).
+- Price signer: a server-side oracle posts a signed price only when at least two of {issuer API (xStocks/Backpack), Jupiter, Pyth Hermes} agree within 200 bps. A third source drops a single outlier instead of going dark. Equity prices deliberately go stale when the market closes — the program refuses unsafe borrows after-hours.
+- App: one Next.js 16 PWA is both the website and the Android app (solana-mobile webshell + Mobile Wallet Adapter). Calm consumer-fintech UI, not a DeFi dashboard.
+
+PRE-IPO COLLATERAL (Tessera + PreStocks bounties)
+StockCard accepts pre-IPO SPV tokens as collateral — live on devnet today: OpenAI and Kalshi (Tessera T-tokens), Anthropic and SpaceX (PreStocks). The price signer reads each provider's public API and lends against the LOWER of NAV and traded price, so a token trading at a premium never inflates the credit line. On-chain they are Equity markets with a tighter band (30% max LTV, 25% haircut, 11.9–15.9% APR). Buy them in the Demo Shop, deposit, borrow — end-to-end on devnet.
 
 WHAT'S REAL VS MOCK (honest demo)
-- Real: all collateral vault, borrow, repay, liquidate, savings and cashback-deposit transactions; the devnet USDC transfers for card settlement and payouts; signed-price oracle with three real data sources.
-- Mocked and labelled as such in the UI: the card issuer (mock provider — Bridge sandbox integration is built but gated), the SEPA rail (mock payout address), and the devnet stock/USDC mints (real xStocks have no devnet mints). No real KYC.
+- Real: every collateral deposit, borrow, repay, liquidate, savings and cashback transaction; the devnet USDC transfers behind card settlement and payouts; the signed-price oracle reading three real data sources.
+- Mocked and labelled in the UI: the card issuer (mock provider; Bridge sandbox integration built but gated), the SEPA rail (mock payout address), and the devnet stock/USDC mints (real xStocks have no devnet mints). No real KYC.
 
-Track: Credit &amp; yield / Consumer. Also submitted for the Pyth, Tessera and PreStocks bounties — see below.
-
-PRE-IPO COLLATERAL (Tessera + PreStocks)
-StockCard accepts pre-IPO SPV tokens as collateral — live on devnet today: OpenAI and Kalshi (Tessera T-tokens), Anthropic and SpaceX (PreStocks). The price signer reads each provider's public API and lends against the LOWER of NAV (mark price) and traded price — a pre-IPO token trading at a premium never inflates the credit line. On-chain they're Equity markets with a tighter band (30% max LTV, 25% haircut, 11.9–15.9% APR); the UI labels them "Pre-IPO · provider" and shows the live premium/discount line on the asset detail screen. Users can buy mock pre-IPO tokens in the Demo Shop, deposit them, and borrow dUSDC against them end-to-end.</div>
+Try it: https://stockcard-app.vercel.app — connect a devnet wallet, claim test dUSDC in the Shop, buy NVDAx, deposit, borrow, spend on the card. Program: HsXyxfSvp7mha6bxgh3Qr9NoVmMVe6HmynVguRfBLWrY</div>
 
 <h2>Pyth bounty paragraph (Best use of Pyth market data)</h2>
 <div class="field">Pyth is wired into StockCard's collateral price signer (app/src/lib/prices/pyth.ts, Hermes client). Today Pyth supplies the NYSE market-hours calendar that gates every equity price post — prices deliberately go stale when the market closes, which drives the LTV checks on the Anchor program. With a Pro grant, Pyth equity feeds become a third price source: it breaks ties between the issuer API and Jupiter, lets the signer drop a single outlier instead of going dark, and covers an issuer API outage — so a lending protocol can keep pricing collateral safely when one feed fails. Pyth never prices collateral alone by design.</div>

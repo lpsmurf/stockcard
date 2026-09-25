@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { MockBadge } from "./mock-badge";
+import { BandBanners } from "./band-banners";
 import { usePortfolio } from "@/lib/portfolio";
 import { alertBand } from "@/lib/risk";
 
@@ -72,7 +73,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main className="flex-1 px-4 pb-28 pt-5 md:px-8 md:pb-10">
-          <div className="mx-auto w-full max-w-md md:max-w-xl lg:max-w-5xl">{children}</div>
+          <div className="mx-auto w-full max-w-md md:max-w-[640px] lg:max-w-5xl">
+            {/* Banners sit full-width under the top bar on every page at ≥768 px (mobile keeps them inline on Home) */}
+            <div className="mb-4 hidden space-y-3 md:block">
+              <BandBanners />
+            </div>
+            {children}
+          </div>
         </main>
       </div>
 

@@ -252,7 +252,7 @@ function BankSheet() {
       },
     ];
     return (
-      <Sheet title="Send to your bank" onClose={() => router.push("/")}>
+      <Sheet title="Send to your bank" wide onClose={() => router.push("/")}>
         <ol className="space-y-3">
           {steps.map((s, i) => (
             <li key={i} className="flex items-center gap-3">
@@ -294,7 +294,7 @@ function BankSheet() {
     !busy && !!account && !!quote && eurCents >= 1000 && !preview?.overMax && (!needsPurpose || !!purpose);
 
   return (
-    <Sheet title="Send to your bank">
+    <Sheet title="Send to your bank" wide>
       <div className="grid grid-cols-2 gap-1 rounded-xl bg-surface p-1" role="tablist" aria-label="Source">
         {(
           [

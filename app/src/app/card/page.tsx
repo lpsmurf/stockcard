@@ -289,12 +289,13 @@ function CardScreen() {
                   <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 text-right font-medium">Amount</th>
                   <th className="hidden px-4 py-3 text-right font-medium lg:table-cell">Cashback</th>
+                  <th className="hidden px-4 py-3 text-right font-medium lg:table-cell">Time</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-rule">
                 {(txsQuery.data ?? []).length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-sm text-ink-3">
+                    <td colSpan={6} className="px-4 py-6 text-center text-sm text-ink-3">
                       No purchases yet: try a test purchase
                     </td>
                   </tr>
