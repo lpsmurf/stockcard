@@ -8,7 +8,7 @@ import {
   CASHBACK_ASSET_OPTIONS,
   REFERRAL_REWARD,
   REFERRAL_SPOTS_PER_FRIEND,
-} from "@/lib/waitlist";
+} from "@/lib/waitlist-shared";
 
 type Success = {
   position: number;
