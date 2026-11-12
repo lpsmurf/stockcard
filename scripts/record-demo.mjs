@@ -52,8 +52,9 @@ for (const line of fs.readFileSync(path.join(ROOT, "app", ".env.local"), "utf8")
   const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
   if (m) ENV.set(m[1], m[2].trim());
 }
-const RPC = ENV.get("NEXT_PUBLIC_SOLANA_RPC");
-if (!RPC) throw new Error("NEXT_PUBLIC_SOLANA_RPC missing from app/.env.local");
+// Node-side RPC: prefer the public devnet endpoint so our sends don't compete with
+// the app's heavily rate-limited Helius key. Override with RECORD_RPC if needed.
+const RPC = process.env.RECORD_RPC ?? "https://api.devnet.solana.com";
 const connection = new Connection(RPC, "confirmed");
 
 const WALLET_FILE = path.join(ROOT, ".demo-wallet.json");
@@ -84,20 +85,22 @@ async function ensureFunds() {
 }
 
 // ---------- signing bridge (called from page via exposeFunction) ----------
-function signTxBytes(buf) {
+// Bound per-keypair so the admin wallet can drive /admin while the demo wallet
+// watches its position react on another page.
+function signTxBytes(kp, buf) {
   try {
     const vt = VersionedTransaction.deserialize(buf);
-    vt.sign([demo]);
+    vt.sign([kp]);
     return Buffer.from(vt.serialize());
   } catch {
     const tx = Transaction.from(buf);
-    tx.partialSign(demo);
+    tx.partialSign(kp);
     return tx.serialize({ requireAllSignatures: false, verifySignatures: false });
   }
 }
-const signTxB64 = (b64) => signTxBytes(Buffer.from(b64, "base64")).toString("base64");
-async function sendTxB64(b64) {
-  const raw = signTxBytes(Buffer.from(b64, "base64"));
+const signTxB64 = (kp) => (b64) => signTxBytes(kp, Buffer.from(b64, "base64")).toString("base64");
+const sendTxB64 = (kp) => async (b64) => {
+  const raw = signTxBytes(kp, Buffer.from(b64, "base64"));
   for (let attempt = 0; ; attempt++) {
     try {
       const sig = await connection.sendRawTransaction(raw, { skipPreflight: false, maxRetries: 5 });
@@ -108,19 +111,19 @@ async function sendTxB64(b64) {
       await sleep(Math.min(1500 * 2 ** attempt, 15000));
     }
   }
-}
-function signMsgB64(b64) {
-  const seed = demo.secretKey.slice(0, 32);
+};
+const signMsgB64 = (kp) => (b64) => {
+  const seed = kp.secretKey.slice(0, 32);
   const pkcs8 = Buffer.concat([Buffer.from("302e020100300506032b657004220420", "hex"), seed]);
   const key = createPrivateKey({ key: pkcs8, format: "der", type: "pkcs8" });
   return cryptoSign(null, Buffer.from(b64, "base64"), key).toString("base64");
-}
+};
 
 // ---------- injected wallet-standard wallet ----------
-const WALLET_JS = `(() => {
+const walletJsFor = (kp) => `(() => {
   const CHAIN = "solana:devnet";
-  const ADDRESS = ${JSON.stringify(demo.publicKey.toBase58())};
-  const PUB_B64 = ${JSON.stringify(Buffer.from(demo.publicKey.toBytes()).toString("base64"))};
+  const ADDRESS = ${JSON.stringify(kp.publicKey.toBase58())};
+  const PUB_B64 = ${JSON.stringify(Buffer.from(kp.publicKey.toBytes()).toString("base64"))};
   window.__DW_ADDRESS = ADDRESS;
   const b64ToBytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
   const bytesToB64 = (bytes) => {
@@ -133,12 +136,6 @@ const WALLET_JS = `(() => {
   const listeners = {};
   const on = (event, listener) => { (listeners[event] = listeners[event] || new Set()).add(listener); return () => listeners[event].delete(listener); };
   const emit = (event, data) => { for (const l of listeners[event] || []) l(data); };
-  // surface toasts to the playwright console for debugging
-  new MutationObserver((muts) => {
-    for (const m of muts) for (const n of m.addedNodes) {
-      if (n.nodeType === 1) console.log("[toast]", n.textContent);
-    }
-  }).observe(document.documentElement, { childList: true, subtree: true });
   const FEATURES = ["solana:signAndSendTransaction", "solana:signTransaction", "solana:signMessage"];
   const account = () => ({ address: ADDRESS, publicKey: b64ToBytes(PUB_B64), chains: [CHAIN], icon: ICON, label: "Demo account", features: FEATURES });
   const wallet = {
@@ -162,6 +159,15 @@ const WALLET_JS = `(() => {
   const register = (api) => api.register(wallet);
   window.addEventListener("wallet-standard:app-ready", (event) => register(event.detail));
   window.dispatchEvent(new CustomEvent("wallet-standard:register-wallet", { detail: register }));
+  // surface toasts to the playwright console for debugging (document exists; body may not yet)
+  try {
+    new MutationObserver((muts) => {
+      for (const m of muts) {
+        if (!m.target.closest || !m.target.closest('[role="status"]')) continue;
+        for (const n of m.addedNodes) if (n.nodeType === 1) console.log("[toast]", n.textContent);
+      }
+    }).observe(document, { childList: true, subtree: true });
+  } catch {}
 })();`;
 
 // ---------- helpers ----------
@@ -234,80 +240,107 @@ const scenes = [
 
   ["02-shop", "Shop — claim test money, buy $50 NVDAx", async (p) => {
     await connect(p, "/shop");
+    await p.waitForSelector('button:not([disabled]):has-text("Claim test money")');
+    const claimRes = p.waitForResponse((r) => r.url().includes("/api/faucet"), { timeout: 60000 }).catch(() => null);
     await p.getByRole("button", { name: "Claim test money" }).click();
-    await toastWith(p, /Claimed .* test money/);
-    await shot(p, 2000);
+    const cr = await claimRes;
+    console.log(`  faucet → ${cr?.status() ?? "no response"}`);
+    await shot(p, 2500);
     const card = p.locator("div.rounded-2xl", { hasText: "NVIDIA" }).first();
+    await card.locator('button:not([disabled]):has-text("Buy with test money")').waitFor();
     await card.getByRole("button", { name: "Buy with test money" }).click();
+    await p.getByLabel("Amount").waitFor();
     await p.getByLabel("Amount").fill("50");
     await shot(p, 1500);
+    const buyRes = p.waitForResponse((r) => r.url().includes("/api/shop/buy"), { timeout: 120000 });
     await p.getByRole("button", { name: "Buy", exact: true }).click();
-    await toastWith(p, /You bought .* NVDAx/);
+    const br = await buyRes;
+    console.log(`  shop/buy → ${br.status()}`);
+    await p.getByLabel("Amount").waitFor({ state: "detached", timeout: 30000 }).catch(() => {});
     await shot(p, 2000);
   }],
 
   ["03-borrow", "Borrow — deposit NVDAx, borrow dUSDC", async (p) => {
     await connect(p, "/portfolio/NVDAx?mode=deposit");
+    await p.getByRole("button", { name: "Max" }).waitFor();
+    await shot(p, 1500);
     await p.getByRole("button", { name: "Max" }).click();
     await shot(p, 1500);
+    await p.waitForSelector('button:not([disabled]):has-text("Confirm and sign")');
     await p.getByRole("button", { name: "Confirm and sign" }).click();
-    await toastWith(p, /Deposited .* NVDAx/);
-    await shot(p, 2000);
+    await p.waitForURL(/\/portfolio$/, { timeout: 120000 });
+    await shot(p, 3000); // position now shows in assets
     await p.goto(`${BASE}/borrow`, { waitUntil: "domcontentloaded" });
-    await shot(p, 1500);
-    await p.getByRole("button", { name: "Max" }).click();
-    await shot(p, 2500); // preview rows: New LTV, liquidation price, APR
-    await p.getByRole("button", { name: "Confirm and sign" }).click();
-    await toastWith(p, /Borrowed|to your card/i);
     await shot(p, 2000);
+    await p.getByRole("button", { name: "Max" }).waitFor();
+    await p.getByRole("button", { name: "Max" }).click();
+    await shot(p, 3500); // preview rows: New LTV, liquidation price, APR
+    await p.waitForSelector('button:not([disabled]):has-text("Confirm and sign")');
+    await p.getByRole("button", { name: "Confirm and sign" }).click();
+    await p.waitForURL(`${BASE}/`, { timeout: 120000 });
+    await shot(p, 2500); // home shows debt + credit line
   }],
 
   ["04-preipo", "Pre-IPO — buy T-OPENAI, asset detail, deposit, tighter bands", async (p) => {
     await connect(p, "/shop");
     await shot(p, 1000);
     const card = p.locator("div.rounded-2xl", { hasText: "OpenAI" }).first();
+    await card.locator('button:not([disabled]):has-text("Buy with test money")').waitFor();
     await card.getByRole("button", { name: "Buy with test money" }).click();
+    await p.getByLabel("Amount").waitFor();
     await p.getByLabel("Amount").fill("50");
     await shot(p, 1200);
+    const buyRes = p.waitForResponse((r) => r.url().includes("/api/shop/buy"), { timeout: 120000 });
     await p.getByRole("button", { name: "Buy", exact: true }).click();
-    await toastWith(p, /You bought .* T-OPENAI/);
+    console.log(`  shop/buy → ${(await buyRes).status()}`);
+    await p.getByLabel("Amount").waitFor({ state: "detached", timeout: 30000 }).catch(() => {});
     await shot(p, 1500);
     await p.goto(`${BASE}/portfolio/T-OPENAI`, { waitUntil: "domcontentloaded" });
-    await shot(p, 3500); // Pre-IPO chip + NAV line + price sources
+    await shot(p, 4000); // Pre-IPO chip + NAV line + price sources
     await p.goto(`${BASE}/portfolio/T-OPENAI?mode=deposit`, { waitUntil: "domcontentloaded" });
+    await p.getByRole("button", { name: "Max" }).waitFor();
     await p.getByRole("button", { name: "Max" }).click();
     await shot(p, 1500);
+    await p.waitForSelector('button:not([disabled]):has-text("Confirm and sign")');
     await p.getByRole("button", { name: "Confirm and sign" }).click();
-    await toastWith(p, /Deposited .* T-OPENAI/);
+    await p.waitForURL(/\/portfolio$/, { timeout: 120000 });
+    await shot(p, 1500);
     await p.goto(`${BASE}/borrow?market=T-OPENAI`, { waitUntil: "domcontentloaded" });
-    await shot(p, 4000); // tighter bands visible in sheet
+    await shot(p, 4500); // tighter bands visible in sheet
   }],
 
   ["05-card", "Card — create, approve limit, coffee purchase", async (p) => {
     await connect(p, "/card");
     const create = p.getByRole("button", { name: "Create card" });
     if (await create.isVisible().catch(() => false)) {
+      const cres = p.waitForResponse((r) => r.url().endsWith("/api/card") && r.request().method() === "POST", { timeout: 60000 });
       await create.click();
-      await toastWith(p, /Card created/);
-      await shot(p, 1500);
+      console.log(`  card create → ${(await cres).status()}`);
+      await shot(p, 2000);
     }
-    await p.locator("button", { hasText: /limit|Limit/ }).first().click();
+    await p.getByRole("button", { name: /Edit ›/ }).click();
+    await p.getByLabel("Limit").waitFor();
     await p.getByLabel("Limit").fill("500");
     await shot(p, 1000);
     await p.getByRole("button", { name: "Approve limit" }).click();
-    await toastWith(p, /Card limit set/);
-    await shot(p, 1500);
-    await p.getByRole("button", { name: "Test purchase" }).click();
+    // approve is an on-chain SPL delegate; the sheet closes when the tx confirms
+    await p.getByLabel("Limit").waitFor({ state: "detached", timeout: 120000 });
+    await shot(p, 2500);
+    await p.getByRole("link", { name: "Test purchase" }).click();
+    await p.getByRole("button", { name: /Coffee \$4\.80/ }).waitFor();
     await p.getByRole("button", { name: /Coffee \$4\.80/ }).click();
     await shot(p, 1500);
+    const simRes = p.waitForResponse((r) => r.url().includes("/api/card/simulate"), { timeout: 120000 });
     await p.getByRole("button", { name: "Pay", exact: true }).click();
-    await toastWith(p, /Paid .* cashback/);
-    await shot(p, 3000); // settled tx + queued cashback row in feed
+    console.log(`  card/simulate → ${(await simRes).status()}`);
+    await shot(p, 4000); // settled tx + queued cashback row in feed
   }],
 
   ["06-cashback", "Cashback — queued → deposited as collateral", async (p) => {
     await connect(p, "/card");
-    await shot(p, 2500); // queued cashback row visible
+    await shot(p, 2500);
+    await p.getByText(/cashback \(queued\)/).first().waitFor({ timeout: 60000 }).catch(() => {});
+    await shot(p, 2000); // queued cashback row visible
     // trigger processing for the latest settled tx with queued cashback
     const done = await p.evaluate(async () => {
       const ts = Date.now().toString();
@@ -319,9 +352,10 @@ const scenes = [
       if (!tx) return null;
       return (await fetch("/api/cashback/process", { method: "POST", headers: await headers("/api/cashback/process"), body: JSON.stringify({ txId: tx.id }) })).json();
     });
-    console.log("  cashback process:", JSON.stringify(done));
+    console.log("  cashback process:", JSON.stringify(done)?.slice(0, 200));
     await p.waitForTimeout(2000);
     await p.reload({ waitUntil: "domcontentloaded" });
+    await p.getByText(/cashback \(sent\)|cashback \(deposited\)/).first().waitFor({ timeout: 60000 }).catch(() => {});
     await shot(p, 3500); // row now shows deposited
   }],
 
@@ -333,11 +367,15 @@ const scenes = [
     await p.getByPlaceholder("Must match your name").fill("Luis Plönnig");
     await p.getByPlaceholder(/IBAN|DE44/i).fill("NL91ABNA0417164300");
     await shot(p, 1500); // "IBAN looks valid ✓"
+    const saveRes = p.waitForResponse((r) => r.url().includes("/api/bank-accounts") && r.request().method() === "POST", { timeout: 60000 });
     await p.getByRole("button", { name: "Save account" }).click();
-    await toastWith(p, /Bank account saved/);
-    await shot(p, 1000);
+    console.log(`  bank-accounts → ${(await saveRes).status()}`);
+    await p.getByPlaceholder("Must match your name").waitFor({ state: "detached", timeout: 30000 }).catch(() => {});
+    await shot(p, 1500);
     await p.getByLabel("Amount").fill("50");
+    await p.waitForResponse((r) => r.url().includes("/api/payouts/quote"), { timeout: 60000 }).catch(() => null);
     await shot(p, 2500); // quote appears ≈ USDC
+    await p.waitForSelector('button:not([disabled]):has-text("Confirm and sign")');
     await p.getByRole("button", { name: "Confirm and sign" }).click();
     await p.getByText(/Sent on Solana|Processing|Arrived/i).first().waitFor({ timeout: 90000 });
     await shot(p, 2500);
@@ -379,12 +417,14 @@ async function main() {
   for (const [id, name, fn] of picked) {
     console.log(`\n▶ ${id} ${name}`);
     const page = await ctx.newPage();
+    page.setDefaultTimeout(90000);
     page.on("console", (m) => {
       const t = m.text();
-      if (t.startsWith("[toast]") || /error|failed|429|401/i.test(t)) console.log("  [pg]", t.slice(0, 180));
+      if (!/429|MWA|Failed to load resource|Download the React DevTools/i.test(t)) console.log("  [pg]", t.slice(0, 200));
     });
+    page.on("pageerror", (e) => console.log("  [pageerror]", String(e).slice(0, 300)));
     page.on("response", (r) => {
-      if (r.url().includes("/api/") && r.status() >= 400) console.log(`  [api ${r.status()}] ${r.url().replace(BASE, "")}`);
+      if (r.url().includes("/api/")) console.log(`  [api ${r.status()}] ${r.url().replace(BASE, "")} (${r.request().timing()?.responseEnd?.toFixed(0) ?? "?"}ms)`);
     });
     const t0 = Date.now();
     try {

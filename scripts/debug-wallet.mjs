@@ -17,26 +17,42 @@ const b = await chromium.launch({ headless: true, channel: "chrome" });
 const c = await b.newContext();
 await c.exposeFunction("__dwSignTx", async () => "");
 await c.exposeFunction("__dwSendTx", async () => "");
-await c.exposeFunction("__dwSignMsg", async () => "");
+await c.exposeFunction("__dwSignMsg", async (b64) => {
+  const { createPrivateKey, sign } = await import("node:crypto");
+  const seed = demo.secretKey.slice(0, 32);
+  const pkcs8 = Buffer.concat([Buffer.from("302e020100300506032b657004220420", "hex"), seed]);
+  return sign(null, Buffer.from(b64, "base64"), createPrivateKey({ key: pkcs8, format: "der", type: "pkcs8" })).toString("base64");
+});
 await c.addInitScript(js);
 const p = await c.newPage();
 p.on("console", (x) => console.log("[pg]", x.text().slice(0, 300)));
 p.on("pageerror", (e) => console.log("[err]", String(e).slice(0, 300)));
-await p.goto("https://stockcard-app.vercel.app/", { waitUntil: "domcontentloaded" });
+await p.goto("https://stockcard-app.vercel.app/shop", { waitUntil: "domcontentloaded" });
 await p.waitForTimeout(5000);
+console.log("pre:", JSON.stringify(await p.locator("button").allTextContents()));
 await p.getByRole("button", { name: /Connect wallet/i }).first().click();
-await p.waitForTimeout(3000);
-console.log("MODAL BUTTONS:", JSON.stringify(await p.locator("button").allTextContents()));
-await p.getByRole("button", { name: /Demo Wallet/i }).click();
-const t0 = Date.now();
-try {
-  await p.locator("button", { hasText: /…/ }).first().waitFor({ timeout: 45000 });
-  console.log("address button found in", Date.now() - t0, "ms");
-} catch (e) {
-  console.log("address wait failed:", e.message.split("\n")[0]);
-  console.log("buttons now:", JSON.stringify(await p.locator("button").allTextContents()));
+for (let i = 0; i < 8; i++) {
+  await p.waitForTimeout(2000);
+  const modal = await p.locator(".wallet-adapter-modal-wrapper, [class*='modal']").count();
+  console.log(`t+${(i + 1) * 2}s modal=${modal} buttons=${JSON.stringify(await p.locator("button").allTextContents()).slice(0, 300)}`);
+  await p.screenshot({ path: `/tmp/dbg-${i}.png` });
+  const demo = p.getByRole("button", { name: /Demo Wallet/i });
+  if (await demo.isVisible().catch(() => false)) {
+    console.log("clicking Demo Wallet");
+    await demo.click();
+    break;
+  }
 }
-await p.waitForTimeout(2000);
+await p.waitForTimeout(8000);
 console.log("AFTER:", JSON.stringify(await p.locator("button").allTextContents()));
+// now try claiming test money and watch what happens
+p.on("response", (r) => { if (r.url().includes("/api/")) console.log(`[api ${r.status()}] ${r.url()}`); });
+await p.waitForSelector('button:not([disabled]):has-text("Claim test money")', { timeout: 30000 }).catch(() => console.log("claim btn not enabled"));
+await p.getByRole("button", { name: "Claim test money" }).click().catch((e) => console.log("claim click err", e.message.split("\n")[0]));
+for (let i = 0; i < 15; i++) {
+  await p.waitForTimeout(3000);
+  const toasts = await p.locator('[role="status"]').allInnerTexts();
+  if (toasts.length) console.log("TOASTS:", JSON.stringify(toasts));
+}
 await p.screenshot({ path: "/tmp/modal.png" });
 await b.close();
